@@ -22,12 +22,10 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None):
   
   ## Save
   
-  if output_fp == None:
-    print(evaluation_dict)
-    
-  else:
+  if output_fp is not None:
     with open(output_fp, 'w') as file:
       yaml.dump(evaluation_dict, file)
-    
+      
+  ## In any case, return as a dict    
   return evaluation_dict
     

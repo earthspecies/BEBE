@@ -7,6 +7,7 @@ import yaml
 import sys
 import behavior_benchmarks.models as models
 import behavior_benchmarks.training.evaluation as evaluation
+import behavior_benchmarks.visualization as bbvis
 
 ## todo: wrap in a function etc
 ## todo: load config and make it a dictionary
@@ -26,9 +27,9 @@ config = {'experiment_name' : 'gmm_test',
           'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
           'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
 
-##
+## save off config
 
-# modify config
+## modify config to be passed around
 
 config['output_dir'] = os.path.join(config['output_parent_dir'], config['experiment_name'])
 config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
@@ -37,13 +38,15 @@ train_data_fp = []
 test_data_fp = []
 for x in config['train_data_fp_glob']:
   train_data_fp.extend(glob.glob(x))
+  train_data_fp.sort()
   ##
-  train_data_fp = train_data_fp[:2]
+  #train_data_fp = train_data_fp[:2]
   ##
 for x in config['test_data_fp_glob']:
   test_data_fp.extend(glob.glob(x))
+  test_data_fp.sort()
   ##
-  test_data_fp = train_data_fp[:2]
+  #test_data_fp = train_data_fp[:2]
   ##
 
 config['train_data_fp'] = train_data_fp
@@ -81,9 +84,9 @@ print("Generating predictions based on trained model")
 all_predictions = []
 all_labels = []
 
-for fp in config['train_data_fp'][:2]:
+for fp in config['train_data_fp']:
   predictions = model.predict(fp)
-  predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1] + '.npy')
+  predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
   np.save(predictions_fp, predictions)
   
   labels_idx = config['metadata']['clip_column_names'].index('label')
@@ -99,4 +102,11 @@ all_predictions = np.array(all_predictions)
 
 eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
 evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
-  
+
+# Save example figures
+
+for fp in config['train_data_fp'][:5]:
+  predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
+  target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
+  target_fp = os.path.join(config['output_dir'], target_filename)
+  bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp)
