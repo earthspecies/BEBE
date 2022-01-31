@@ -71,14 +71,14 @@ model.fit()
 
 # Generate predictions for each file
 
-all_predictions = np.array([])
-all_labels = np.array([])
+all_predictions = []
+all_labels = []
 
-labels_idx = self.metadata['clip_column_names'].index('label')
+labels_idx = metadata['clip_column_names'].index('label')
 
 for fp in config['train_data_fp'][:2]:
-  predictions = model.predict(fp)
-  labels = np.load(fp)[:, labels_idx]
+  predictions = list(model.predict(fp))
+  labels = list(np.load(fp)[:, labels_idx])
   all_predictions.append(predictions)
   all_labels.append(labels)
   
