@@ -7,11 +7,8 @@ import numpy as np
 class gmm():
   def __init__(self, config):
     self.config = config
-    self.model = GaussianMixture(n_components = self.config['num_components'], verbose = 2)
-    
-    metadata_fp = config['metadata_fp']
-    with open(metadata_fp) as file:
-      self.metadata = yaml.load(file, Loader=yaml.FullLoader)
+    self.model = GaussianMixture(n_components = self.config['num_components'], verbose = 2, max_iter = 10)
+    self.metadata = config['metadata']
       
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]

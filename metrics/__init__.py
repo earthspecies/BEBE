@@ -1,0 +1,1 @@
+from behavior_benchmarks.metrics.information_theoretic import Thiel_U
