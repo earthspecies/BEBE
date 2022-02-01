@@ -5,14 +5,15 @@ from matplotlib import pyplot as plt
 import glob
 import yaml
 import sys
+import argparse
+
 sys.path.append('/home/jupyter')
 import behavior_benchmarks.models as models
 import behavior_benchmarks.training.evaluation as evaluation
+import behavior_benchmarks.training.handle_config as handle_config
 import behavior_benchmarks.visualization as bbvis
 
-def main():
-  ## todo: load config and make it a dictionary
-
+def main(config):
   # config = {'experiment_name' : 'gmm_test',
   #          'model' : 'gmm',
   #          'num_components' : 8,
@@ -28,21 +29,22 @@ def main():
   #          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
   #          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
 
-  config = {'experiment_name' : 'gmm_test',
-            'model' : 'gmm',
-            'num_components' : 8,
-            'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/ladds_seals',
-            'input_vars' : ['AccX',
-                            'AccY',
-                            'AccZ',
-                            'Depth'], 
-            'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml',
-            'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy'],
-            'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy']}
+  # config = {'experiment_name' : 'gmm_test',
+  #           'model' : 'gmm',
+  #           'num_components' : 8,
+  #           'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/ladds_seals',
+  #           'input_vars' : ['AccX',
+  #                           'AccY',
+  #                           'AccZ',
+  #                           'Depth'], 
+  #           'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml',
+  #           'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy'],
+  #           'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy']}
 
 
   ## save off config
-
+  
+  config = handle_config.accept_default_model_configs(config)
   output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
 
   target_fp = os.path.join(output_dir, "config.yaml")
@@ -55,19 +57,14 @@ def main():
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
 
   train_data_fp = []
-  test_data_fp = []
   for x in config['train_data_fp_glob']:
     train_data_fp.extend(glob.glob(x))
-    train_data_fp.sort()
-    ##
-    #train_data_fp = train_data_fp[:2]
-    ##
+  train_data_fp.sort()
+
+  test_data_fp = []
   for x in config['test_data_fp_glob']:
     test_data_fp.extend(glob.glob(x))
-    test_data_fp.sort()
-    ##
-    #test_data_fp = train_data_fp[:2]
-    ##
+  test_data_fp.sort()
 
   config['train_data_fp'] = train_data_fp
   config['test_data_fp'] = test_data_fp
@@ -134,4 +131,12 @@ def main():
 
   
 if __name__ == "__main__":
-  main()
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--config', type=str, required=True)
+  args = parser.parse_args()
+  config_fp = args.config
+  
+  with open(config_fp) as file:
+    config = yaml.load(file, Loader=yaml.FullLoader)
+  
+  main(config)
