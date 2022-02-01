@@ -16,6 +16,7 @@ import behavior_benchmarks.visualization as bbvis
 def main(config):
 
   ## save off config
+  
   config = handle_config.accept_default_model_configs(config)
   output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
 
@@ -23,7 +24,7 @@ def main(config):
   with open(target_fp, 'w') as file:
     yaml.dump(config, file)
 
-  ## modify config to be passed around
+  ## modify config to be passed around in future steps
 
   config['output_dir'] = output_dir
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
