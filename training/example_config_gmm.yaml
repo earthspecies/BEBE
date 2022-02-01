@@ -12,10 +12,10 @@ test_data_fp_glob:
 train_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 
-#gmm_configs:
-#  num_components: 8
-  #max_iter: 10
-  #n_init: 10
+gmm_config:
+  num_components: 8
+  max_iter: 10
+  n_init: 1
 
 
 

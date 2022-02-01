@@ -14,36 +14,8 @@ import behavior_benchmarks.training.handle_config as handle_config
 import behavior_benchmarks.visualization as bbvis
 
 def main(config):
-  # config = {'experiment_name' : 'gmm_test',
-  #          'model' : 'gmm',
-  #          'num_components' : 8,
-  #          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
-  #          'input_vars' : ['AccX',
-  #                          'AccY',
-  #                          'AccZ',
-  #                          'GyrX',
-  #                          'GyrY',
-  #                          'GyrZ',
-  #                          'Depth'], 
-  #          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
-  #          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
-  #          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
-
-  # config = {'experiment_name' : 'gmm_test',
-  #           'model' : 'gmm',
-  #           'num_components' : 8,
-  #           'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/ladds_seals',
-  #           'input_vars' : ['AccX',
-  #                           'AccY',
-  #                           'AccZ',
-  #                           'Depth'], 
-  #           'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml',
-  #           'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy'],
-  #           'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy']}
-
 
   ## save off config
-  
   config = handle_config.accept_default_model_configs(config)
   output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
 
@@ -72,6 +44,12 @@ def main(config):
   metadata_fp = config['metadata_fp']
   with open(metadata_fp) as file:
     config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
+  
+  final_model_dir = os.path.join(config['output_dir'], "final_model")
+  config['final_model_dir'] = final_model_dir
+  
+  visualization_dir = os.path.join(config['output_dir'], "visualizations")
+  config['visualization_dir'] = visualization_dir
 
   # Set up experiment
 
@@ -80,6 +58,12 @@ def main(config):
 
   if not os.path.exists(config['predictions_dir']):
     os.makedirs(config['predictions_dir'])
+    
+  if not os.path.exists(config['final_model_dir']):
+    os.makedirs(config['final_model_dir'])
+    
+  if not os.path.exists(config['visualization_dir']):
+    os.makedirs(config['visualization_dir'])
 
   ## Instantiate model
 
@@ -93,6 +77,9 @@ def main(config):
 
   print("Training model")
   model.fit()
+  
+  # Save model
+  model.save()
 
   # Generate predictions for each file
   # Simultaneously, keep track of all predictions at once
@@ -122,11 +109,14 @@ def main(config):
   evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
 
   # Save example figures
+  
+  target_fp = os.path.join(config['visualization_dir'], "confusion_matrix.png")
+  bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = target_fp)
 
   for fp in config['train_data_fp'][:5]:
     predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
     target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
-    target_fp = os.path.join(config['output_dir'], target_filename)
+    target_fp = os.path.join(config['visualization_dir'], target_filename)
     bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp)
 
   

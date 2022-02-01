@@ -1,6 +1,8 @@
 from sklearn.mixture import GaussianMixture
 import yaml
 import numpy as np
+import pickle
+import os
 
 class gmm():
   def __init__(self, config):
@@ -23,6 +25,11 @@ class gmm():
     train_data = np.concatenate(train_data, axis = 0)
 
     self.model.fit(train_data)
+    
+  def save(self):
+    target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
+    with open(target_fp, 'wb') as f:
+      pickle.dump(self, f)
   
   def predict(self, data):
     predictions = self.model.predict(data)

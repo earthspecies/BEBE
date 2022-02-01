@@ -45,7 +45,7 @@ def plot_track(data_fp, predictions_fp, config, start_sample = 0, end_sample = 2
     axes[-1].set_ylabel("cluster")
 
     if target_fp is not None:
-        plt.savefig(target_fp)
+        plt.savefig(target_fp); plt.close()
     
     else:
         plt.show()
