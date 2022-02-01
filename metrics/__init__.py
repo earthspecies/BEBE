@@ -1,1 +1,1 @@
-from behavior_benchmarks.metrics.information_theoretic import Thiel_U
+from behavior_benchmarks.metrics.information_theoretic import homogeneity

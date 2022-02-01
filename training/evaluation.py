@@ -17,8 +17,8 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None):
   
   ## Compute evaluation metrics
   
-  uncertainty = metrics.Thiel_U(y_true_sub, y_pred_sub)
-  evaluation_dict['uncertainty'] = float(uncertainty)
+  homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
+  evaluation_dict['homogeneity'] = float(homogeneity)
   
   ## Save
   
