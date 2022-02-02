@@ -122,8 +122,8 @@ class eskmeans():
         for start_point in start_points:
             #x = np.arange(start_point, start_point + l)
             key = '---'.join([fp, str(start_point)])
-            raw_input_data = input_data[start_point: start_point + l,:]
-            encoded_input_data = encoder.transform(input_data)
+            chunked_input_data = input_data[start_point: start_point + l,:]
+            encoded_input_data = encoder.transform(chunked_input_data)
             train_data_dict[key] = encoded_input_data
             
     #initialize landmarks in short chunks
