@@ -13,8 +13,8 @@ import random
 import time
 import tqdm
 
-from eskmeans.kmeans import KMeans
-from eskmeans.utterances import Utterances
+from behavior_benchmarks.applications.eskmeans.kmeans import KMeans
+from behavior_benchmarks.applications.eskmeans.utterances import Utterances
 
 DEBUG = 0
 SEGMENT_DEBUG_ONLY = False
@@ -64,6 +64,8 @@ class ESKmeans(object):
         Word insertion penalty.
     p_boundary_init : float
         See `Utterances`.
+    boundary_init_lambda: positive float
+        See `Utterances`. Added in by BH for dealing with long files
     init_assignments : str
         This setting determines how the initial acoustic model assignments are
         determined: "rand" assigns data vectors randomly; "each-in-own" assigns
@@ -85,7 +87,7 @@ class ESKmeans(object):
 
     def __init__(self, K_max, embedding_mats, vec_ids_dict, durations_dict,
             landmarks_dict, n_slices_min=0, n_slices_max=20, min_duration=0,
-            p_boundary_init=0.5, init_assignments="rand", wip=0):
+            p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0):
 
         # Attributes from parameters
         self.n_slices_min = n_slices_min
@@ -108,7 +110,7 @@ class ESKmeans(object):
         durations = [durations_dict[i] for i in ids_to_utterance_labels]
         self.utterances = Utterances(
             lengths, vec_ids, durations, landmarks,
-            p_boundary_init=p_boundary_init, n_slices_min=n_slices_min,
+            p_boundary_init=p_boundary_init, boundary_init_lambda = boundary_init_lambda, n_slices_min=n_slices_min,
             n_slices_max=n_slices_max, min_duration=min_duration
             )
 
@@ -649,7 +651,7 @@ def forward_backward_kmeans_viterbi(vec_embed_neg_len_sqrd_norms, N,
                 t = t - 1
                 if t == 0:
                     break  # this is a very crappy utterance
-                i = 0.5*(t - 1)*t
+                i = int(0.5*(t - 1)*t)
                 q_t = (vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:] + gammas[:t][-n_slices_max:])
             if DEBUG > 0:
                 print("Backtracked to cut " + str(t))

@@ -15,10 +15,13 @@ import behavior_benchmarks.visualization as bbvis
 
 def main(config):
 
-  ## save off config
+  ## save off input config
   
   config = handle_config.accept_default_model_configs(config)
   output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
+  
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
   target_fp = os.path.join(output_dir, "config.yaml")
   with open(target_fp, 'w') as file:
@@ -52,10 +55,7 @@ def main(config):
   visualization_dir = os.path.join(config['output_dir'], "visualizations")
   config['visualization_dir'] = visualization_dir
 
-  # Set up experiment
-
-  if not os.path.exists(config['output_dir']):
-    os.makedirs(config['output_dir'])
+  # Set up the rest of the experiment
 
   if not os.path.exists(config['predictions_dir']):
     os.makedirs(config['predictions_dir'])
@@ -70,6 +70,9 @@ def main(config):
 
   if config['model'] == 'gmm':
     model = models.gmm(config)
+    
+  elif config['model'] == 'eskmeans':
+    model = models.eskmeans(config)
 
   else:
     raise ValueError('model type not recognized')
@@ -90,8 +93,7 @@ def main(config):
   all_labels = []
 
   for fp in config['train_data_fp']:
-    model_inputs = model.load_model_inputs(fp)
-    predictions = model.predict(model_inputs)
+    predictions = model.predict_from_file(fp)
     predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
     np.save(predictions_fp, predictions)
 

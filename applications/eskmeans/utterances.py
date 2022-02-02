@@ -6,6 +6,7 @@ Date: 2014-2017, 2021
 
 import pickle
 import numpy as np
+import tqdm
 
 
 class Utterances(object):
@@ -66,7 +67,7 @@ class Utterances(object):
     """
 
     def __init__(self, lengths, vec_ids, durations, landmarks,
-            init_boundaries=None, p_boundary_init=0.5, n_slices_min=0,
+            init_boundaries=None, p_boundary_init=0.5, boundary_init_lambda = None, n_slices_min=0,
             n_slices_max=6, min_duration=0):
 
         # Check parameters
@@ -113,6 +114,21 @@ class Utterances(object):
                     ind = np.argmin(delta)
                     closest_landmarks.append(ind)
                 self.boundaries[i_utt, closest_landmarks] = True
+                
+        elif boundary_init_lambda is not None:
+            print("Initializing boundaries using a random walk")
+            # The default random initialization is not practical for long files
+            # Alternatively we initialize using a random walk
+            for i in tqdm.tqdm(range(self.D)): #iterate through utterances
+                N = self.lengths[i]
+                current_index = -1
+                while current_index < N-1:
+                  hop_size_to_new_index = np.minimum(n_slices_max, n_slices_min + np.random.poisson(lam = boundary_init_lambda) + 1)
+                  new_index = np.minimum(current_index + hop_size_to_new_index, N-1)
+                  self.boundaries[i, new_index] = True
+                  current_index = new_index
+                self.boundaries[i, N-1] = True
+            
         elif p_boundary_init == 0:
             print("Initializing boundaries at start and end of utterance")
             # Some constraints are placed below to get valid embeddings from

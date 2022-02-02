@@ -14,7 +14,31 @@ def accept_default_model_configs(config):
       
     if 'n_init' not in config['gmm_config']:
       config['gmm_config']['n_init'] = 1
+  
+  if model_type == 'eskmeans':
+    if 'eskmeans_config' not in config:
+      config['eskmeans_config'] = {}
       
+    if 'landmark_hop_size' not in config['eskmeans_config']:
+      config['eskmeans_config']['landmark_hop_size'] = 10
+      
+    if 'n_init' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_init'] = 1
+      
+    if 'n_iter' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_iter'] = 10
+      
+    if 'n_landmarks_max' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_landmarks_max'] = 8
+      
+    if 'embed_length' not in config['eskmeans_config']:
+      config['eskmeans_config']['embed_length'] = 10
+      
+    if 'n_clusters' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_clusters'] = 8
+      
+    if 'boundary_init_lambda' not in config['eskmeans_config']:
+      config['eskmeans_config']['boundary_init_lambda'] = 4.
       
   return config
       
