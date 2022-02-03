@@ -152,7 +152,9 @@ class eskmeans():
         ### Potential to use different embedding method
         downsample_dict[key] = downsample_track(train_data_dict[key],
                                                     seglist_dict[key],
-                                                    downsample_length = self.embed_length)      
+                                                    downsample_length = self.embed_length)
+        
+    del train_data_dict
         
     # Intermediate variables
     print("generating intermediate variables")
