@@ -53,7 +53,7 @@ class KMeans(object):
         component assignments for each of the `N` data vectors. 
     """
 
-    def __init__(self, X, K_max, assignments="rand"):
+    def __init__(self, X, K_max, assignments="rand", init_means = None):
 
         # Attributes from parameters
         self.X = X
@@ -65,8 +65,12 @@ class KMeans(object):
         self.mean_numerators = np.zeros((self.K_max, self.D), np.float)
         self.counts = np.zeros(self.K_max, np.int)
         self.assignments = -1*np.ones(self.N, dtype=np.int)
-        self.setup_random_means()
-        self.means = self.random_means.copy()
+        if init_means is None:
+          self.setup_random_means()
+          self.means = self.random_means.copy()
+        else:
+          # use supplied means
+          self.means = init_means
 
         # Initial component assignments
         if assignments is not None:

@@ -116,10 +116,10 @@ class Utterances(object):
                 self.boundaries[i_utt, closest_landmarks] = True
                 
         elif boundary_init_lambda is not None:
-            print("Initializing boundaries using a random walk")
+            #print("Initializing boundaries using a random walk")
             # The default random initialization is not practical for long files
             # Alternatively we initialize using a random walk
-            for i in tqdm.tqdm(range(self.D)): #iterate through utterances
+            for i in range(self.D): #iterate through utterances tqdm
                 N = self.lengths[i]
                 current_index = -1
                 while current_index < N-1:

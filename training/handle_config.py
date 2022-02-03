@@ -22,11 +22,8 @@ def accept_default_model_configs(config):
     if 'landmark_hop_size' not in config['eskmeans_config']:
       config['eskmeans_config']['landmark_hop_size'] = 10
       
-    if 'n_init' not in config['eskmeans_config']:
-      config['eskmeans_config']['n_init'] = 1
-      
-    if 'n_iter' not in config['eskmeans_config']:
-      config['eskmeans_config']['n_iter'] = 10
+    if 'n_epochs' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_epochs'] = 10
       
     if 'n_landmarks_max' not in config['eskmeans_config']:
       config['eskmeans_config']['n_landmarks_max'] = 8

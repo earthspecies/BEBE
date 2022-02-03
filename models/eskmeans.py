@@ -86,8 +86,7 @@ class eskmeans():
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     self.landmark_hop_size = self.model_config['landmark_hop_size']
-    self.n_init = self.model_config['n_init']
-    self.n_iter = self.model_config['n_iter']
+    self.n_epochs = self.model_config['n_epochs']
     self.n_landmarks_max = self.model_config['n_landmarks_max'] 
     self.embed_length = self.model_config['embed_length']  
     self.n_clusters = self.model_config['n_clusters']
@@ -111,68 +110,96 @@ class eskmeans():
     # initialize raw data -> latent variables encoder
     encoder = self.build_encoder()
     
+    # Set up data batches
+    
     # chop up each track into something computationally tractable
-    l = 10000
+    batch_len = 10000
 
-    train_data_dict = {}
+    all_data_keys = []
     for fp in self.config['train_data_fp']:
         input_data = self.load_model_inputs(fp)
         len_track = np.shape(input_data)[0]
-        start_points = list(np.arange(0, len_track, l))
+        start_points = list(np.arange(0, len_track, batch_len))
         for start_point in start_points:
-            #x = np.arange(start_point, start_point + l)
             key = '---'.join([fp, str(start_point)])
-            chunked_input_data = input_data[start_point: start_point + l,:]
-            encoded_input_data = encoder.transform(chunked_input_data)
-            train_data_dict[key] = encoded_input_data
+            all_data_keys.append(key)
             
-    #initialize landmarks in short chunks
-    landmarks_dict = {}
-
-    for key in train_data_dict:
-        num_samples = np.shape(train_data_dict[key])[0]
-        boundaries = np.arange(self.landmark_hop_size, num_samples, self.landmark_hop_size)
-        boundaries = list(boundaries)
-        boundaries.append(num_samples) # unsure if this is necessary?
-        landmarks_dict[key] = boundaries
-        
-    # Find all the possible segmentation intervals
-
-    seglist_dict = {}
-    for key in landmarks_dict:
-        seglist_dict[key] = get_seglist_from_landmarks(
-            landmarks_dict[key], self.n_landmarks_max
-            )
-        
-    # Precompute all the embeddings        
-    downsample_dict = {}
-    print("downsampling latents")
-    downsample_dict = {}
-    for key in tqdm.tqdm(train_data_dict.keys()):
-        ### Potential to use different embedding method
-        downsample_dict[key] = downsample_track(train_data_dict[key],
-                                                    seglist_dict[key],
-                                                    downsample_length = self.embed_length)
-        
-    del train_data_dict
-        
-    # Intermediate variables
-    print("generating intermediate variables")
-    lengths_dict = {}
-    for i in landmarks_dict:
-        lengths_dict[i] = len(landmarks_dict[i])
-
-    vec_ids_dict = get_vec_ids_dict(lengths_dict, self.n_landmarks_max)
-    durations_dict = get_durations_dict(landmarks_dict, self.n_landmarks_max)
+    current_epoch = 0
+    first_batch = True
     
-    ### Now I get to instantiate the model and train
+    while current_epoch < self.n_epochs:
+      print("Beginning on epoch %d" % current_epoch)
+      current_epoch_keys = all_data_keys.copy()
+      current_epoch_keys = np.random.permutation(current_epoch_keys)
+      current_epoch_keys = list(current_epoch_keys)
+      
+      # keep track of current epoch progress
+      record_dict = {}
+      record_dict["sum_neg_sqrd_norm"] = []
+      record_dict["sum_neg_len_sqrd_norm"] = []
+      record_dict["components"] = []
+      record_dict["sample_time"] = []
+      record_dict["n_tokens"] = []
+      
+      for input_data_key in tqdm.tqdm(current_epoch_keys):  
+        train_data_dict = {}
+        #print("considering %s" % input_data_key)
+        input_data = self.load_model_inputs(input_data_key.split('---')[0])
 
-    best_objective = -np.infty
-    best_model = None
+        chunked_input_data = input_data[start_point: start_point + batch_len,:]
+        encoded_input_data = encoder.transform(chunked_input_data)
+        train_data_dict[key] = encoded_input_data
 
-    for i in range(self.n_init):
-        print("Model initialization %d" % i)
+        #initialize landmarks in short chunks
+        landmarks_dict = {}
+
+        for key in train_data_dict:
+            num_samples = np.shape(train_data_dict[key])[0]
+            boundaries = np.arange(self.landmark_hop_size, num_samples, self.landmark_hop_size)
+            boundaries = list(boundaries)
+            boundaries.append(num_samples) # unsure if this is necessary?
+            landmarks_dict[key] = boundaries
+
+        # Find all the possible segmentation intervals
+
+        seglist_dict = {}
+        for key in landmarks_dict:
+            seglist_dict[key] = get_seglist_from_landmarks(
+                landmarks_dict[key], self.n_landmarks_max
+                )
+
+        # Precompute all the embeddings        
+        downsample_dict = {}
+        #print("downsampling latents")
+        downsample_dict = {}
+        for key in train_data_dict.keys(): #tqdm
+            ### Potential to use different embedding method
+            downsample_dict[key] = downsample_track(train_data_dict[key],
+                                                        seglist_dict[key],
+                                                        downsample_length = self.embed_length)
+
+        # Intermediate variables
+        #print("generating intermediate variables")
+        lengths_dict = {}
+        for i in landmarks_dict:
+            lengths_dict[i] = len(landmarks_dict[i])
+
+        vec_ids_dict = get_vec_ids_dict(lengths_dict, self.n_landmarks_max)
+        durations_dict = get_durations_dict(landmarks_dict, self.n_landmarks_max)
+
+        ### Now I get to instantiate the model and train
+
         # Model
+        if first_batch:
+          print("Initializing randomly")
+          init_assignments = "rand"
+          init_means = None
+          first_batch = False
+        else:
+          init_assignments = None
+          init_means = cluster_means
+        
+        
         ksegmenter = eskmeans_wordseg.ESKmeans(
             K_max=self.n_clusters,
             embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
@@ -181,20 +208,34 @@ class eskmeans():
             n_slices_min=0,
             n_slices_max=self.n_landmarks_max,
             min_duration=0,
-            init_assignments="rand",
+            init_means = init_means,
+            init_assignments=init_assignments,
             wip=0
             )
-
+        
         # Segment
-        segmenter_record = ksegmenter.segment(n_iter=self.n_iter)
-        objective = segmenter_record['sum_neg_len_sqrd_norm'][-1] ## objective we want to maximise
+        segmenter_record = ksegmenter.segment(n_iter=1)
+        
+        for key in record_dict:
+          record_dict[key].append(segmenter_record[key])
+        
+        cluster_means = ksegmenter.acoustic_model.means
+        
+      #########
+      info = "Finished epoch: " + str(current_epoch)
+      info += ", sum_neg_sqrd_norm: " + str(sum(record_dict["sum_neg_sqrd_norm"]))
+      info += ", sum_neg_len_sqrd_norm: " + str(sum(record_dict["sum_neg_len_sqrd_norm"]))
+      info += ", n_tokens: " + str(sum(record_dict["n_tokens"]))
+      print(info)
+      
+      current_epoch +=1
+      #########
 
-        if objective > best_objective:
-            print("found new best model")
-            best_objective = objective
-            best_model = ksegmenter
-
-    self.model = best_model
+    self.model = ksegmenter
+    
+    
+    
+    #####The following should go in the predict method
     
     # Obtain clusters and landmarks (frame indices)
     unsup_transcript = {}

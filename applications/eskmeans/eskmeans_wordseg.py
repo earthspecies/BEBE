@@ -87,7 +87,7 @@ class ESKmeans(object):
 
     def __init__(self, K_max, embedding_mats, vec_ids_dict, durations_dict,
             landmarks_dict, n_slices_min=0, n_slices_max=20, min_duration=0,
-            p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0):
+            p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0, init_means = None):
 
         # Attributes from parameters
         self.n_slices_min = n_slices_min
@@ -96,7 +96,7 @@ class ESKmeans(object):
         
         
         # Process embeddings into a single matrix, and vec_ids into a list (entry for each utterance)
-        print("Processing embeddings")
+        #print("Processing embeddings")
         embeddings, vec_ids, ids_to_utterance_labels = process_embeddings(
             embedding_mats, vec_ids_dict#, n_slices_min=n_slices_min
             )
@@ -104,7 +104,7 @@ class ESKmeans(object):
         N = embeddings.shape[0]
     
         # Initialize `utterances`
-        print("Initializing utterances")
+        #print("Initializing utterances")
         lengths = [len(landmarks_dict[i]) for i in ids_to_utterance_labels]
         landmarks = [landmarks_dict[i] for i in ids_to_utterance_labels]
         durations = [durations_dict[i] for i in ids_to_utterance_labels]
@@ -115,16 +115,16 @@ class ESKmeans(object):
             )
 
         # Embeddings in the initial segmentation
-        print("Initializing embeddings")
+        #print("Initializing embeddings")
         init_embeds = []
         for i in range(self.utterances.D):
             init_embeds.extend(self.utterances.get_segmented_embeds_i(i))
         init_embeds = np.array(init_embeds, dtype=int)
         init_embeds = init_embeds[np.where(init_embeds != -1)]
-        print("No. initial embeddings: {}".format(init_embeds.shape[0]))
+        #print("No. initial embeddings: {}".format(init_embeds.shape[0]))
 
         # Initialize the K-means components
-        print("Initializing K-means")
+        #print("Initializing K-means")
         assignments = -1*np.ones(N, dtype=int)
         if init_assignments == "rand":
             assignments[init_embeds] = np.random.randint(0, K_max, len(init_embeds))
@@ -135,7 +135,7 @@ class ESKmeans(object):
                 )[:n_init_embeds]
             random.shuffle(assignment_list)
             assignments[init_embeds] = np.array(assignment_list)
-        self.acoustic_model = KMeans(embeddings, K_max, assignments)
+        self.acoustic_model = KMeans(embeddings, K_max, assignments, init_means = init_means)
 
     def save(self, f):
         self.acoustic_model.save(f)
@@ -263,7 +263,7 @@ class ESKmeans(object):
         """
 
         # Debug trace
-        print("Segmenting for {} iterations".format(n_iter))
+        #print("Segmenting for {} iterations".format(n_iter))
         if DEBUG > 0:
             print(
                 "Monitoring utterance {} (index={:d})".format(
@@ -299,10 +299,10 @@ class ESKmeans(object):
             record_dict["components"].append(self.acoustic_model.K)
             record_dict["n_tokens"].append(self.acoustic_model.get_n_assigned())
 
-            info = "Iteration: " + str(i_iter)
-            for key in sorted(record_dict):
-                info += ", " + key + ": " + str(record_dict[key][-1])
-            print(info)
+            # info = "Iteration: " + str(i_iter)
+            # for key in sorted(record_dict):
+            #     info += ", " + key + ": " + str(record_dict[key][-1])
+            # print(info)
 
             # Perform intermediate acoustic model re-sampling
             if n_iter_inbetween_kmeans > 0:
@@ -706,7 +706,7 @@ def process_embeddings(embedding_mats, vec_ids_dict):
     n_embed = 0
 
     # Loop over utterances
-    for utt in tqdm.tqdm(sorted(embedding_mats)):
+    for utt in sorted(embedding_mats): #tqdm
         ids_to_utterance_labels.append(utt)
         cur_vec_ids = vec_ids_dict[utt].copy()
 
