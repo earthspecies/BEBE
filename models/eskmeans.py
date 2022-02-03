@@ -216,8 +216,8 @@ class eskmeans():
         # Segment
         segmenter_record = ksegmenter.segment(n_iter=1)
         
-        for key in record_dict:
-          record_dict[key].append(segmenter_record[key])
+        for k in record_dict:
+          record_dict[k].append(segmenter_record[k][0])
         
         cluster_means = ksegmenter.acoustic_model.means
         
