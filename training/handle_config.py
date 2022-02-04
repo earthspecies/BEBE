@@ -37,5 +37,11 @@ def accept_default_model_configs(config):
     if 'boundary_init_lambda' not in config['eskmeans_config']:
       config['eskmeans_config']['boundary_init_lambda'] = 4.
       
+    if 'max_track_len' not in config['eskmeans_config']:
+      config['eskmeans_config']['max_track_len'] = 10000
+      
+    if 'batch_size' not in config['eskmeans_config']:
+      config['eskmeans_config']['batch_size'] = 10
+      
   return config
       

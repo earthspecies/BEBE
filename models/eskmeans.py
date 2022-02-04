@@ -11,6 +11,10 @@ from sklearn.decomposition import PCA
 
 # Utility functions
 
+def group_list(input_list, group_size):
+    for i in range(0, len(input_list), group_size):
+        yield input_list[i:i+group_size]
+
 def get_vec_ids_dict(lengths_dict, n_landmarks_max):
     """
     Every N(N + 1)/2 length vector `vec_ids` contains all the indices for a
@@ -125,11 +129,10 @@ class eskmeans():
     self.config = config
     self.model_config = config['eskmeans_config']
     self.model = None
-    self.predictions_dict = None
     self.metadata = config['metadata']
     self.encoder = None
     # chop up each track into something computationally tractable
-    self.max_track_len = 10000
+    self.max_track_len = self.model_config['max_track_len']
       
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
@@ -140,7 +143,7 @@ class eskmeans():
     self.embed_length = self.model_config['embed_length']  
     self.n_clusters = self.model_config['n_clusters']
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
-    self.batch_size = 5
+    self.batch_size = self.model_config['batch_size']
     
   def load_model_inputs(self, filepath):
     return np.load(filepath)[:, self.cols_included]
@@ -156,11 +159,16 @@ class eskmeans():
     pca.fit(train_data)
     self.encoder = pca
   
-  def prepare_intermediate_variables(self, input_data_keys):
+  def prepare_intermediate_variables(self, input_data_keys, input_data_single_file = None):
+    ### input_data_keys is a list of str of the form "fp---start_point"
+    ### if input_data_single_file is specified (as a single numpy array), we use that array as input_data instead of loading from file
     train_data_dict = {}
     for input_data_key in input_data_keys:
     #print("considering %s" % input_data_key)
-      input_data = self.load_model_inputs(input_data_key.split('---')[0])
+      if input_data_single_file is None:
+        input_data = self.load_model_inputs(input_data_key.split('---')[0])
+      else:
+        input_data = input_data_single_file
       start_point = int(input_data_key.split('---')[1])
       chunked_input_data = input_data[start_point: start_point + self.max_track_len,:]
       encoded_input_data = self.encoder.transform(chunked_input_data)
@@ -241,9 +249,7 @@ class eskmeans():
       record_dict["sample_time"] = []
       record_dict["n_tokens"] = []
       
-      def group_list(input_list, group_size):
-        for i in range(0, len(input_list), group_size):
-            yield input_list[i:i+group_size]
+      
       
       
       for input_data_keys in tqdm.tqdm(list(group_list(current_epoch_keys, self.batch_size))): #tqdm.tqdm(current_epoch_keys):  
@@ -263,7 +269,7 @@ class eskmeans():
         else:
           init_assignments = None
           rate_constant = (self.n_epochs -  current_epoch)/self.n_epochs
-          print("Step Size: " + str(np.sum(((new_means - old_means) * rate_constant)**2)))
+          #print("Step Size: " + str(np.sum(((new_means - old_means) * rate_constant)**2)))
           init_means = old_means + (new_means - old_means) * rate_constant ### lower step size as epoch increases
         
         ksegmenter = eskmeans_wordseg.ESKmeans(
@@ -308,98 +314,80 @@ class eskmeans():
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
   
-  def predict(self, data):
-    # in progress
-    if False:
-      
-      all_data_keys = []
-      input_data = self.load_model_inputs(fp)
-      len_track = np.shape(input_data)[0]
-      start_points = list(np.arange(0, len_track, self.max_track_len))
-      for start_point in start_points:
-          key = '---'.join([fp, str(start_point)])
-          all_data_keys.append(key)
+  def predict(self, input_data):
 
-      print("preparing inputs")
-      downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys)
+    all_data_keys = []
+    len_track = np.shape(input_data)[0]
+    start_points = list(np.arange(0, len_track, self.max_track_len))
+    fp = 'input' # placeholder for consistency
+    for start_point in start_points:
+        key = '---'.join([fp, str(start_point)])
+        all_data_keys.append(key)
 
-      ### Now I get to instantiate the model
-      ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-      ### written by H Kamper and pass in the currently discovered cluster means
+    downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys, input_data_single_file = input_data)
 
-      init_assignments = None
-      init_means = self.model.acoustic_model.means.copy() ### lower step size as epoch increases
+    ### Now I get to instantiate the model
+    ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
+    ### written by H Kamper and pass in the currently discovered cluster means
 
-      ksegmenter = eskmeans_wordseg.ESKmeans(
-          K_max=self.n_clusters,
-          embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
-          durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
-          boundary_init_lambda = self.boundary_init_lambda, 
-          n_slices_min=0,
-          n_slices_max=self.n_landmarks_max,
-          min_duration=0,
-          init_means = init_means,
-          init_assignments=init_assignments,
-          wip=0
-          )
+    init_assignments = None
+    init_means = self.model.acoustic_model.means.copy() ### lower step size as epoch increases
 
+    ksegmenter = eskmeans_wordseg.ESKmeans(
+        K_max=self.n_clusters,
+        embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
+        durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
+        boundary_init_lambda = self.boundary_init_lambda, 
+        n_slices_min=0,
+        n_slices_max=self.n_landmarks_max,
+        min_duration=0,
+        init_means = init_means,
+        init_assignments=init_assignments,
+        wip=0
+        )
+    
+    
+    # Obtain clusters and landmarks (frame indices)
+    unsup_transcript = {}
+    unsup_landmarks = {}
+    for i_utt in range(ksegmenter.utterances.D):
+      ksegmenter.segment_i(i_utt)
+      utt = ksegmenter.ids_to_utterance_labels[i_utt]
+      unsup_transcript[utt] = ksegmenter.get_unsup_transcript_i(i_utt)
+      if -1 in unsup_transcript[utt]:
+        logger.warning(
+            "Unassigned cuts in: " + utt + " (transcript: " +
+            str(unsup_transcript[utt]) + ")"
+            )
+      unsup_landmarks[utt] = (
+            ksegmenter.utterances.get_segmented_landmarks(i_utt)
+            )
+      ksegmenter.acoustic_model.means = init_means
 
-      # Segment
-      segmenter_record = ksegmenter.segment(n_iter=1)
+    # Assemble a list of predictions, in a compressed format
+    # Need to put back together the tracks which we chopped up earlier
+    # We get predictions_compressed is a list of tuples (cluster, start_frame, end_frame)
+    # These are adjusted back to the indexing of the original (long) file
+    # When calling the predict method, we expand the compressed version out to per-frame predictions
 
+    predictions_compressed = []
+    for utt_key in unsup_transcript:
+        start_point = int(utt_key.split('---')[1])
+        for i, cluster in enumerate(unsup_transcript[utt_key]):
+            start, end = unsup_landmarks[utt_key][i]
+            start += start_point
+            end += start_point
+            predictions_compressed.append((cluster, start, end))
+            
+    # Finally put it all together into per-frame predictions
 
-
-
-
-
-
-      # Obtain clusters and landmarks (frame indices)
-      unsup_transcript = {}
-      unsup_landmarks = {}
-      for i_utt in range(self.model.utterances.D):
-          utt = self.model.ids_to_utterance_labels[i_utt]
-          unsup_transcript[utt] = self.model.get_unsup_transcript_i(i_utt)
-          if -1 in unsup_transcript[utt]:
-              logger.warning(
-                  "Unassigned cuts in: " + utt + " (transcript: " +
-                  str(unsup_transcript[utt]) + ")"
-                  )
-          unsup_landmarks[utt] = (
-              self.model.utterances.get_segmented_landmarks(i_utt)
-              )
-
-      # Assemble a dictionary of predictions, in a compressed format
-      # Need to put back together the tracks which we chopped up earlier
-      # We get predictions_dict[filepath] is a list of tuples (cluster, start_frame, end_frame)
-      # These are adjusted back to the indexing of the original (long) file
-      # When calling the predict method, we expand the compressed version out to per-frame predictions
-
-      predictions_dict = {}
-      for utt_key in unsup_transcript:
-          fp = utt_key.split('---')[0]
-          if fp not in predictions_dict:
-              predictions_dict[fp] = []
-          start_point = int(utt_key.split('---')[1])
-          for i, cluster in enumerate(unsup_transcript[utt_key]):
-              start, end = unsup_landmarks[utt_key][i]
-              start += start_point
-              end += start_point
-              predictions_dict[fp].append((cluster, start, end))
-
-
-      self.predictions_dict = predictions_dict
+    predictions = np.full(np.shape(input_data)[0], -1)
+    for chunk in predictions_compressed:
+        cluster, start, end = chunk
+        predictions[start: end] = cluster
+    return predictions
   
   def predict_from_file(self, fp):
-    if self.predictions_dict is not None:
-      inputs = self.load_model_inputs(fp)
-      predictions = np.full(np.shape(inputs)[0], -1)
-      if fp not in self.predictions_dict:
-        raise ValueError('file path not included in training data')
-      pred_compressed = self.predictions_dict[fp]
-      for chunk in pred_compressed:
-          cluster, start, end = chunk
-          predictions[start: end] = cluster
-      return predictions
-    
-    else:
-      raise ValueError('Model is not trained, cannot make predictions yet')
+    inputs = self.load_model_inputs(fp)
+    predictions = self.predict(inputs)
+    return predictions

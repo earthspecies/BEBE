@@ -6,6 +6,7 @@ import glob
 import yaml
 import sys
 import argparse
+import tqdm
 
 sys.path.append('/home/jupyter')
 import behavior_benchmarks.models as models
@@ -92,7 +93,7 @@ def main(config):
   all_predictions = []
   all_labels = []
 
-  for fp in config['train_data_fp']:
+  for fp in tqdm.tqdm(config['train_data_fp']):
     predictions = model.predict_from_file(fp)
     predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
     np.save(predictions_fp, predictions)
@@ -121,6 +122,8 @@ def main(config):
     target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
     target_fp = os.path.join(config['visualization_dir'], target_filename)
     bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp)
+    
+  print("model outputs saved to %s " % config['output_dir'])
 
   
 if __name__ == "__main__":

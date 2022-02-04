@@ -4,8 +4,9 @@ eskmeans_config:
   embed_length: 5
   landmark_hop_size: 10
   n_clusters: 8
-  n_epochs: 10
+  n_epochs: 4
   n_landmarks_max: 10
+  batch_size: 10
 input_vars:
 - AccX
 - AccY
