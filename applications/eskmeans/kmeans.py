@@ -70,7 +70,7 @@ class KMeans(object):
           self.means = self.random_means.copy()
         else:
           # use supplied means
-          self.means = init_means
+          self.means = init_means.copy()
 
         # Initial component assignments
         if assignments is not None:

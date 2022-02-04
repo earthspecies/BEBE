@@ -86,7 +86,7 @@ class ESKmeans(object):
     """
 
     def __init__(self, K_max, embedding_mats, vec_ids_dict, durations_dict,
-            landmarks_dict, n_slices_min=0, n_slices_max=20, min_duration=0,
+            landmarks_dict, processed_embeddings, n_slices_min=0, n_slices_max=20, min_duration=0,
             p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0, init_means = None):
 
         # Attributes from parameters
@@ -94,12 +94,8 @@ class ESKmeans(object):
         self.n_slices_max = n_slices_max
         self.wip = wip
         
+        embeddings, vec_ids, ids_to_utterance_labels = processed_embeddings        
         
-        # Process embeddings into a single matrix, and vec_ids into a list (entry for each utterance)
-        #print("Processing embeddings")
-        embeddings, vec_ids, ids_to_utterance_labels = process_embeddings(
-            embedding_mats, vec_ids_dict#, n_slices_min=n_slices_min
-            )
         self.ids_to_utterance_labels = ids_to_utterance_labels
         N = embeddings.shape[0]
     
@@ -684,48 +680,6 @@ def local_segment_only_utts(this, utterances):
         updates.append(this.segment_only_i(i_utt))
     return updates
 
-
-def process_embeddings(embedding_mats, vec_ids_dict):
-    """
-    Process the embeddings and vector IDs into single data structures.
-
-    Return
-    ------
-    (embeddings, vec_ids, utterance_labels_to_ids) : 
-            (matrix of float, list of vector of int, list of str)
-        All the embeddings are returned in a single matrix, with a `vec_id`
-        vector for every utterance and a list of str indicating which `vec_id`
-        goes with which original utterance label.
-    """
-
-    embeddings = []
-    vec_ids = []
-    ids_to_utterance_labels = []
-    i_embed = 0
-    n_disregard = 0
-    n_embed = 0
-
-    # Loop over utterances
-    for utt in sorted(embedding_mats): #tqdm
-        ids_to_utterance_labels.append(utt)
-        cur_vec_ids = vec_ids_dict[utt].copy()
-
-        # Loop over rows
-        for i_row, row in enumerate(embedding_mats[utt]):
-
-            n_embed += 1
-
-            # Add it to the embeddings
-            embeddings.append(row)
-
-            # Update vec_ids_dict so that the index points to i_embed
-            cur_vec_ids[np.where(vec_ids_dict[utt] == i_row)[0]] = i_embed
-            i_embed += 1
-
-        # Add the updated entry in vec_ids_dict to the overall vec_ids list
-        vec_ids.append(cur_vec_ids)
-
-    return (np.asarray(embeddings), vec_ids, ids_to_utterance_labels)
 
 
 
