@@ -196,6 +196,8 @@ class ESKmeans(object):
         sum_neg_len_sqrd_norm, self.utterances.boundaries[i, :N] = forward_backward_kmeans_viterbi(
             vec_embed_neg_len_sqrd_norms, N, self.n_slices_min, self.n_slices_max, i
             )
+        
+
 
         # Debug trace
         if DEBUG > 0 and i == I_DEBUG_MONITOR:
@@ -344,8 +346,8 @@ class ESKmeans(object):
         # Get the scores of the embeddings
         N = self.utterances.lengths[i]
         vec_embed_neg_len_sqrd_norms = self.get_vec_embed_neg_len_sqrd_norms(
-            self.utterances.vec_ids[i, :(N**2 + N)/2],
-            self.utterances.durations[i, :(N**2 + N)/2]
+            self.utterances.vec_ids[i, :int((N**2 + N)/2)],
+            self.utterances.durations[i, :int((N**2 + N)/2)]
             )
 
         # Debug trace

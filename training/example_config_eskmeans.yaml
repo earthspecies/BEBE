@@ -4,7 +4,7 @@ eskmeans_config:
   embed_length: 5
   landmark_hop_size: 10
   n_clusters: 8
-  n_epochs: 4
+  n_epochs: 2
   n_landmarks_max: 10
   batch_size: 10
 input_vars:
@@ -18,7 +18,7 @@ output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 test_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 train_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
+- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/malie*.npy
 
 
 

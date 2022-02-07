@@ -351,9 +351,13 @@ class eskmeans():
     unsup_transcript = {}
     unsup_landmarks = {}
     for i_utt in range(ksegmenter.utterances.D):
-      ksegmenter.segment_i(i_utt)
+      i, sum_neg_len_sqrd_norm, new_boundaries, old_embeds, new_embeds, new_k = ksegmenter.segment_only_i(i_utt)
+
+      
+      ksegmenter.segment_i(i_utt) # this re-segments the track and updates the model, including the means
+      ksegmenter.acoustic_model.means = init_means.copy() # re-initialize with our trained means to undo part of the segment_i call
       utt = ksegmenter.ids_to_utterance_labels[i_utt]
-      unsup_transcript[utt] = ksegmenter.get_unsup_transcript_i(i_utt)
+      unsup_transcript[utt] = ksegmenter.get_max_unsup_transcript_i(i_utt) # map segments to their appropriate clusters
       if -1 in unsup_transcript[utt]:
         logger.warning(
             "Unassigned cuts in: " + utt + " (transcript: " +
@@ -362,7 +366,6 @@ class eskmeans():
       unsup_landmarks[utt] = (
             ksegmenter.utterances.get_segmented_landmarks(i_utt)
             )
-      ksegmenter.acoustic_model.means = init_means
 
     # Assemble a list of predictions, in a compressed format
     # Need to put back together the tracks which we chopped up earlier

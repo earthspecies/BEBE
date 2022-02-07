@@ -202,7 +202,10 @@ class KMeans(object):
         """
         Return a vector of the current assignments for the data vector indices
         in `list_of_i`.
+        
+        BH: Better to use get_max_assignments. I noticed strange behavior with get_assignments, but couldn't find the cause
         """
+        print("Using get_assignments, better to use get_max_assignments. I noticed strange behavior with get_assignments, but couldn't find the cause")
         return self.assignments[np.asarray(list_of_i)]
 
     def get_max_assignments(self, list_of_i):
