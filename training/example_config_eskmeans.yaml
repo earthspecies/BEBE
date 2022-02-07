@@ -1,11 +1,11 @@
 experiment_name: eskmeans_test
 eskmeans_config:
-  boundary_init_lambda: 5.0
-  embed_length: 5
+  boundary_init_lambda: 10.0
+  embed_length: 10
   landmark_hop_size: 10
   n_clusters: 8
-  n_epochs: 2
-  n_landmarks_max: 10
+  n_epochs: 1
+  n_landmarks_max: 20
   batch_size: 10
 input_vars:
 - AccX
@@ -18,7 +18,7 @@ output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 test_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 train_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/malie*.npy
+- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 
 
 

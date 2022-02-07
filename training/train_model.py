@@ -7,6 +7,7 @@ import yaml
 import sys
 import argparse
 import tqdm
+import shutil
 
 sys.path.append('/home/jupyter')
 import behavior_benchmarks.models as models
@@ -32,6 +33,7 @@ def main(config):
 
   config['output_dir'] = output_dir
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
+  config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
 
   train_data_fp = []
   for x in config['train_data_fp_glob']:
@@ -66,6 +68,9 @@ def main(config):
     
   if not os.path.exists(config['visualization_dir']):
     os.makedirs(config['visualization_dir'])
+    
+  if not os.path.exists(config['temp_dir']):
+    os.makedirs(config['temp_dir'])
 
   ## Instantiate model
 
@@ -122,6 +127,9 @@ def main(config):
     target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
     target_fp = os.path.join(config['visualization_dir'], target_filename)
     bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp)
+    
+  # Clean up
+  #shutil.rmtree(config['temp_dir'])
     
   print("model outputs saved to %s " % config['output_dir'])
 

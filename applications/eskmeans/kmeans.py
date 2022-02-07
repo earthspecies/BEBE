@@ -65,8 +65,8 @@ class KMeans(object):
         self.mean_numerators = np.zeros((self.K_max, self.D), np.float)
         self.counts = np.zeros(self.K_max, np.int)
         self.assignments = -1*np.ones(self.N, dtype=np.int)
+        self.setup_random_means()
         if init_means is None:
-          self.setup_random_means()
           self.means = self.random_means.copy()
         else:
           # use supplied means
@@ -167,9 +167,11 @@ class KMeans(object):
         self.means[self.K] = self.random_means[self.K]
 
     def clean_components(self):
-        """Remove all empty components."""
-        for k in np.where(self.counts[:self.K] == 0)[0][::-1]:
-            self.del_component(k)
+        """Remove all empty components.
+        BH: removed this for batched implementation"""
+        pass
+        #for k in np.where(self.counts[:self.K] == 0)[0][::-1]:
+        #    self.del_component(k)
 
     def neg_sqrd_norm(self, i):
         """
