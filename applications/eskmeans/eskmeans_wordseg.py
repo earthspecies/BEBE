@@ -5,6 +5,8 @@ Embedded segmental K-means model for unsupervised word segmentation.
 Author: Herman Kamper
 Contact: kamperh@gmail.com
 Date: 2016-2017
+
+I've edited it substantially, so functions outside the behavior benchmarks loop aren't guaranteed to be compatible
 """
 
 from joblib import Parallel, delayed
@@ -71,6 +73,8 @@ class ESKmeans(object):
         determined: "rand" assigns data vectors randomly; "each-in-own" assigns
         each data point to a component of its own; and "spread" makes an
         attempt to spread data vectors evenly over the components.
+    init_means : if init_assignments == None, we can alternatively initialize the model with 
+        prototypes before segmenting
 
     Attributes
     ----------
@@ -197,8 +201,6 @@ class ESKmeans(object):
             vec_embed_neg_len_sqrd_norms, N, self.n_slices_min, self.n_slices_max, i
             )
         
-
-
         # Debug trace
         if DEBUG > 0 and i == I_DEBUG_MONITOR:
             print("Statistics after sampling, but before adding new embeddings to acoustic model")
@@ -304,6 +306,7 @@ class ESKmeans(object):
 
             # Perform intermediate acoustic model re-sampling
             if n_iter_inbetween_kmeans > 0:
+                print("WARNING: kmeans fit isn't guaranteed to work in batched implementation")
                 self.acoustic_model.fit(
                     n_iter_inbetween_kmeans, consider_unassigned=False
                     )
@@ -522,6 +525,7 @@ class ESKmeans(object):
 
             # Perform intermediate acoustic model re-sampling
             if n_iter_inbetween_kmeans > 0:
+                print("WARNING: kmeans fit isn't guaranteed to work in batched implementation")
                 self.acoustic_model.fit(
                     n_iter_inbetween_kmeans, consider_unassigned=False
                     )

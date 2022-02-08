@@ -184,7 +184,6 @@ class eskmeans():
     seglist_dict = {}
     downsample_dict = {}
     lengths_dict = {}
-    input_length = 0
     
     for input_data_key in input_data_keys:
     #print("considering %s" % input_data_key)
@@ -192,7 +191,6 @@ class eskmeans():
         input_data = self.load_model_inputs(input_data_key.split('---')[0])
       else:
         input_data = input_data_single_file
-      input_length += np.shape(input_data)[0]
       start_point = int(input_data_key.split('---')[1])
       chunked_input_data = input_data[start_point: start_point + self.max_track_len,:]
       encoded_input_data = self.encoder.transform(chunked_input_data)
@@ -235,7 +233,7 @@ class eskmeans():
         downsample_dict, vec_ids_dict, use_temp = use_temp#, n_slices_min=n_slices_min
         )
     
-    return downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, input_length
+    return downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings
     
   def fit(self):
     # initialize raw data -> latent variables encoder
@@ -263,8 +261,8 @@ class eskmeans():
       #current_epoch_keys = np.random.permutation(current_epoch_keys) #muted: we only update means after each epoch
       current_epoch_keys = list(current_epoch_keys)
       
-      epoch_means_reweighted = []
-      epoch_samples = 0
+      epoch_mean_numerators = []
+      epoch_counts = []
       
       # keep track of current epoch progress
       record_dict = {}
@@ -276,7 +274,7 @@ class eskmeans():
       
       for input_data_keys in tqdm.tqdm(list(group_list(current_epoch_keys, self.batch_size))): #tqdm.tqdm(current_epoch_keys):  
         
-        downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, input_length = self.prepare_intermediate_variables(input_data_keys)
+        downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(input_data_keys)
         if previous_means is None:
           print("Initializing randomly")
           first_batch = False
@@ -323,13 +321,18 @@ class eskmeans():
         for k in record_dict:
           record_dict[k].append(segmenter_record[k][0])
         
-        new_means = ksegmenter.acoustic_model.means.copy()
-        new_means_reweighted = new_means * input_length/total_samples
+        new_mean_numerators = ksegmenter.acoustic_model.mean_numerators.copy()
+        new_counts = ksegmenter.acoustic_model.counts.copy()
         
-        epoch_means_reweighted.append(new_means_reweighted)
+        epoch_mean_numerators.append(new_mean_numerators)
+        epoch_counts.append(new_counts)
       
       #do a weighted average to find epoch means
-      epoch_new_means = sum(epoch_means_reweighted)      
+      epoch_counts = sum(epoch_counts)
+      epoch_counts = np.expand_dims(epoch_counts, -1)
+      epoch_mean_numerators = sum(epoch_mean_numerators)
+      epoch_new_means = np.divide(epoch_mean_numerators, epoch_counts, out=ksegmenter.acoustic_model.random_means.copy(), where = epoch_counts != 0)
+           
       ksegmenter.acoustic_model.means = epoch_new_means.copy()
       previous_means = epoch_new_means.copy()
       
@@ -352,22 +355,10 @@ class eskmeans():
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
-  
-  def predict(self, input_data):
-
-    all_data_keys = []
-    len_track = np.shape(input_data)[0]
-    start_points = list(np.arange(0, len_track, self.max_track_len))
-    fp = 'input' # placeholder for consistency
-    for start_point in start_points:
-        key = '---'.join([fp, str(start_point)])
-        all_data_keys.append(key)
-
-    downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, _ = self.prepare_intermediate_variables(all_data_keys, input_data_single_file = input_data, use_temp = False)
-
-    ### Now I get to instantiate the model
-    ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-    ### written by H Kamper and pass in the currently discovered cluster means
+      
+  def predict_from_intermediates(self, input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points):
+    ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class,
+    ### that was written by H Kamper, and pass in the currently discovered cluster means
 
     init_assignments = None
     init_means = self.model.acoustic_model.means.copy() ### lower step size as epoch increases
@@ -428,6 +419,20 @@ class eskmeans():
         cluster, start, end = chunk
         predictions[start: end] = cluster
     return predictions
+  
+  def predict(self, input_data):
+
+    all_data_keys = []
+    len_track = np.shape(input_data)[0]
+    start_points = list(np.arange(0, len_track, self.max_track_len))
+    fp = 'input' # placeholder for consistency
+    for start_point in start_points:
+        key = '---'.join([fp, str(start_point)])
+        all_data_keys.append(key)
+
+    downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys, input_data_single_file = input_data, use_temp = False)
+    
+    return self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
   
   def predict_from_file(self, fp):
     #inputs = self.load_model_inputs(fp)
@@ -443,70 +448,8 @@ class eskmeans():
         key = '---'.join([fp, str(start_point)])
         all_data_keys.append(key)
 
-    downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, _ = self.prepare_intermediate_variables(all_data_keys)
+    downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys)
 
-    ### Now I get to instantiate the model
-    ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-    ### written by H Kamper and pass in the currently discovered cluster means
-
-    init_assignments = None
-    init_means = self.model.acoustic_model.means.copy() ### lower step size as epoch increases
-
-    ksegmenter = eskmeans_wordseg.ESKmeans(
-        K_max=self.n_clusters,
-        embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
-        durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
-        boundary_init_lambda = self.boundary_init_lambda, 
-        n_slices_min=0,
-        n_slices_max=self.n_landmarks_max,
-        min_duration=0,
-        init_means = init_means,
-        init_assignments=init_assignments,
-        wip=0
-        )
-    
-    
-    # Obtain clusters and landmarks (frame indices)
-    unsup_transcript = {}
-    unsup_landmarks = {}
-    for i_utt in range(ksegmenter.utterances.D):
-      i, sum_neg_len_sqrd_norm, new_boundaries, old_embeds, new_embeds, new_k = ksegmenter.segment_only_i(i_utt)
-
-      
-      ksegmenter.segment_i(i_utt) # this re-segments the track and updates the model, including the means
-      ksegmenter.acoustic_model.means = init_means.copy() # re-initialize with our trained means to undo part of the segment_i call
-      utt = ksegmenter.ids_to_utterance_labels[i_utt]
-      unsup_transcript[utt] = ksegmenter.get_max_unsup_transcript_i(i_utt) # map segments to their appropriate clusters
-      if -1 in unsup_transcript[utt]:
-        logger.warning(
-            "Unassigned cuts in: " + utt + " (transcript: " +
-            str(unsup_transcript[utt]) + ")"
-            )
-      unsup_landmarks[utt] = (
-            ksegmenter.utterances.get_segmented_landmarks(i_utt)
-            )
-
-    # Assemble a list of predictions, in a compressed format
-    # Need to put back together the tracks which we chopped up earlier
-    # We get predictions_compressed is a list of tuples (cluster, start_frame, end_frame)
-    # These are adjusted back to the indexing of the original (long) file
-    # When calling the predict method, we expand the compressed version out to per-frame predictions
-
-    predictions_compressed = []
-    for utt_key in unsup_transcript:
-        start_point = int(utt_key.split('---')[1])
-        for i, cluster in enumerate(unsup_transcript[utt_key]):
-            start, end = unsup_landmarks[utt_key][i]
-            start += start_point
-            end += start_point
-            predictions_compressed.append((cluster, start, end))
-            
-    # Finally put it all together into per-frame predictions
-
-    predictions = np.full(np.shape(input_data)[0], -1)
-    for chunk in predictions_compressed:
-        cluster, start, end = chunk
-        predictions[start: end] = cluster
-    return predictions
+    return self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
   
   

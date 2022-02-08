@@ -5,7 +5,7 @@ eskmeans_config:
   landmark_hop_size: 10
   n_clusters: 8
   n_epochs: 1
-  n_landmarks_max: 20
+  n_landmarks_max: 5
   batch_size: 10
 input_vars:
 - AccX
