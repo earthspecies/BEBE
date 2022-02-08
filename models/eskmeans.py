@@ -100,6 +100,7 @@ class eskmeans():
     self.n_clusters = self.model_config['n_clusters']
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
     self.batch_size = self.model_config['batch_size']
+    self.n_slices_min = self.model_config['n_slices_min']
     
   def load_model_inputs(self, filepath):
     return np.load(filepath)[:, self.cols_included]
@@ -275,6 +276,9 @@ class eskmeans():
       for input_data_keys in tqdm.tqdm(list(group_list(current_epoch_keys, self.batch_size))): #tqdm.tqdm(current_epoch_keys):  
         
         downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(input_data_keys)
+        
+        ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
+        ### written by H Kamper and pass in the currently discovered cluster means
         if previous_means is None:
           print("Initializing randomly")
           first_batch = False
@@ -294,19 +298,13 @@ class eskmeans():
           # use these means for subsequenct batches
           previous_means = ksegmenter.acoustic_model.means.copy()
         
-        ### Now I get to instantiate the model
-        ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-        ### written by H Kamper and pass in the currently discovered cluster means
-
-        # Model
-        
         else:
           ksegmenter = eskmeans_wordseg.ESKmeans(
               K_max=self.n_clusters,
               embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
               durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
               boundary_init_lambda = self.boundary_init_lambda, 
-              n_slices_min=0,
+              n_slices_min=self.n_slices_min,
               n_slices_max=self.n_landmarks_max,
               min_duration=0,
               init_means = previous_means.copy(),
@@ -314,9 +312,7 @@ class eskmeans():
               wip=0
               )
         
-        
-        
-        # Segment
+        # Segment & update means
         segmenter_record = ksegmenter.segment(n_iter=1)
         for k in record_dict:
           record_dict[k].append(segmenter_record[k][0])
@@ -368,7 +364,7 @@ class eskmeans():
         embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
         durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
         boundary_init_lambda = self.boundary_init_lambda, 
-        n_slices_min=0,
+        n_slices_min=self.n_slices_min,
         n_slices_max=self.n_landmarks_max,
         min_duration=0,
         init_means = init_means,

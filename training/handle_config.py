@@ -43,5 +43,8 @@ def accept_default_model_configs(config):
     if 'batch_size' not in config['eskmeans_config']:
       config['eskmeans_config']['batch_size'] = 10
       
+    if 'n_slices_min' not in config['eskmeans_config']:
+      config['eskmeans_config']['n_slices_min'] = 0
+      
   return config
       

@@ -625,11 +625,19 @@ def forward_backward_kmeans_viterbi(vec_embed_neg_len_sqrd_norms, N,
         if np.all(vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:] +
                 gammas[:t][-n_slices_max:] == -np.inf):
             gammas[t] = -np.inf
+        elif len(vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:n_slices_min_cut] +
+                  gammas[:t][-n_slices_max:n_slices_min_cut]) == 0:
+            gammas[t] = -np.inf
+            #print("pow")
         else:
-            gammas[t] = np.max(
-                vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:n_slices_min_cut] +
-                gammas[:t][-n_slices_max:n_slices_min_cut]
-                )
+              #print(np.shape(vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:n_slices_min_cut] +
+              #    gammas[:t][-n_slices_max:n_slices_min_cut]))
+              #print(len(vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:n_slices_min_cut] +
+              #    gammas[:t][-n_slices_max:n_slices_min_cut]))
+              gammas[t] = np.max(
+                  vec_embed_neg_len_sqrd_norms[i:i + t][-n_slices_max:n_slices_min_cut] +
+                  gammas[:t][-n_slices_max:n_slices_min_cut]
+                  )
         i += t
 
     if DEBUG > 0 and i_utt == I_DEBUG_MONITOR:
@@ -645,11 +653,11 @@ def forward_backward_kmeans_viterbi(vec_embed_neg_len_sqrd_norms, N,
             gammas[:t][-n_slices_max:n_slices_min_cut]
             )
         # assert not np.isnan(np.sum(q_t))
-        if np.all(q_t == -np.inf):
+        if np.all(q_t == -np.inf) or len(q_t) == 0:
             if DEBUG > 0:
                 print("Only impossible solutions for initial back-sampling for utterance " + str(i_utt))
             # Look for first point where we can actually sample and insert a boundary at this point
-            while np.all(q_t == -np.inf):
+            while np.all(q_t == -np.inf) or len(q_t) == 0:
                 t = t - 1
                 if t == 0:
                     break  # this is a very crappy utterance
@@ -660,7 +668,11 @@ def forward_backward_kmeans_viterbi(vec_embed_neg_len_sqrd_norms, N,
             boundaries[t - 1] = True  # insert the boundary
 
         q_t = q_t[::-1]
-        k = np.argmax(q_t) + 1
+        try:
+          k = np.argmax(q_t) + 1
+        except:
+          print(q_t)
+          print(len(q_t))
         if n_slices_min_cut is not None:
             k += n_slices_min - 1
         if DEBUG > 0 and i_utt == I_DEBUG_MONITOR:
