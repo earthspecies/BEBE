@@ -1,4 +1,4 @@
-experiment_name: eskmeans_test
+experiment_name: eskmeans_test_penalized
 eskmeans_config:
   boundary_init_lambda: 15.0
   embed_length: 10
@@ -7,7 +7,7 @@ eskmeans_config:
   n_epochs: 6
   n_landmarks_max: 20
   batch_size: 10
-  n_slices_min: 5
+  time_power_term: .5
 input_vars:
 - AccX
 - AccY

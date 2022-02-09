@@ -89,6 +89,7 @@ class eskmeans():
     self.encoder = None
     # chop up each track into something computationally tractable
     self.max_track_len = self.model_config['max_track_len']
+    self.time_power_term = self.model_config['time_power_term'] ## Positive float. when 1., we get standard behavior. when <1, we penalize making short segments
       
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
@@ -100,7 +101,6 @@ class eskmeans():
     self.n_clusters = self.model_config['n_clusters']
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
     self.batch_size = self.model_config['batch_size']
-    self.n_slices_min = self.model_config['n_slices_min']
     
   def load_model_inputs(self, filepath):
     return np.load(filepath)[:, self.cols_included]
@@ -231,7 +231,7 @@ class eskmeans():
     # Process embeddings into a single matrix, and vec_ids into a list (entry for each utterance)
     # print("Processing embeddings")
     processed_embeddings = self.process_embeddings(
-        downsample_dict, vec_ids_dict, use_temp = use_temp#, n_slices_min=n_slices_min
+        downsample_dict, vec_ids_dict, use_temp = use_temp
         )
     
     return downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings
@@ -259,7 +259,7 @@ class eskmeans():
     while current_epoch < self.n_epochs:
       print("Beginning on epoch %d" % current_epoch)
       current_epoch_keys = all_data_keys.copy()
-      #current_epoch_keys = np.random.permutation(current_epoch_keys) #muted: we only update means after each epoch
+      current_epoch_keys = np.random.permutation(current_epoch_keys)
       current_epoch_keys = list(current_epoch_keys)
       
       epoch_mean_numerators = []
@@ -292,6 +292,7 @@ class eskmeans():
               min_duration=0,
               init_means = previous_means,
               init_assignments="rand",
+              time_power_term = self.time_power_term,
               wip=0
               )
 
@@ -304,11 +305,12 @@ class eskmeans():
               embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
               durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
               boundary_init_lambda = self.boundary_init_lambda, 
-              n_slices_min=self.n_slices_min,
+              n_slices_min=0,
               n_slices_max=self.n_landmarks_max,
               min_duration=0,
               init_means = previous_means.copy(),
               init_assignments=None,
+              time_power_term = self.time_power_term,
               wip=0
               )
         
@@ -364,11 +366,12 @@ class eskmeans():
         embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
         durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
         boundary_init_lambda = self.boundary_init_lambda, 
-        n_slices_min=self.n_slices_min,
+        n_slices_min=0,
         n_slices_max=self.n_landmarks_max,
         min_duration=0,
         init_means = init_means,
         init_assignments=init_assignments,
+        time_power_term = self.time_power_term,
         wip=0
         )
     

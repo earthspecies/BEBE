@@ -91,12 +91,13 @@ class ESKmeans(object):
 
     def __init__(self, K_max, embedding_mats, vec_ids_dict, durations_dict,
             landmarks_dict, processed_embeddings, n_slices_min=0, n_slices_max=20, min_duration=0,
-            p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0, init_means = None):
+            p_boundary_init=0.5, boundary_init_lambda = None, init_assignments="rand", wip=0, init_means = None, time_power_term = 1.):
 
         # Attributes from parameters
         self.n_slices_min = n_slices_min
         self.n_slices_max = n_slices_max
         self.wip = wip
+        self.time_power_term = time_power_term
         
         embeddings, vec_ids, ids_to_utterance_labels = processed_embeddings        
         
@@ -548,7 +549,7 @@ class ESKmeans(object):
             if durations[i] == -1:
                 vec_embed_neg_len_sqrd_norms[i] = -np.inf
             else:
-                vec_embed_neg_len_sqrd_norms[i] *= durations[i]#**self.time_power_term
+                vec_embed_neg_len_sqrd_norms[i] *= durations[i]**0.1**self.time_power_term
 
         return vec_embed_neg_len_sqrd_norms + self.wip
 
@@ -668,11 +669,7 @@ def forward_backward_kmeans_viterbi(vec_embed_neg_len_sqrd_norms, N,
             boundaries[t - 1] = True  # insert the boundary
 
         q_t = q_t[::-1]
-        try:
-          k = np.argmax(q_t) + 1
-        except:
-          print(q_t)
-          print(len(q_t))
+        k = np.argmax(q_t) + 1
         if n_slices_min_cut is not None:
             k += n_slices_min - 1
         if DEBUG > 0 and i_utt == I_DEBUG_MONITOR:
