@@ -37,5 +37,5 @@ class gmm():
   
   def predict_from_file(self, fp):
     inputs = self.load_model_inputs(fp)
-    predictions = self.predict(self, inputs)
+    predictions = self.predict(inputs)
     return predictions
