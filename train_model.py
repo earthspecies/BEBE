@@ -9,7 +9,6 @@ import argparse
 import tqdm
 import shutil
 
-sys.path.append('/home/jupyter')
 import behavior_benchmarks.models as models
 import behavior_benchmarks.training.evaluation as evaluation
 import behavior_benchmarks.training.handle_config as handle_config

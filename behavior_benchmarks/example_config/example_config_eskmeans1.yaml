@@ -1,25 +1,29 @@
-experiment_name: eskmeans_test_penalized
+experiment_name: eskmeans_test1
 eskmeans_config:
-  boundary_init_lambda: 15.0
+  boundary_init_lambda: 20.0
   embed_length: 10
-  landmark_hop_size: 10
-  n_clusters: 8
+  landmark_hop_size: 5
+  n_clusters: 16
   n_epochs: 6
-  n_landmarks_max: 20
-  batch_size: 10
-  time_power_term: .5
+  n_landmarks_max: 30
+  batch_size: 4
 input_vars:
 - AccX
 - AccY
 - AccZ
+- GyrX
+- GyrY
+- GyrZ
 - Depth
-metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
+metadata_fp: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml
 model: eskmeans
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
 test_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
+- /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
 train_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
+- /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
+
+
 
 
 # config = {'experiment_name' : 'gmm_test',

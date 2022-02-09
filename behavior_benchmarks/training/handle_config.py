@@ -44,7 +44,7 @@ def accept_default_model_configs(config):
       config['eskmeans_config']['batch_size'] = 10
       
     if 'time_power_term' not in config['eskmeans_config']:
-      config['eskmeans_config']['time_power_term'] = 1.
+      config['eskmeans_config']['time_power_term'] = 1. ## 1 is standard. if between 0 and 1, it penalizes discovering short segments
       
   return config
       
