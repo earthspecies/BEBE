@@ -1,0 +1,43 @@
+experiment_name: gmm_test
+input_vars:
+- AccX_Back 
+- AccY_Back
+- AccZ_Back
+- AccX_Neck
+- AccY_Neck
+- AccZ_Neck
+- GyrX_Back
+- GyrY_Back
+- GyrZ_Back
+- GyrX_Neck
+- GyrY_Neck
+- GyrZ_Neck
+metadata_fp: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/dataset_metadata.yaml
+model: gmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs
+test_data_fp_glob:
+- /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/clip_data/*.npy
+train_data_fp_glob:
+- /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/clip_data/*.npy
+
+gmm_config:
+  num_components: 20
+  max_iter: 10
+  n_init: 3
+
+
+
+# config = {'experiment_name' : 'gmm_test',
+#          'model' : 'gmm',
+#          'num_components' : 8,
+#          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
+#          'input_vars' : ['AccX',
+#                          'AccY',
+#                          'AccZ',
+#                          'GyrX',
+#                          'GyrY',
+#                          'GyrZ',
+#                          'Depth'], 
+#          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
+#          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
+#          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
