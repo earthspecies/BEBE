@@ -8,7 +8,7 @@ class gmm():
   def __init__(self, config):
     self.config = config
     self.model_config = config['gmm_config']
-    self.model = GaussianMixture(n_components = self.model_config['num_components'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
+    self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
     self.metadata = config['metadata']
       
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 

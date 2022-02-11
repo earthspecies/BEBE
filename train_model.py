@@ -88,6 +88,7 @@ def main(config):
   model.fit()
   
   # Save model
+  
   model.save()
 
   # Generate predictions for each file
@@ -123,13 +124,14 @@ def main(config):
 
   for fp in config['train_data_fp'][:5]:
     predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
+    track_length = len(np.load(predictions_fp))
     target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
     target_fp = os.path.join(config['visualization_dir'], target_filename)
-    bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp)
+    bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
     
   # Clean up
+  
   shutil.rmtree(config['temp_dir'])
-    
   print("model outputs saved to %s " % config['output_dir'])
 
   

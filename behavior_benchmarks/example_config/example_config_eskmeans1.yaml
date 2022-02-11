@@ -3,7 +3,6 @@ eskmeans_config:
   boundary_init_lambda: 20.0
   embed_length: 10
   landmark_hop_size: 5
-  n_clusters: 16
   n_epochs: 6
   n_landmarks_max: 30
   batch_size: 4
@@ -22,6 +21,10 @@ test_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
 train_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
+num_clusters: 16
+
+evaluation:
+  boundary_tolerance_sec: 0.5
 
 
 

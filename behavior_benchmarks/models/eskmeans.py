@@ -98,7 +98,7 @@ class eskmeans():
     self.n_epochs = self.model_config['n_epochs']
     self.n_landmarks_max = self.model_config['n_landmarks_max'] 
     self.embed_length = self.model_config['embed_length']  
-    self.n_clusters = self.model_config['n_clusters']
+    self.n_clusters = self.config['num_clusters']
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
     self.batch_size = self.model_config['batch_size']
     

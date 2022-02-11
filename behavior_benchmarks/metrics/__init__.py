@@ -1,1 +1,2 @@
 from behavior_benchmarks.metrics.information_theoretic import homogeneity
+from behavior_benchmarks.metrics.mapping_based import mapping_based_scores

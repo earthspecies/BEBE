@@ -5,9 +5,6 @@ def accept_default_model_configs(config):
   if model_type == 'gmm':
     if 'gmm_config' not in config:
       config['gmm_config'] = {}
-    
-    if 'num_components' not in config['gmm_config']:
-      config['gmm_config']['num_components'] = 10
       
     if 'max_iter' not in config['gmm_config']:
       config['gmm_config']['max_iter'] = 100
@@ -30,9 +27,6 @@ def accept_default_model_configs(config):
       
     if 'embed_length' not in config['eskmeans_config']:
       config['eskmeans_config']['embed_length'] = 10
-      
-    if 'n_clusters' not in config['eskmeans_config']:
-      config['eskmeans_config']['n_clusters'] = 8
       
     if 'boundary_init_lambda' not in config['eskmeans_config']:
       config['eskmeans_config']['boundary_init_lambda'] = 4.

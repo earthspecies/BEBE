@@ -11,11 +11,14 @@ test_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 train_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
+num_clusters: 8
 
 gmm_config:
-  num_components: 8
   max_iter: 10
   n_init: 1
+  
+evaluation:
+  boundary_tolerance_sec: 0.5
 
 
 

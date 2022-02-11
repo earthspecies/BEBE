@@ -11,14 +11,29 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None):
  
   unknown_label = config['metadata']['label_names'].index('unknown')
   mask = y_true != unknown_label
-  
-  y_true_sub = y_true[mask]
-  y_pred_sub = y_pred[mask]
-  
+    
   ## Compute evaluation metrics
   
+  # information-theoretic
+  y_true_sub = y_true[mask]
+  y_pred_sub = y_pred[mask]
   homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
   evaluation_dict['homogeneity'] = float(homogeneity)
+  
+  # mapping-based
+  num_clusters = config['num_clusters']
+  num_classes = len(config['metadata']['label_names'])
+  boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
+  
+  mapping_based = metrics.mapping_based_scores(y_true, 
+                                               y_pred, 
+                                               num_clusters, 
+                                               num_classes, 
+                                               boundary_tolerance_frames = boundary_tolerance_frames, 
+                                               unknown_value = unknown_label
+                                              )
+  evaluation_dict['averaged_scores'] = mapping_based['averaged_scores']
+  evaluation_dict['MAP_scores'] = mapping_based['MAP_scores']
   
   ## Save
   
