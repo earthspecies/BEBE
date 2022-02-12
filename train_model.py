@@ -115,7 +115,7 @@ def main(config):
   all_predictions = np.array(all_predictions)
 
   eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
-  evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
+  eval_dict = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
 
   # Save example figures
   
@@ -127,7 +127,7 @@ def main(config):
     track_length = len(np.load(predictions_fp))
     target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
     target_fp = os.path.join(config['visualization_dir'], target_filename)
-    bbvis.plot_track(fp, predictions_fp, config, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
+    bbvis.plot_track(fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
     
   # Clean up
   

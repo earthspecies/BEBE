@@ -22,7 +22,7 @@ train_data_fp_glob:
 num_clusters: 20
 
 gmm_config:
-  max_iter: 10
+  max_iter: 100
   n_init: 1
 
 evaluation:
