@@ -7,7 +7,7 @@ import os
 import scipy.signal as signal
 import tqdm
 from behavior_benchmarks.applications.eskmeans import eskmeans_wordseg
-from sklearn.decomposition import PCA
+import concurrent.futures
 
 # Utility functions
 
@@ -79,14 +79,37 @@ def downsample_track(features, seglist, downsample_length):
         y_new = signal.resample(y, downsample_length, axis=1).flatten("C")
         embeddings.append(y_new)
     return np.asarray(embeddings)
+  
+def process_and_segment(input_data_keys, model, previous_means):
+  #print('hi')
+  downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = model.prepare_intermediate_variables(input_data_keys)
 
-class eskmeans():
+  ksegmenter = eskmeans_wordseg.ESKmeans(
+          K_max=model.n_clusters,
+          embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
+          durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
+          boundary_init_lambda = model.boundary_init_lambda, 
+          n_slices_min=0,
+          n_slices_max=model.n_landmarks_max,
+          min_duration=0,
+          init_means = previous_means,
+          init_assignments=None,
+          time_power_term = model.time_power_term,
+          wip=0
+          )
+
+  # Segment & update means
+  segmenter_record = ksegmenter.segment(n_iter=1)
+        
+  return segmenter_record.copy(), ksegmenter.acoustic_model.mean_numerators.copy(), ksegmenter.acoustic_model.counts.copy()
+
+class eskmeans(object):
   def __init__(self, config):
     self.config = config
     self.model_config = config['eskmeans_config']
+    self.read_latents = config['read_latents']
     self.model = None
     self.metadata = config['metadata']
-    self.encoder = None
     # chop up each track into something computationally tractable
     self.max_track_len = self.model_config['max_track_len']
     self.time_power_term = self.model_config['time_power_term'] ## Positive float. when 1., we get standard behavior. when <1, we penalize making short segments
@@ -102,19 +125,11 @@ class eskmeans():
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
     self.batch_size = self.model_config['batch_size']
     
-  def load_model_inputs(self, filepath):
-    return np.load(filepath)[:, self.cols_included]
-  
-  def build_encoder(self):
-    ## get data. assume stored in memory for now
-    print("Computing whitening transform")
-    train_fps = self.config['train_data_fp']
-    train_data = [self.load_model_inputs(fp) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 0)
-    
-    pca = PCA(whiten = True)
-    pca.fit(train_data)
-    self.encoder = pca
+  def load_model_inputs(self, filepath, read_latents = False):
+    if read_latents:
+      return np.load(filepath)
+    else:
+      return np.load(filepath)[:, self.cols_included]
     
   def process_embeddings(self, embedding_mats, vec_ids_dict, use_temp = True):
       """
@@ -159,7 +174,6 @@ class eskmeans():
               np.save(utt_temp_fp, cur_vec_ids)
 
             cur_vec_ids = np.load(utt_temp_fp)
-
             #correct to account for batch indexing
             if i_embed != 0:
               cur_vec_ids[cur_vec_ids != -1] = cur_vec_ids[cur_vec_ids != -1] + i_embed
@@ -187,18 +201,16 @@ class eskmeans():
     lengths_dict = {}
     
     for input_data_key in input_data_keys:
-    #print("considering %s" % input_data_key)
       if input_data_single_file is None:
-        input_data = self.load_model_inputs(input_data_key.split('---')[0])
+        input_data = self.load_model_inputs(input_data_key.split('---')[0], read_latents = self.read_latents)
       else:
         input_data = input_data_single_file
       start_point = int(input_data_key.split('---')[1])
       chunked_input_data = input_data[start_point: start_point + self.max_track_len,:]
-      encoded_input_data = self.encoder.transform(chunked_input_data)
-      train_data_dict[input_data_key] = encoded_input_data
+      train_data_dict[input_data_key] = chunked_input_data
 
     #initialize landmarks in short chunks
-
+    
     for key in train_data_dict:
         num_samples = np.shape(train_data_dict[key])[0]
         boundaries = np.arange(self.landmark_hop_size, num_samples, self.landmark_hop_size)
@@ -208,7 +220,6 @@ class eskmeans():
 
     # Find all the possible segmentation intervals
 
-    
     for key in landmarks_dict:
         seglist_dict[key] = get_seglist_from_landmarks(
             landmarks_dict[key], self.n_landmarks_max
@@ -234,18 +245,23 @@ class eskmeans():
         downsample_dict, vec_ids_dict, use_temp = use_temp
         )
     
-    return downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings
+    return downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings    
     
   def fit(self):
-    # initialize raw data -> latent variables encoder
-    self.build_encoder()
     
     # Set up data batches
 
     all_data_keys = []
     total_samples = 0
-    for fp in self.config['train_data_fp']:
-        input_data = self.load_model_inputs(fp)
+    
+    if self.read_latents:
+      train_fps = self.config['train_data_latents_fp']
+    else:
+      train_fps = self.config['train_data_fp']
+    
+    
+    for fp in train_fps:
+        input_data = self.load_model_inputs(fp, read_latents = self.read_latents)
         len_track = np.shape(input_data)[0]
         total_samples += len_track
         start_points = list(np.arange(0, len_track, self.max_track_len))
@@ -261,6 +277,7 @@ class eskmeans():
       current_epoch_keys = all_data_keys.copy()
       current_epoch_keys = np.random.permutation(current_epoch_keys)
       current_epoch_keys = list(current_epoch_keys)
+      current_epoch_batches = list(group_list(current_epoch_keys, self.batch_size))
       
       epoch_mean_numerators = []
       epoch_counts = []
@@ -273,65 +290,79 @@ class eskmeans():
       record_dict["sample_time"] = []
       record_dict["n_tokens"] = []
       
-      for input_data_keys in tqdm.tqdm(list(group_list(current_epoch_keys, self.batch_size))): #tqdm.tqdm(current_epoch_keys):  
-        
+      if previous_means is None:
+        print("Initializing means randomly")
+        input_data_keys = current_epoch_batches[0] # For simplicity: we consider again later, this is just for initialization of means
         downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(input_data_keys)
         
-        ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-        ### written by H Kamper and pass in the currently discovered cluster means
-        if previous_means is None:
-          print("Initializing randomly")
-          first_batch = False
-          ksegmenter = eskmeans_wordseg.ESKmeans(
-              K_max=self.n_clusters,
-              embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
-              durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
-              boundary_init_lambda = self.boundary_init_lambda, 
-              n_slices_min=0,
-              n_slices_max=self.n_landmarks_max,
-              min_duration=0,
-              init_means = previous_means,
-              init_assignments="rand",
-              time_power_term = self.time_power_term,
-              wip=0
-              )
-
-          # use these means for subsequenct batches
-          previous_means = ksegmenter.acoustic_model.means.copy()
+        ksegmenter = eskmeans_wordseg.ESKmeans(
+            K_max=self.n_clusters,
+            embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
+            durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
+            boundary_init_lambda = self.boundary_init_lambda, 
+            n_slices_min=0,
+            n_slices_max=self.n_landmarks_max,
+            min_duration=0,
+            init_means = None,
+            init_assignments="rand",
+            time_power_term = self.time_power_term,
+            wip=0
+            )
         
-        else:
-          ksegmenter = eskmeans_wordseg.ESKmeans(
-              K_max=self.n_clusters,
-              embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
-              durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
-              boundary_init_lambda = self.boundary_init_lambda, 
-              n_slices_min=0,
-              n_slices_max=self.n_landmarks_max,
-              min_duration=0,
-              init_means = previous_means.copy(),
-              init_assignments=None,
-              time_power_term = self.time_power_term,
-              wip=0
-              )
-        
-        # Segment & update means
-        segmenter_record = ksegmenter.segment(n_iter=1)
+        # use these means for subsequenct batches
+        previous_means = ksegmenter.acoustic_model.means.copy()
+      
+      self_repeat = [self for _ in current_epoch_batches]
+      means_repeat = [previous_means.copy() for _ in current_epoch_batches]
+      with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = list(tqdm.tqdm(executor.map(process_and_segment, current_epoch_batches, self_repeat, means_repeat), total = len(current_epoch_batches)))
+      
+      #unpack results:
+      record_dicts = [x[0] for x in results]
+      for d in record_dicts:
         for k in record_dict:
-          record_dict[k].append(segmenter_record[k][0])
+          record_dict[k].append(d[k][0])
+      epoch_mean_numerators = [x[1] for x in results]
+      epoch_counts = [x[2] for x in results]        
         
-        new_mean_numerators = ksegmenter.acoustic_model.mean_numerators.copy()
-        new_counts = ksegmenter.acoustic_model.counts.copy()
-        
-        epoch_mean_numerators.append(new_mean_numerators)
-        epoch_counts.append(new_counts)
+#       for input_data_keys in tqdm.tqdm(current_epoch_batches): #tqdm.tqdm(current_epoch_keys):  
+
+#         downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(input_data_keys)
+
+#         ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
+#         ### written by H Kamper and pass in the currently discovered cluster means
+
+#         ksegmenter = eskmeans_wordseg.ESKmeans(
+#             K_max=self.n_clusters,
+#             embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
+#             durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
+#             boundary_init_lambda = self.boundary_init_lambda, 
+#             n_slices_min=0,
+#             n_slices_max=self.n_landmarks_max,
+#             min_duration=0,
+#             init_means = previous_means.copy(),
+#             init_assignments=None,
+#             time_power_term = self.time_power_term,
+#             wip=0
+#             )
+
+#         # Segment & update means
+#         segmenter_record = ksegmenter.segment(n_iter=1)
+#         for k in record_dict:
+#           record_dict[k].append(segmenter_record[k][0])
+
+#         new_mean_numerators = ksegmenter.acoustic_model.mean_numerators.copy()
+#         new_counts = ksegmenter.acoustic_model.counts.copy()
+
+#         epoch_mean_numerators.append(new_mean_numerators)
+#         epoch_counts.append(new_counts)
       
       #do a weighted average to find epoch means
       epoch_counts = sum(epoch_counts)
       epoch_counts = np.expand_dims(epoch_counts, -1)
       epoch_mean_numerators = sum(epoch_mean_numerators)
       epoch_new_means = np.divide(epoch_mean_numerators, epoch_counts, out=ksegmenter.acoustic_model.random_means.copy(), where = epoch_counts != 0)
-           
-      ksegmenter.acoustic_model.means = epoch_new_means.copy()
+      # for next epoch:
       previous_means = epoch_new_means.copy()
       
       
@@ -344,7 +375,8 @@ class eskmeans():
       
       current_epoch +=1
       #########
-
+    
+    ksegmenter.acoustic_model.means = previous_means.copy()
     self.model = ksegmenter
     
     ############
@@ -431,7 +463,10 @@ class eskmeans():
 
     downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys, input_data_single_file = input_data, use_temp = False)
     
-    return self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
+    predictions = self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
+    latents = None
+    
+    return predictions, latents
   
   def predict_from_file(self, fp):
     #inputs = self.load_model_inputs(fp)
@@ -440,7 +475,7 @@ class eskmeans():
     
     # faster to do this, in case temp files are already generated:
     all_data_keys = []
-    input_data = self.load_model_inputs(fp)
+    input_data = self.load_model_inputs(fp, read_latents = self.read_latents)
     len_track = np.shape(input_data)[0]
     start_points = list(np.arange(0, len_track, self.max_track_len))
     for start_point in start_points:
@@ -449,6 +484,9 @@ class eskmeans():
 
     downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(all_data_keys)
 
-    return self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
+    predictions = self.predict_from_intermediates(input_data, downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings, start_points)
+    latents = None
+    
+    return predictions, latents
   
   

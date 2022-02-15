@@ -33,6 +33,11 @@ def main(config):
   config['output_dir'] = output_dir
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
   config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
+  
+  if 'save_latents' in config and config['save_latents']:
+    config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
+  else: 
+    config['save_latents'] = False
 
   train_data_fp = []
   for x in config['train_data_fp_glob']:
@@ -43,9 +48,27 @@ def main(config):
   for x in config['test_data_fp_glob']:
     test_data_fp.extend(glob.glob(x))
   test_data_fp.sort()
-
+  
   config['train_data_fp'] = train_data_fp
   config['test_data_fp'] = test_data_fp
+  
+  if 'read_latents' in config and config['read_latents']:
+    # We assume latent filenames are the same as data filenames. They are distinguished by their filepaths
+    train_data_latents_fp = []
+    for x in config['train_data_latents_fp_glob']:
+      train_data_latents_fp.extend(glob.glob(x))
+    train_data_latents_fp.sort()
+    
+    test_data_latents_fp = []
+    for x in config['test_data_latents_fp_glob']:
+      test_data_latents_fp.extend(glob.glob(x))
+    test_data_latents_fp.sort()
+    
+    config['train_data_latents_fp'] = train_data_latents_fp
+    config['test_data_latents_fp'] = test_data_latents_fp
+  
+  else:
+    config['read_latents'] = False
 
   metadata_fp = config['metadata_fp']
   with open(metadata_fp) as file:
@@ -56,7 +79,28 @@ def main(config):
   
   visualization_dir = os.path.join(config['output_dir'], "visualizations")
   config['visualization_dir'] = visualization_dir
-
+  
+  # Set up a dictionary to keep track of file id's, the data filepaths, and (potentially) the latent filepaths:
+  
+  file_id_to_data_fp = {}
+  file_id_to_model_input_fp = {}
+  
+  for fp in config['train_data_fp']:
+    file_id = fp.split('/')[-1]
+    file_id_to_data_fp[file_id] = fp
+    if not config['read_latents']:
+      file_id_to_model_input_fp[file_id] = fp
+      
+  if config['read_latents']:
+    for fp in config['train_data_latents_fp']:
+      file_id = fp.split('/')[-1]
+      file_id_to_model_input_fp[file_id] = fp
+  
+  assert set(file_id_to_data_fp.keys()) == set(file_id_to_model_input_fp.keys()), "mismatch between specified latent filenames and data filenames"
+  
+  file_ids = list(file_id_to_data_fp.keys())
+  file_ids.sort()
+  
   # Set up the rest of the experiment
 
   if not os.path.exists(config['predictions_dir']):
@@ -70,11 +114,17 @@ def main(config):
     
   if not os.path.exists(config['temp_dir']):
     os.makedirs(config['temp_dir'])
+    
+  if config['save_latents'] and not os.path.exists(config['latents_output_dir']):
+    os.makedirs(config['latents_output_dir'])
 
   ## Instantiate model
 
   if config['model'] == 'gmm':
     model = models.gmm(config)
+    
+  elif config['model'] == 'kmeans':
+    model = models.kmeans(config)
     
   elif config['model'] == 'eskmeans':
     model = models.eskmeans(config)
@@ -97,14 +147,21 @@ def main(config):
   print("Generating predictions based on trained model")
   all_predictions = []
   all_labels = []
-
-  for fp in tqdm.tqdm(config['train_data_fp']):
-    predictions = model.predict_from_file(fp)
-    predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
+  
+  
+  for filename in tqdm.tqdm(file_ids):
+    fp = file_id_to_model_input_fp[filename]
+    predictions, latents = model.predict_from_file(fp)
+    predictions_fp = os.path.join(config['predictions_dir'], filename)
     np.save(predictions_fp, predictions)
+    
+    if config['save_latents']:
+      latents_fp = os.path.join(config['latents_output_dir'], filename)
+      np.save(latents_fp, latents)
 
     labels_idx = config['metadata']['clip_column_names'].index('label')
-    labels = list(np.load(fp)[:, labels_idx])  
+    data_fp = file_id_to_data_fp[filename]
+    labels = list(np.load(data_fp)[:, labels_idx])  
 
     all_predictions.extend(list(predictions))
     all_labels.extend(labels)
@@ -121,13 +178,20 @@ def main(config):
   
   target_fp = os.path.join(config['visualization_dir'], "confusion_matrix.png")
   bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = target_fp)
-
-  for fp in config['train_data_fp'][:5]:
-    predictions_fp = os.path.join(config['predictions_dir'], fp.split('/')[-1])
+  
+  rng = np.random.default_rng(seed = 607)  
+  
+  for filename in list(rng.choice(file_ids, 5, replace = False)):
+    predictions_fp = os.path.join(config['predictions_dir'], filename)
     track_length = len(np.load(predictions_fp))
-    target_filename = fp.split('/')[-1].split('.')[0] + '-track_visualization.png'
+    target_filename = filename.split('.')[0] + '-track_visualization.png'
     target_fp = os.path.join(config['visualization_dir'], target_filename)
-    bbvis.plot_track(fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
+    data_fp = file_id_to_data_fp[filename]
+    if track_length <= 20000:
+      bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
+    else:
+      start_sample = rng.integers(0, high = track_length - 20000)
+      bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = start_sample, end_sample = start_sample + 20000)
     
   # Clean up
   

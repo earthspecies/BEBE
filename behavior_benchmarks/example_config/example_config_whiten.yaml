@@ -1,34 +1,21 @@
-experiment_name: eskmeans_test
-eskmeans_config:
-  boundary_init_lambda : 15.0
-  embed_length: 10
-  landmark_hop_size: 10
-  n_epochs: 6
-  n_landmarks_max: 20
-  batch_size: 1
-  time_power_term: .95
+experiment_name: whiten_seals
 input_vars:
 - AccX
 - AccY
 - AccZ
 - Depth
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
-model: eskmeans
+model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
+save_latents: True
 test_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 train_data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8
-read_latents: True
-train_data_latents_fp_glob: 
-- /home/jupyter/behavior_benchmarks_outputs/ladds_seals/whiten_seals/latents/*.npy
-test_data_latents_fp_glob: 
-- /home/jupyter/behavior_benchmarks_outputs/ladds_seals/whiten_seals/latents/*.npy
-
+  
 evaluation:
   boundary_tolerance_sec: 0.5
-
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',
