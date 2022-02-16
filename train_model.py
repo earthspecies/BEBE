@@ -52,6 +52,8 @@ def main(config):
   config['train_data_fp'] = train_data_fp
   config['test_data_fp'] = test_data_fp
   
+  # If 'read_latents' is True, then we use the specified latent fp's as model inputs
+  # The original data is still kept track of, so we can plot it and use the ground-truth labels
   if 'read_latents' in config and config['read_latents']:
     # We assume latent filenames are the same as data filenames. They are distinguished by their filepaths
     train_data_latents_fp = []
@@ -124,6 +126,8 @@ def main(config):
     model = models.gmm(config)
     
   elif config['model'] == 'kmeans':
+    # kmeans model is primarily used as a way to save off whitened data as new "latents"
+    # so it can be fed into eg eskmeans
     model = models.kmeans(config)
     
   elif config['model'] == 'eskmeans':
@@ -133,7 +137,6 @@ def main(config):
     raise ValueError('model type not recognized')
 
   # Train model
-
   print("Training model")
   model.fit()
   
@@ -147,7 +150,6 @@ def main(config):
   print("Generating predictions based on trained model")
   all_predictions = []
   all_labels = []
-  
   
   for filename in tqdm.tqdm(file_ids):
     fp = file_id_to_model_input_fp[filename]
@@ -179,7 +181,7 @@ def main(config):
   target_fp = os.path.join(config['visualization_dir'], "confusion_matrix.png")
   bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = target_fp)
   
-  rng = np.random.default_rng(seed = 607)  
+  rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
   
   for filename in list(rng.choice(file_ids, 5, replace = False)):
     predictions_fp = os.path.join(config['predictions_dir'], filename)
@@ -198,7 +200,6 @@ def main(config):
   shutil.rmtree(config['temp_dir'])
   print("model outputs saved to %s " % config['output_dir'])
 
-  
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument('--config', type=str, required=True)

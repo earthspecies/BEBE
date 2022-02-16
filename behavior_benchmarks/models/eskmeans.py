@@ -324,38 +324,6 @@ class eskmeans(object):
           record_dict[k].append(d[k][0])
       epoch_mean_numerators = [x[1] for x in results]
       epoch_counts = [x[2] for x in results]        
-        
-#       for input_data_keys in tqdm.tqdm(current_epoch_batches): #tqdm.tqdm(current_epoch_keys):  
-
-#         downsample_dict, vec_ids_dict, durations_dict, landmarks_dict, processed_embeddings = self.prepare_intermediate_variables(input_data_keys)
-
-#         ### Since this is batched implementation, we repeatedly have to initialize the ESKmeans class
-#         ### written by H Kamper and pass in the currently discovered cluster means
-
-#         ksegmenter = eskmeans_wordseg.ESKmeans(
-#             K_max=self.n_clusters,
-#             embedding_mats=downsample_dict, vec_ids_dict=vec_ids_dict,
-#             durations_dict=durations_dict, landmarks_dict=landmarks_dict, processed_embeddings = processed_embeddings,
-#             boundary_init_lambda = self.boundary_init_lambda, 
-#             n_slices_min=0,
-#             n_slices_max=self.n_landmarks_max,
-#             min_duration=0,
-#             init_means = previous_means.copy(),
-#             init_assignments=None,
-#             time_power_term = self.time_power_term,
-#             wip=0
-#             )
-
-#         # Segment & update means
-#         segmenter_record = ksegmenter.segment(n_iter=1)
-#         for k in record_dict:
-#           record_dict[k].append(segmenter_record[k][0])
-
-#         new_mean_numerators = ksegmenter.acoustic_model.mean_numerators.copy()
-#         new_counts = ksegmenter.acoustic_model.counts.copy()
-
-#         epoch_mean_numerators.append(new_mean_numerators)
-#         epoch_counts.append(new_counts)
       
       #do a weighted average to find epoch means
       epoch_counts = sum(epoch_counts)
@@ -364,8 +332,7 @@ class eskmeans(object):
       epoch_new_means = np.divide(epoch_mean_numerators, epoch_counts, out=ksegmenter.acoustic_model.random_means.copy(), where = epoch_counts != 0)
       # for next epoch:
       previous_means = epoch_new_means.copy()
-      
-      
+        
       #########
       info = "Finished epoch: " + str(current_epoch)
       info += ", sum_neg_sqrd_norm: " + str(sum(record_dict["sum_neg_sqrd_norm"]))

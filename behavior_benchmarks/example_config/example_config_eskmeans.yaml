@@ -3,7 +3,7 @@ eskmeans_config:
   boundary_init_lambda : 15.0
   embed_length: 10
   landmark_hop_size: 10
-  n_epochs: 6
+  n_epochs: 1
   n_landmarks_max: 20
   batch_size: 1
   time_power_term: .95
