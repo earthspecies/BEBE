@@ -3,7 +3,7 @@ import numpy as np
 import os
 import yaml
 
-def perform_evaluation(y_true, y_pred, config, output_fp = None):
+def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None, probs = None):
   
   evaluation_dict = {}
   
@@ -25,13 +25,15 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None):
   num_classes = len(config['metadata']['label_names'])
   boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
-  mapping_based = metrics.mapping_based_scores(y_true, 
-                                               y_pred, 
-                                               num_clusters, 
-                                               num_classes, 
-                                               boundary_tolerance_frames = boundary_tolerance_frames, 
-                                               unknown_value = unknown_label
-                                              )
+  mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
+                                                               y_pred, 
+                                                               num_clusters, 
+                                                               num_classes, 
+                                                               boundary_tolerance_frames = boundary_tolerance_frames, 
+                                                               unknown_value = unknown_label,
+                                                               choices = choices,
+                                                               probs = probs
+                                                              )
   evaluation_dict['averaged_scores'] = mapping_based['averaged_scores']
   evaluation_dict['MAP_scores'] = mapping_based['MAP_scores']
   
@@ -42,5 +44,5 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None):
       yaml.dump(evaluation_dict, file)
       
   ## In any case, return as a dict    
-  return evaluation_dict
+  return evaluation_dict, choices, probs
     

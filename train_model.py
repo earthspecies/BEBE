@@ -87,8 +87,6 @@ def main(config):
   
   else:
     config['read_latents'] = False
-
-  
   
   final_model_dir = os.path.join(config['output_dir'], "final_model")
   config['final_model_dir'] = final_model_dir
@@ -174,7 +172,10 @@ def main(config):
 
   # Generate predictions for each file
   # Simultaneously, keep track of all predictions at once
-
+  
+  choices = None # choices and probs are parameters for the mapping based metrics, we discover them using the train set on the first loop through
+  probs = None
+  
   for file_ids in [train_file_ids, test_file_ids]:
     print("Generating predictions based on trained model")
     all_predictions = []
@@ -208,7 +209,7 @@ def main(config):
     else:
       eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
-    eval_dict = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
+    eval_dict, choices, probs = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs)
 
   # Save example figures
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)

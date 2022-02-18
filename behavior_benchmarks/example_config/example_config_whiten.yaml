@@ -8,9 +8,7 @@ metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/datase
 model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 save_latents: True
-test_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
-train_data_fp_glob:
+data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8
   

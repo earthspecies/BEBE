@@ -17,9 +17,7 @@ input_vars:
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml
 model: eskmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
-test_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
-train_data_fp_glob:
+data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy
 num_clusters: 16
 

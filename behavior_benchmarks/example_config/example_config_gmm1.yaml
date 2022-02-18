@@ -15,9 +15,7 @@ input_vars:
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/dataset_metadata.yaml
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs
-test_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/clip_data/*.npy
-train_data_fp_glob:
+data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/clip_data/*.npy
 num_clusters: 20
 
