@@ -92,7 +92,7 @@ def process_and_segment(input_data_keys, model, previous_means):
           n_slices_min=0,
           n_slices_max=model.n_landmarks_max,
           min_duration=0,
-          init_means = previous_means,
+          init_means = previous_means.copy(),
           init_assignments=None,
           time_power_term = model.time_power_term,
           wip=0
@@ -379,7 +379,7 @@ class eskmeans(object):
     unsup_transcript = {}
     unsup_landmarks = {}
     for i_utt in range(ksegmenter.utterances.D):
-      i, sum_neg_len_sqrd_norm, new_boundaries, old_embeds, new_embeds, new_k = ksegmenter.segment_only_i(i_utt)
+      #i, sum_neg_len_sqrd_norm, new_boundaries, old_embeds, new_embeds, new_k = ksegmenter.segment_only_i(i_utt)
 
       
       ksegmenter.segment_i(i_utt) # this re-segments the track and updates the model, including the means
