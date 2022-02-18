@@ -7,9 +7,7 @@ input_vars:
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-test_data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
-train_data_fp_glob:
+data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8
 

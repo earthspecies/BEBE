@@ -34,19 +34,29 @@ def main(config):
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
   config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
   
+  metadata_fp = config['metadata_fp']
+  with open(metadata_fp) as file:
+    config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
+  
   if 'save_latents' in config and config['save_latents']:
     config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
   else: 
     config['save_latents'] = False
 
   train_data_fp = []
-  for x in config['train_data_fp_glob']:
-    train_data_fp.extend(glob.glob(x))
+  test_data_fp = []  
+  
+  for x in config['data_fp_glob']:
+    # Generate splits based on metadata
+    fps = glob.glob(x)
+    for fp in fps:
+      clip_id = fp.split('/')[-1].split('.')[0]
+      if clip_id in config['metadata']['train_clip_ids']:
+        train_data_fp.append(fp)
+      else:
+        test_data_fp.append(fp)
+    
   train_data_fp.sort()
-
-  test_data_fp = []
-  for x in config['test_data_fp_glob']:
-    test_data_fp.extend(glob.glob(x))
   test_data_fp.sort()
   
   config['train_data_fp'] = train_data_fp
@@ -57,13 +67,19 @@ def main(config):
   if 'read_latents' in config and config['read_latents']:
     # We assume latent filenames are the same as data filenames. They are distinguished by their filepaths
     train_data_latents_fp = []
-    for x in config['train_data_latents_fp_glob']:
-      train_data_latents_fp.extend(glob.glob(x))
-    train_data_latents_fp.sort()
-    
     test_data_latents_fp = []
-    for x in config['test_data_latents_fp_glob']:
-      test_data_latents_fp.extend(glob.glob(x))
+    
+    for x in config['data_latents_fp_glob']:
+      # Generate splits based on metadata
+      fps = glob.glob(x)
+      for fp in fps:
+        clip_id = fp.split('/')[-1].split('.')[0]
+        if clip_id in config['metadata']['train_clip_ids']:
+          train_data_latents_fp.append(fp)
+        else:
+          test_data_latents_fp.append(fp)
+    
+    train_data_latents_fp.sort()
     test_data_latents_fp.sort()
     
     config['train_data_latents_fp'] = train_data_latents_fp
@@ -72,9 +88,7 @@ def main(config):
   else:
     config['read_latents'] = False
 
-  metadata_fp = config['metadata_fp']
-  with open(metadata_fp) as file:
-    config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
+  
   
   final_model_dir = os.path.join(config['output_dir'], "final_model")
   config['final_model_dir'] = final_model_dir
@@ -87,9 +101,20 @@ def main(config):
   file_id_to_data_fp = {}
   file_id_to_model_input_fp = {}
   
+  train_file_ids = [] # file_ids are of the form clip_id.npy, could also call them "filenames"
+  test_file_ids = []
+  
   for fp in config['train_data_fp']:
     file_id = fp.split('/')[-1]
     file_id_to_data_fp[file_id] = fp
+    train_file_ids.append(file_id)
+    if not config['read_latents']:
+      file_id_to_model_input_fp[file_id] = fp
+      
+  for fp in config['test_data_fp']:
+    file_id = fp.split('/')[-1]
+    file_id_to_data_fp[file_id] = fp
+    test_file_ids.append(file_id)
     if not config['read_latents']:
       file_id_to_model_input_fp[file_id] = fp
       
@@ -97,11 +122,14 @@ def main(config):
     for fp in config['train_data_latents_fp']:
       file_id = fp.split('/')[-1]
       file_id_to_model_input_fp[file_id] = fp
+    for fp in config['test_data_latents_fp']:
+      file_id = fp.split('/')[-1]
+      file_id_to_model_input_fp[file_id] = fp
   
   assert set(file_id_to_data_fp.keys()) == set(file_id_to_model_input_fp.keys()), "mismatch between specified latent filenames and data filenames"
   
-  file_ids = list(file_id_to_data_fp.keys())
-  file_ids.sort()
+  train_file_ids.sort()
+  test_file_ids.sort()
   
   # Set up the rest of the experiment
 
@@ -147,54 +175,62 @@ def main(config):
   # Generate predictions for each file
   # Simultaneously, keep track of all predictions at once
 
-  print("Generating predictions based on trained model")
-  all_predictions = []
-  all_labels = []
-  
-  for filename in tqdm.tqdm(file_ids):
-    fp = file_id_to_model_input_fp[filename]
-    predictions, latents = model.predict_from_file(fp)
-    predictions_fp = os.path.join(config['predictions_dir'], filename)
-    np.save(predictions_fp, predictions)
+  for file_ids in [train_file_ids, test_file_ids]:
+    print("Generating predictions based on trained model")
+    all_predictions = []
+    all_labels = []
+
+    for filename in tqdm.tqdm(file_ids):
+      fp = file_id_to_model_input_fp[filename]
+      predictions, latents = model.predict_from_file(fp)
+      predictions_fp = os.path.join(config['predictions_dir'], filename)
+      np.save(predictions_fp, predictions)
+
+      if config['save_latents']:
+        latents_fp = os.path.join(config['latents_output_dir'], filename)
+        np.save(latents_fp, latents)
+
+      labels_idx = config['metadata']['clip_column_names'].index('label')
+      data_fp = file_id_to_data_fp[filename]
+      labels = list(np.load(data_fp)[:, labels_idx])  
+
+      all_predictions.extend(list(predictions))
+      all_labels.extend(labels)
+
+    # Evaluate
+
+    all_labels = np.array(all_labels)
+    all_predictions = np.array(all_predictions)
     
-    if config['save_latents']:
-      latents_fp = os.path.join(config['latents_output_dir'], filename)
-      np.save(latents_fp, latents)
-
-    labels_idx = config['metadata']['clip_column_names'].index('label')
-    data_fp = file_id_to_data_fp[filename]
-    labels = list(np.load(data_fp)[:, labels_idx])  
-
-    all_predictions.extend(list(predictions))
-    all_labels.extend(labels)
-
-  # Evaluate
-
-  all_labels = np.array(all_labels)
-  all_predictions = np.array(all_predictions)
-
-  eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
-  eval_dict = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
+    if file_ids == train_file_ids:
+      eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
+      confusion_target_fp = os.path.join(config['visualization_dir'], "train_confusion_matrix.png")
+    else:
+      eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
+      confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
+    eval_dict = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp)
 
   # Save example figures
-  
-  target_fp = os.path.join(config['visualization_dir'], "confusion_matrix.png")
-  bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = target_fp)
+    bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
   
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
   
-  for filename in list(rng.choice(file_ids, 5, replace = False)):
-    predictions_fp = os.path.join(config['predictions_dir'], filename)
-    track_length = len(np.load(predictions_fp))
-    target_filename = filename.split('.')[0] + '-track_visualization.png'
-    target_fp = os.path.join(config['visualization_dir'], target_filename)
-    data_fp = file_id_to_data_fp[filename]
-    if track_length <= 20000:
-      bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
-    else:
-      start_sample = rng.integers(0, high = track_length - 20000)
-      bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = start_sample, end_sample = start_sample + 20000)
-    
+  for file_ids in [train_file_ids, test_file_ids]:
+    for filename in list(rng.choice(file_ids, 3, replace = False)):
+      predictions_fp = os.path.join(config['predictions_dir'], filename)
+      track_length = len(np.load(predictions_fp))
+      if file_ids == train_file_ids:
+        target_filename = filename.split('.')[0] + '-train-track_visualization.png'
+      else:
+        target_filename = filename.split('.')[0] + '-test-track_visualization.png'
+      target_fp = os.path.join(config['visualization_dir'], target_filename)
+      data_fp = file_id_to_data_fp[filename]
+      if track_length <= 20000:
+        bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = max(0, track_length - 20000), end_sample = track_length)
+      else:
+        start_sample = rng.integers(0, high = track_length - 20000)
+        bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = start_sample, end_sample = start_sample + 20000)
+
   # Clean up
   
   shutil.rmtree(config['temp_dir'])
