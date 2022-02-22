@@ -29,6 +29,8 @@ def accept_default_model_configs(config):
                             'batch_size' : 10,
                             'time_power_term' : 1. ## 1 is standard. if between 0 and 1, it penalizes discovering short segments
                            }
+  elif model_type == 'vame':
+    default_model_config = {}
     
   ### apply defaults if unspecified
       

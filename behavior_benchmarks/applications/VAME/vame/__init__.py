@@ -11,19 +11,19 @@ Licensed under GNU General Public License v3.0
 import sys
 sys.dont_write_bytecode = True
 
-from vame.initialize_project import init_new_project
-from vame.model import create_trainset
-from vame.model import train_model
-from vame.model import evaluate_model
-from vame.analysis import pose_segmentation
-from vame.analysis import motif_videos
-from vame.analysis import community
-from vame.analysis import community_videos
-from vame.analysis import visualization
-from vame.analysis import generative_model
-from vame.analysis import gif
-from vame.util.csv_to_npy import csv_to_numpy
-from vame.util.align_egocentrical import egocentric_alignment
-from vame.util import auxiliary
-from vame.util.auxiliary import update_config
+from behavior_benchmarks.applications.VAME.vame.initialize_project import init_new_project
+from behavior_benchmarks.applications.VAME.vame.model import create_trainset
+from behavior_benchmarks.applications.VAME.vame.model import train_model
+from behavior_benchmarks.applications.VAME.vame.model import evaluate_model
+from behavior_benchmarks.applications.VAME.vame.analysis import pose_segmentation
+from behavior_benchmarks.applications.VAME.vame.analysis import motif_videos
+from behavior_benchmarks.applications.VAME.vame.analysis import community
+from behavior_benchmarks.applications.VAME.vame.analysis import community_videos
+from behavior_benchmarks.applications.VAME.vame.analysis import visualization
+from behavior_benchmarks.applications.VAME.vame.analysis import generative_model
+from behavior_benchmarks.applications.VAME.vame.analysis import gif
+from behavior_benchmarks.applications.VAME.vame.util.csv_to_npy import csv_to_numpy
+from behavior_benchmarks.applications.VAME.vame.util.align_egocentrical import egocentric_alignment
+from behavior_benchmarks.applications.VAME.vame.util import auxiliary
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import update_config
 

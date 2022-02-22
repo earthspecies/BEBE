@@ -176,47 +176,47 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     
     
     print("Sampling to estimate averaged mapping based scores")
-    with tqdm.tqdm(total=n_iter) as pbar:
+#     with tqdm.tqdm(total=n_iter) as pbar:
     
-      with concurrent.futures.ProcessPoolExecutor() as executor:
-          futures = [executor.submit(compute_single_score_randomized, choices, probs, pred_list, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames) for _ in range(n_iter)]
+#       with concurrent.futures.ProcessPoolExecutor() as executor:
+#           futures = [executor.submit(compute_single_score_randomized, choices, probs, pred_list, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames) for _ in range(n_iter)]
 
-          for future in concurrent.futures.as_completed(futures):
-              single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future.result()
-              prec.append(single_prec)
-              rec.append(single_rec)
-              f1.append(single_f1)
-              boundary_prec.append(single_bprec)
-              boundary_rec.append(single_brec)
-              boundary_f1.append(single_bf1)
-              boundary_R.append(single_bR)
-              pbar.update(1)
+#           for future in concurrent.futures.as_completed(futures):
+#               single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future.result()
+#               prec.append(single_prec)
+#               rec.append(single_rec)
+#               f1.append(single_f1)
+#               boundary_prec.append(single_bprec)
+#               boundary_rec.append(single_brec)
+#               boundary_f1.append(single_bf1)
+#               boundary_R.append(single_bR)
+#               pbar.update(1)
       
-#      Non-parallel version
-#     for i in tqdm.tqdm(range(n_iter)):
-#         # sample mapping
-#         mapping, _ = produce_random_cluster_to_label(choices, probs)
-#         pred_mapped = np.array(list(map(mapping, pred_list)))
-#         pred_sub = pred_mapped[mask]
-#         prec.append(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-#         rec.append(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-#         f1.append(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+#     Non-parallel version
+    for i in tqdm.tqdm(range(n_iter)):
+        # sample mapping
+        mapping, _ = produce_random_cluster_to_label(choices, probs)
+        pred_mapped = np.array(list(map(mapping, pred_list)))
+        pred_sub = pred_mapped[mask]
+        prec.append(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+        rec.append(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+        f1.append(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
         
-#         pred_bound = find_boundaries(pred_mapped)
-#         bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
-#                                                               pred_bound,
-#                                                               gt_mask_boundaries,
-#                                                               tolerance_frames = boundary_tolerance_frames
-#                                                              )
-#         boundary_prec.append(bprec)
-#         brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
-#                                                           pred_bound,
-#                                                           gt_mask_boundaries,
-#                                                           tolerance_frames = boundary_tolerance_frames
-#                                                          )
-#         boundary_rec.append(brec)
-#         boundary_f1.append(compute_f1(bprec, brec))
-#         boundary_R.append(compute_R(bprec, brec))
+        pred_bound = find_boundaries(pred_mapped)
+        bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
+                                                              pred_bound,
+                                                              gt_mask_boundaries,
+                                                              tolerance_frames = boundary_tolerance_frames
+                                                             )
+        boundary_prec.append(bprec)
+        brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
+                                                          pred_bound,
+                                                          gt_mask_boundaries,
+                                                          tolerance_frames = boundary_tolerance_frames
+                                                         )
+        boundary_rec.append(brec)
+        boundary_f1.append(compute_f1(bprec, brec))
+        boundary_R.append(compute_R(bprec, brec))
         
     results['averaged_classification_precision'] = np.mean(prec)
     results['averaged_classification_recall'] = np.mean(rec)

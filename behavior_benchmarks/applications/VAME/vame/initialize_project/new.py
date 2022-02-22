@@ -24,7 +24,7 @@ import shutil
 
 def init_new_project(project, videos, working_directory=None, videotype='.mp4'):
     from datetime import datetime as dt
-    from vame.util import auxiliary
+    from behavior_benchmarks.applications.VAME.vame.util import auxiliary
     date = dt.today()
     month = date.strftime("%B")
     day = date.day

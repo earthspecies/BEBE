@@ -11,4 +11,4 @@ Licensed under GNU General Public License v3.0
 import sys
 sys.dont_write_bytecode = True
 
-from vame.util.auxiliary import *
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import *

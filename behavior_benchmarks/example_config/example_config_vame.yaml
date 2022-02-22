@@ -1,0 +1,32 @@
+experiment_name: vame_test
+input_vars:
+- AccX
+- AccY
+- AccZ
+- Depth
+metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
+model: vame
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
+data_fp_glob:
+- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
+num_clusters: 8
+  
+evaluation:
+  boundary_tolerance_sec: 0.5
+
+
+
+# config = {'experiment_name' : 'gmm_test',
+#          'model' : 'gmm',
+#          'num_components' : 8,
+#          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
+#          'input_vars' : ['AccX',
+#                          'AccY',
+#                          'AccZ',
+#                          'GyrX',
+#                          'GyrY',
+#                          'GyrZ',
+#                          'Depth'], 
+#          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
+#          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
+#          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}

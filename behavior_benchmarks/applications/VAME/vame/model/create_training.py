@@ -16,7 +16,7 @@ from pathlib import Path
 import scipy.signal
 from scipy.stats import iqr
 
-from vame.util.auxiliary import read_config
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
 
 
 #Helper function to return indexes of nans

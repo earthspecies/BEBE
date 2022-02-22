@@ -18,8 +18,8 @@ import scipy.signal
 from sklearn import mixture
 from sklearn.cluster import KMeans
 
-from vame.util.auxiliary import read_config
-from vame.model.rnn_vae import RNN_VAE
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from behavior_benchmarks.applications.VAME.vame.model.rnn_vae import RNN_VAE
 
 
 def load_data(PROJECT_PATH, file, data):

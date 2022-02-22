@@ -15,8 +15,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 
-from vame.util.auxiliary import read_config
-from vame.model.rnn_model import RNN_VAE
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from behavior_benchmarks.applications.VAME.vame.model.rnn_model import RNN_VAE
 
 
 def random_generative_samples_motif(cfg, model, latent_vector,labels,n_cluster):

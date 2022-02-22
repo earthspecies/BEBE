@@ -14,7 +14,7 @@ import pandas as pd
 import tqdm    
 
 from pathlib import Path
-from vame.util.auxiliary import read_config  
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config  
 
 #Returns cropped image using rect tuple
 def crop_and_flip(rect, src, points, ref_index):

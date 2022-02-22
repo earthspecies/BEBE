@@ -17,8 +17,8 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-from vame.util.auxiliary import read_config
-from vame.analysis.tree_hierarchy import graph_to_tree, draw_tree, traverse_tree_cutline
+from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from behavior_benchmarks.applications.VAME.vame.analysis.tree_hierarchy import graph_to_tree, draw_tree, traverse_tree_cutline
 
 
 def get_adjacency_matrix(labels, n_cluster):

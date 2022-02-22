@@ -158,6 +158,9 @@ def main(config):
     
   elif config['model'] == 'eskmeans':
     model = models.eskmeans(config)
+    
+  elif config['model'] == 'vame':
+    model = models.vame(config)
 
   else:
     raise ValueError('model type not recognized')
