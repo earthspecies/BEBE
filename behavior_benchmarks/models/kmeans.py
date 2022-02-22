@@ -39,7 +39,7 @@ class kmeans():
     
     print("computing whitening transform")
     pca = PCA(whiten = True)
-    train_data = pca.fit_transform(train_data)
+    train_data = pca.fit_transform(train_data)  
     
     self.encoder = pca
     print("fitting kmeans")
@@ -51,8 +51,8 @@ class kmeans():
       pickle.dump(self, f)
   
   def predict(self, data):
-    whitened_data = self.model.transform(data)
-    predictions = self.model.predict(data)
+    whitened_data = self.encoder.transform(data)
+    predictions = self.model.predict(whitened_data)
     return predictions, whitened_data
   
   def predict_from_file(self, fp):

@@ -29,8 +29,21 @@ def accept_default_model_configs(config):
                             'batch_size' : 10,
                             'time_power_term' : 1. ## 1 is standard. if between 0 and 1, it penalizes discovering short segments
                            }
+    
   elif model_type == 'vame':
-    default_model_config = {}
+    default_model_config = {'batch_size' : 256,
+                            'max_epochs' : 500, 
+                            'beta': 1, ## Scalar multiplied by KL loss
+                            'zdims': 30, ## Latent space dimensionality
+                            'learning_rate' : 0.0005,
+                            'time_window_sec': 1.,
+                            'prediction_decoder': 1, ## Whether to predict future steps
+                            'prediction_sec': 0.5, ## How much to predict after encoded window
+                            'scheduler': 1,
+                            'scheduler_step_size': 100,
+                            'scheduler_gamma': 0.2,
+                            'kmeans_lambda': 0.1 ## Scalar multiplied by kmeans loss
+                           }
     
   ### apply defaults if unspecified
       

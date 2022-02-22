@@ -26,8 +26,8 @@ class SEQUENCE_DATASET(Dataset):
         
         if train and not os.path.exists(os.path.join(path_to_file,'seq_mean.npy')):
             print("Compute mean and std for temporal dataset.")
-            self.mean = np.mean(self.X)
-            self.std = np.std(self.X)
+            self.mean = np.mean(self.X, axis = 1, keepdims = True)
+            self.std = np.std(self.X, axis = 1, keepdims = True)
             np.save(path_to_file+'seq_mean.npy', self.mean)
             np.save(path_to_file+'seq_std.npy', self.std)
         else:

@@ -16,7 +16,7 @@ class vame():
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
-    # Set up temporary VAME directory to follow their formatting
+    # Set up temporary VAME directory to follow the VAME package's formatting conventions
     project = 'temp_vame_project'
     self.config_vame_fp = VAME.init_new_project(project=project, videos=[], working_directory=config['temp_dir'])
     
@@ -27,7 +27,20 @@ class vame():
     self.vame_experiment_dir = config_vame['project_path']
   
     config_vame['n_cluster'] = config['num_clusters']
-    config_vame['max_epochs'] = 100
+    config_vame['n_init_kmeans'] = config['num_clusters']
+    config_vame['batch_size'] = self.model_config['batch_size']
+    config_vame['max_epochs'] = self.model_config['max_epochs']
+    config_vame['beta'] = self.model_config['beta']
+    config_vame['zdims'] = self.model_config['zdims']
+    config_vame['learning_rate'] = self.model_config['learning_rate']
+    config_vame['time_window'] = int(self.model_config['time_window_sec'] * self.metadata['sr'])
+    config_vame['prediction_decoder'] = self.model_config['prediction_decoder']
+    config_vame['prediction_steps'] = int(self.model_config['prediction_sec'] * self.metadata['sr'])
+    config_vame['scheduler'] = self.model_config['scheduler']
+    config_vame['scheduler_step_size'] = self.model_config['scheduler_step_size']
+    config_vame['scheduler_gamma'] = self.model_config['scheduler_gamma']
+    config_vame['kmeans_loss'] = self.model_config['zdims'] # Uses all singular values
+    config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']    
     
     with open(self.config_vame_fp, 'w') as file:
       yaml.dump(config_vame, file)

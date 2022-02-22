@@ -10,11 +10,22 @@ output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8
+read_latents: True
+data_latents_fp_glob: 
+- /home/jupyter/behavior_benchmarks_outputs/ladds_seals/whiten_seals/latents/*.npy
   
 evaluation:
   boundary_tolerance_sec: 0.5
-
-
+  
+model_config:
+  batch_size : 256,
+  max_epochs : 100, 
+  beta: 1,
+  zdims: 10,
+  learning_rate : 0.0005,
+  time_window_sec: 1.,
+  prediction_sec: 1.,
+  kmeans_lambda: 0.1
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',
