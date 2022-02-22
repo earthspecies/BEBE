@@ -31,8 +31,9 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     label_idx = clip_column_names.index('label')
     unknown_idx = label_names.index('unknown')
     to_plot = input_data[start_sample: end_sample, label_idx]
+    norm = plt.Normalize(0, num_labels)
     axes[-3].set_xlim(left=0, right=end_sample-start_sample)
-    axes[-3].scatter(np.arange(len(to_plot))[to_plot!= unknown_idx], to_plot[to_plot!= unknown_idx], marker = '|', c = to_plot[to_plot!= unknown_idx]/num_labels, cmap = 'Set2')
+    axes[-3].scatter(np.arange(len(to_plot))[to_plot!= unknown_idx], to_plot[to_plot!= unknown_idx], marker = '|', c = to_plot[to_plot!= unknown_idx], cmap = 'Set2', norm = norm)
     label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
     axes[-3].set_yticks(label_ticks)
     axes[-3].set_yticklabels([label_names[i] for i in label_ticks])
@@ -51,7 +52,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     to_plot = list(to_plot)
     to_plot = np.array(list(map(lambda x : mapping_dict[x], to_plot)))
     axes[-1].set_xlim(left=0, right=end_sample-start_sample)
-    axes[-1].scatter(np.arange(len(to_plot)), to_plot, marker = '|', c = to_plot/num_labels, cmap = 'Set2')
+    axes[-1].scatter(np.arange(len(to_plot)), to_plot, marker = '|', c = to_plot, cmap = 'Set2', norm = norm)
     label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
     axes[-1].set_yticks(label_ticks)
     axes[-1].set_yticklabels([label_names[i] for i in label_ticks])
