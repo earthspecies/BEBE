@@ -125,8 +125,10 @@ def main(config):
     if config['predict_and_evaluate']:
       eval_dict, choices, probs = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
 
-      # Save example figures
+      # Save confusion matrix
       bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
+  
+  # Save example figures
   
   if config['predict_and_evaluate']:
     rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
