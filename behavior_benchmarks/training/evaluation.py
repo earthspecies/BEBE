@@ -3,7 +3,7 @@ import numpy as np
 import os
 import yaml
 
-def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None, probs = None):
+def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None, choices = None, probs = None):
   
   evaluation_dict = {}
   
@@ -32,7 +32,8 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
                                                                boundary_tolerance_frames = boundary_tolerance_frames, 
                                                                unknown_value = unknown_label,
                                                                choices = choices,
-                                                               probs = probs
+                                                               probs = probs,
+                                                               n_samples = n_samples
                                                               )
   evaluation_dict['averaged_scores'] = mapping_based['averaged_scores']
   evaluation_dict['MAP_scores'] = mapping_based['MAP_scores']

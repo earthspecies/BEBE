@@ -22,7 +22,7 @@ class vame():
     
     # Modify config_vame to reflect our conventions
     with open(self.config_vame_fp) as file:
-      config_vame = yaml.load(file, Loader=yaml.FullLoader)  
+      config_vame = yaml.load(file, Loader=yaml.FullLoader)
       
     self.vame_experiment_dir = config_vame['project_path']
   

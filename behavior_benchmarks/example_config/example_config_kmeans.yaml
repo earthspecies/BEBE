@@ -1,15 +1,14 @@
-experiment_name: vame_test
+experiment_name: kmeans
 input_vars:
 - AccX
 - AccY
 - AccZ
 - Depth
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
-model: vame
+model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
-save_latents: True
 num_clusters: 8
 read_latents: True
 data_latents_fp_glob: 
@@ -17,16 +16,6 @@ data_latents_fp_glob:
   
 evaluation:
   boundary_tolerance_sec: 0.5
-  
-vame_config:
-  batch_size : 256
-  max_epochs : 20
-  beta: 0 
-  zdims: 10
-  learning_rate : 0.0005
-  time_window_sec: 1.0
-  prediction_sec: 1.0
-  kmeans_lambda: 0.1
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',

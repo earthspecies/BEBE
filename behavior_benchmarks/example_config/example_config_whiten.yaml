@@ -5,9 +5,8 @@ input_vars:
 - AccZ
 - Depth
 metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
-model: kmeans
+model: whiten
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-save_latents: True
 data_fp_glob:
 - /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8

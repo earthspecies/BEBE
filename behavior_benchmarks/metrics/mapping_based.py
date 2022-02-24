@@ -271,7 +271,7 @@ def get_MAP_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance
     results['MAP_boundary_R'] = float(compute_R(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
     return results
   
-def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None):
+def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100):
     # Main function to produce mapping based scores
     
     # Compute choices and probabilities, essentially from confusion matrix
@@ -283,13 +283,17 @@ def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance
                                               unknown_value = unknown_value)
     
     mapping_based_score_dict = {}
-    mapping_based_score_dict['averaged_scores'] = estimate_averaged_scores(gt, 
-                                                                           pred, 
-                                                                           choices, 
-                                                                           probs, 
-                                                                           unknown_value=unknown_value, 
-                                                                           boundary_tolerance_frames = boundary_tolerance_frames, 
-                                                                           n_iter = 100)
+    
+    if n_samples > 0:
+      mapping_based_score_dict['averaged_scores'] = estimate_averaged_scores(gt, 
+                                                                             pred, 
+                                                                             choices, 
+                                                                             probs, 
+                                                                             unknown_value=unknown_value, 
+                                                                             boundary_tolerance_frames = boundary_tolerance_frames, 
+                                                                             n_iter = n_samples)
+    else:
+      mapping_based_score_dict['averaged_scores'] = None
     
     mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
                                                             pred, 

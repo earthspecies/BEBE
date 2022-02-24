@@ -1,7 +1,150 @@
+import os
+import glob
+import yaml
+
+def expand_config(config):
+  ## accepts a human-generated config dictionary
+  ## and adds in a bunch of entries for access later on
+  
+  
+  config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
+  config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
+  
+  metadata_fp = config['metadata_fp']
+  with open(metadata_fp) as file:
+    config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
+  
+  # Based on model type, decide how to save latents, predictions, and evaluation
+  
+  if config['model'] == 'gmm':
+    config['save_latents'] = False
+    config['predict_and_evaluate'] = True
+    
+  elif config['model'] == 'kmeans':
+    config['save_latents'] = False
+    config['predict_and_evaluate'] = True
+      
+  elif config['model'] == 'whiten':
+    config['save_latents'] = True
+    config['predict_and_evaluate'] = False
+    
+  elif config['model'] == 'eskmeans':
+    config['save_latents'] = False
+    config['predict_and_evaluate'] = True
+    
+  elif config['model'] == 'vame':
+    config['save_latents'] = True
+    config['predict_and_evaluate'] = False # We will read in discovered latents to kmeans model
+
+  else:
+    raise ValueError('model type not recognized')
+  
+  if config['save_latents']:
+    config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
+    
+  # Unglob data filepaths and deal with splits
+
+  train_data_fp = []
+  test_data_fp = []  
+  
+  for x in config['data_fp_glob']:
+    # Generate splits based on metadata
+    fps = glob.glob(x)
+    for fp in fps:
+      clip_id = fp.split('/')[-1].split('.')[0]
+      if clip_id in config['metadata']['train_clip_ids']:
+        train_data_fp.append(fp)
+      else:
+        test_data_fp.append(fp)
+    
+  train_data_fp.sort()
+  test_data_fp.sort()
+  
+  config['train_data_fp'] = train_data_fp
+  config['test_data_fp'] = test_data_fp
+  
+  # If 'read_latents' is True, then we use the specified latent fp's as model inputs
+  # The original data is still kept track of, so we can plot it and use the ground-truth labels
+  if 'read_latents' in config and config['read_latents']:
+    # We assume latent filenames are the same as data filenames. They are distinguished by their filepaths
+    train_data_latents_fp = []
+    test_data_latents_fp = []
+    
+    for x in config['data_latents_fp_glob']:
+      # Generate splits based on metadata
+      fps = glob.glob(x)
+      for fp in fps:
+        clip_id = fp.split('/')[-1].split('.')[0]
+        if clip_id in config['metadata']['train_clip_ids']:
+          train_data_latents_fp.append(fp)
+        else:
+          test_data_latents_fp.append(fp)
+    
+    train_data_latents_fp.sort()
+    test_data_latents_fp.sort()
+    
+    config['train_data_latents_fp'] = train_data_latents_fp
+    config['test_data_latents_fp'] = test_data_latents_fp
+  
+  else:
+    config['read_latents'] = False
+  
+  final_model_dir = os.path.join(config['output_dir'], "final_model")
+  config['final_model_dir'] = final_model_dir
+  
+  visualization_dir = os.path.join(config['output_dir'], "visualizations")
+  config['visualization_dir'] = visualization_dir
+  
+  # Set up a dictionary to keep track of file id's, the data filepaths, and (potentially) the latent filepaths:
+  
+  file_id_to_data_fp = {}
+  file_id_to_model_input_fp = {}
+  
+  train_file_ids = [] # file_ids are of the form clip_id.npy, could also call them "filenames"
+  test_file_ids = []
+  
+  for fp in config['train_data_fp']:
+    file_id = fp.split('/')[-1]
+    file_id_to_data_fp[file_id] = fp
+    train_file_ids.append(file_id)
+    if not config['read_latents']:
+      file_id_to_model_input_fp[file_id] = fp
+      
+  for fp in config['test_data_fp']:
+    file_id = fp.split('/')[-1]
+    file_id_to_data_fp[file_id] = fp
+    test_file_ids.append(file_id)
+    if not config['read_latents']:
+      file_id_to_model_input_fp[file_id] = fp
+      
+  if config['read_latents']:
+    for fp in config['train_data_latents_fp']:
+      file_id = fp.split('/')[-1]
+      file_id_to_model_input_fp[file_id] = fp
+    for fp in config['test_data_latents_fp']:
+      file_id = fp.split('/')[-1]
+      file_id_to_model_input_fp[file_id] = fp
+  
+  assert set(file_id_to_data_fp.keys()) == set(file_id_to_model_input_fp.keys()), "mismatch between specified latent filenames and data filenames"
+  
+  train_file_ids.sort()
+  test_file_ids.sort()
+  
+  config['file_id_to_data_fp'] = file_id_to_data_fp
+  config['file_id_to_model_input_fp'] = file_id_to_model_input_fp
+  config['train_file_ids'] = train_file_ids
+  config['test_file_ids'] = test_file_ids
+  
+  return config
+
+
 
 def accept_default_model_configs(config):
   
   assert 'evaluation' in config
+  
+  if 'n_samples' not in config['evaluation']:
+    config['evaluation']['n_samples'] = 0 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
     
   model_type = config['model']
   model_config_name = model_type + "_config"
@@ -44,6 +187,9 @@ def accept_default_model_configs(config):
                             'scheduler_gamma': 0.2,
                             'kmeans_lambda': 0.1 ## Scalar multiplied by kmeans loss
                            }
+    
+  elif model_type == 'whiten':
+    default_model_config = {}
     
   ### apply defaults if unspecified
       
