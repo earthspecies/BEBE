@@ -6,11 +6,11 @@ def expand_config(config):
   ## accepts a human-generated config dictionary
   ## and adds in a bunch of entries for access later on
   
-  
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
   config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
   
-  metadata_fp = config['metadata_fp']
+  # load metadata
+  metadata_fp = os.path.join(config['dataset_dir'], 'dataset_metadata.yaml')
   with open(metadata_fp) as file:
     config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
   
@@ -45,17 +45,17 @@ def expand_config(config):
   # Unglob data filepaths and deal with splits
 
   train_data_fp = []
-  test_data_fp = []  
+  test_data_fp = []
   
-  for x in config['data_fp_glob']:
-    # Generate splits based on metadata
-    fps = glob.glob(x)
-    for fp in fps:
-      clip_id = fp.split('/')[-1].split('.')[0]
-      if clip_id in config['metadata']['train_clip_ids']:
-        train_data_fp.append(fp)
-      else:
-        test_data_fp.append(fp)
+  data_fp_glob = os.path.join(config['dataset_dir'], 'clip_data', '*.npy')
+
+  fps = glob.glob(data_fp_glob)
+  for fp in fps:
+    clip_id = fp.split('/')[-1].split('.')[0]
+    if clip_id in config['metadata']['train_clip_ids']:
+      train_data_fp.append(fp)
+    else:
+      test_data_fp.append(fp)
     
   train_data_fp.sort()
   test_data_fp.sort()
@@ -198,4 +198,3 @@ def accept_default_model_configs(config):
       config[model_config_name][key] = default_model_config[key]
       
   return config
-      

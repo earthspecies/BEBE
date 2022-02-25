@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-import glob
 import yaml
 import sys
 import argparse
@@ -15,8 +14,6 @@ import behavior_benchmarks.training.handle_config as handle_config
 import behavior_benchmarks.visualization as bbvis
 
 def main(config):
-
-  ## save off input config
   
   # put in default parameters if they are unspecified
   config = handle_config.accept_default_model_configs(config)
@@ -24,6 +21,7 @@ def main(config):
   # create output directory
   output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
   
+  ## save off input config
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 

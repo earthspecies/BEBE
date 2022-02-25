@@ -45,9 +45,10 @@ class whiten():
     train_data = train_data / self.data_std    
     
     print("computing whitening transform")
-    pca = PCA(whiten = True)
+    pca = PCA(n_components = 'mle', whiten = True)
     pca.fit(train_data)  
     self.whitener = pca
+    print("whitened using %d components out of %d input dimensions" % (pca.n_components_ , np.shape(train_data)[1]))
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
