@@ -1,19 +1,40 @@
-experiment_name: whiten_seals
+experiment_name: eskmeans_test
+eskmeans_config:
+  boundary_init_lambda: 20.0
+  embed_length: 10
+  landmark_hop_size: 10
+  n_epochs: 10
+  n_landmarks_max: 30
+  batch_size: 2
+  time_power_term: .95
 input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- Depth
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
-model: whiten
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-num_clusters: 8
-  
+- AccX_Back 
+- AccY_Back
+- AccZ_Back
+- AccX_Neck
+- AccY_Neck
+- AccZ_Neck
+- GyrX_Back
+- GyrY_Back
+- GyrZ_Back
+- GyrX_Neck
+- GyrY_Neck
+- GyrZ_Neck
+metadata_fp: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/dataset_metadata.yaml
+model: eskmeans
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs
+data_fp_glob:
+- /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs/clip_data/*.npy
+num_clusters: 20
+read_latents: True
+data_latents_fp_glob: 
+- /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs/whiten_dogs/latents/*.npy
+
 evaluation:
   boundary_tolerance_sec: 0.5
+
+
+
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',

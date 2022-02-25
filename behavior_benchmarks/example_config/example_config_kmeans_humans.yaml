@@ -1,4 +1,4 @@
-experiment_name: whiten_seals
+experiment_name: kmeans
 input_vars:
 - AccX
 - AccY
@@ -6,11 +6,16 @@ input_vars:
 - StaticAccX
 - StaticAccY
 - StaticAccZ
-- Depth
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
-model: whiten
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-num_clusters: 8
+- GyrX
+- GyrY
+- GyrZ
+model: kmeans
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+num_clusters: 24
+read_latents: True
+data_latents_fp_glob: 
+- /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy
   
 evaluation:
   boundary_tolerance_sec: 0.5

@@ -1,17 +1,28 @@
-experiment_name: whiten_seals
+experiment_name: whiten_dogs
 input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- Depth
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
+- AccX_Back 
+- AccY_Back
+- AccZ_Back
+- AccX_Neck
+- AccY_Neck
+- AccZ_Neck
+- StaticAccX_Back 
+- StaticAccY_Back
+- StaticAccZ_Back
+- StaticAccX_Neck
+- StaticAccY_Neck
+- StaticAccZ_Neck
+- GyrX_Back
+- GyrY_Back
+- GyrZ_Back
+- GyrX_Neck
+- GyrY_Neck
+- GyrZ_Neck
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs
 model: whiten
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-num_clusters: 8
-  
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs
+num_clusters: 20
+
 evaluation:
   boundary_tolerance_sec: 0.5
 

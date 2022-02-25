@@ -3,12 +3,13 @@ input_vars:
 - AccX
 - AccY
 - AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
 - Depth
-metadata_fp: /home/jupyter/behavior_data_local/data/formatted/ladds_seals/dataset_metadata.yaml
 model: kmeans
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-data_fp_glob:
-- /home/jupyter/behavior_data_local/data/formatted/ladds_seals/clip_data/*.npy
 num_clusters: 8
 read_latents: True
 data_latents_fp_glob: 
