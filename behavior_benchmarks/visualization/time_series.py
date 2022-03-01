@@ -38,6 +38,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[-3].set_yticks(label_ticks)
     axes[-3].set_yticklabels([label_names[i] for i in label_ticks])
     axes[-3].set_ylabel("ground truth")
+    axes[-3].set_title("Ground truth labels")
 
     # Clusters
     clusters_data = np.load(predictions_fp)
@@ -45,6 +46,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[-2].set_xlim(left=0, right=end_sample-start_sample)
     axes[-2].scatter(np.arange(len(to_plot)), to_plot, marker = '|', c = to_plot, cmap = 'hsv')
     axes[-2].set_ylabel("cluster")
+    axes[-2].set_title("Discovered clusters")
     
     # Max a posteriori assignment clusters -> labels
     mapping_dict = eval_dict['MAP_scores']['MAP_mapping_dict']
@@ -57,6 +59,9 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[-1].set_yticks(label_ticks)
     axes[-1].set_yticklabels([label_names[i] for i in label_ticks])
     axes[-1].set_ylabel("MAP assignment")
+    axes[-1].set_title("Best assignment of clusters to labels")
+    axes[-1].set_xlabel("Time (samples)")
+                       
 
     if target_fp is not None:
         plt.savefig(target_fp); plt.close()

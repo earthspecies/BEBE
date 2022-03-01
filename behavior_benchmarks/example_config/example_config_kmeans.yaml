@@ -16,7 +16,7 @@ data_latents_fp_glob:
 - /home/jupyter/behavior_benchmarks_outputs/ladds_seals/whiten_seals/latents/*.npy
   
 evaluation:
-  boundary_tolerance_sec: 0.5
+  boundary_tolerance_sec: 1.0
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',

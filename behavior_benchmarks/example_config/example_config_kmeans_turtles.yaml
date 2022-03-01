@@ -19,7 +19,7 @@ data_latents_fp_glob:
 - /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles/whiten_turtles/latents/*.npy
   
 evaluation:
-  boundary_tolerance_sec: 0.5
+  boundary_tolerance_sec: 1.0
 
 # config = {'experiment_name' : 'gmm_test',
 #          'model' : 'gmm',
