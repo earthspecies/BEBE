@@ -185,7 +185,8 @@ def accept_default_model_configs(config):
                             'scheduler': 1,
                             'scheduler_step_size': 100,
                             'scheduler_gamma': 0.2,
-                            'kmeans_lambda': 0.1 ## Scalar multiplied by kmeans loss
+                            'kmeans_lambda': 0.1, ## Scalar multiplied by kmeans loss
+                            'downsizing_factor' : 4 ## Train more efficiently, account for autocorrelation
                            }
     
   elif model_type == 'whiten':

@@ -19,15 +19,27 @@ class SEQUENCE_DATASET(Dataset):
     def __init__(self,path_to_file,data,train,temporal_window):
         self.temporal_window = temporal_window        
         self.X = np.load(path_to_file+data)
-        if self.X.shape[0] > self.X.shape[1]:
-            self.X=self.X.T
+#         if self.X.shape[0] > self.X.shape[1]:
+#             self.X=self.X.T
             
-        self.data_points = len(self.X[0,:])
+#         self.data_points = len(self.X[0,:])
+        
+#         if train and not os.path.exists(os.path.join(path_to_file,'seq_mean.npy')):
+#             print("Compute mean and std for temporal dataset.")
+#             self.mean = np.mean(self.X, axis = 1, keepdims = True)
+#             self.std = np.std(self.X, axis = 1, keepdims = True)
+#             np.save(path_to_file+'seq_mean.npy', self.mean)
+#             np.save(path_to_file+'seq_std.npy', self.std)
+#         else:
+#             self.mean = np.load(path_to_file+'seq_mean.npy')
+#             self.std = np.load(path_to_file+'seq_std.npy')
+            
+        self.data_points = len(self.X[:,0])
         
         if train and not os.path.exists(os.path.join(path_to_file,'seq_mean.npy')):
             print("Compute mean and std for temporal dataset.")
-            self.mean = np.mean(self.X, axis = 1, keepdims = True)
-            self.std = np.std(self.X, axis = 1, keepdims = True)
+            self.mean = np.mean(self.X, axis = 0, keepdims = True)
+            self.std = np.std(self.X, axis = 0, keepdims = True)
             np.save(path_to_file+'seq_mean.npy', self.mean)
             np.save(path_to_file+'seq_std.npy', self.std)
         else:
@@ -40,18 +52,18 @@ class SEQUENCE_DATASET(Dataset):
             print('Initialize test data. Datapoints %d' %self.data_points)
         
     def __len__(self):        
-        return self.data_points
+        return self.data_points - self.temporal_window
 
     def __getitem__(self, index):
         temp_window = self.temporal_window
+        start = index
+        end = start+ temp_window
         
-        nf = self.data_points
-        start = np.random.choice(nf-temp_window) 
-        end = start+temp_window
-        
-        sequence = self.X[:,start:end]  
+        #sequence = self.X[:,start:end] 
+        sequence = self.X[start:end, :] # Possibly faster to access in this order?
 
         sequence = (sequence-self.mean)/self.std
+        sequence = sequence.T
             
         return torch.from_numpy(sequence)
     

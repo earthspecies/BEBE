@@ -14,6 +14,7 @@ from torch import nn
 import torch.utils.data as Data
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+import tqdm
 
 import os
 import numpy as np
@@ -93,7 +94,7 @@ def gaussian(ins, is_training, seq_len, std_n=0.8):
 
 def train(train_loader, epoch, model, optimizer, anneal_function, BETA, kl_start,
           annealtime, seq_len, future_decoder, future_steps, scheduler, mse_red, 
-          mse_pred, kloss, klmbda, bsize, noise):
+          mse_pred, kloss, klmbda, bsize, noise, downsizing_factor = 1):
     model.train() # toggle model to train mode
     train_loss = 0.0
     mse_loss = 0.0
@@ -102,8 +103,9 @@ def train(train_loader, epoch, model, optimizer, anneal_function, BETA, kl_start
     fut_loss = 0.0
     loss = 0.0
     seq_len_half = int(seq_len / 2)
-
-    for idx, data_item in enumerate(train_loader):
+  
+    for idx, data_item in tqdm.tqdm(enumerate(train_loader)):
+        
         data_item = Variable(data_item)
         data_item = data_item.permute(0,2,1)
 
@@ -139,6 +141,7 @@ def train(train_loader, epoch, model, optimizer, anneal_function, BETA, kl_start
             loss = rec_loss + BETA*kl_weight*kl_loss + kl_weight*kmeans_loss
         
         optimizer.zero_grad()
+        
         loss.backward()
         optimizer.step()
         
@@ -148,6 +151,9 @@ def train(train_loader, epoch, model, optimizer, anneal_function, BETA, kl_start
         mse_loss += rec_loss.item()
         kullback_loss += kl_loss.item()
         kmeans_losses += kmeans_loss.item()
+        
+        if idx > len(train_loader)//downsizing_factor:
+          break
 
         # if idx % 1000 == 0:
         #     print('Epoch: %d.  loss: %.4f' %(epoch, loss.item()))
@@ -164,7 +170,7 @@ def train(train_loader, epoch, model, optimizer, anneal_function, BETA, kl_start
     return kl_weight, train_loss/idx, kl_weight*kmeans_losses/idx, kullback_loss/idx, mse_loss/idx, fut_loss/idx
 
 
-def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red, kloss, klmbda, future_decoder, bsize):
+def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red, kloss, klmbda, future_decoder, bsize, downsizing_factor = 1):
     model.eval() # toggle model to inference mode
     test_loss = 0.0
     mse_loss = 0.0
@@ -174,7 +180,7 @@ def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red
     seq_len_half = int(seq_len / 2)
 
     with torch.no_grad():
-        for idx, data_item in enumerate(test_loader):
+        for idx, data_item in tqdm.tqdm(enumerate(test_loader)):
             # we're only going to infer, so no autograd at all required
             data_item = Variable(data_item)
             data_item = data_item.permute(0,2,1)
@@ -203,6 +209,9 @@ def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
             kmeans_losses += kmeans_loss
+            
+            if idx > len(test_loader)//downsizing_factor:
+              break
 
     print('Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}'.format(test_loss / idx,
           mse_loss /idx, BETA*kl_weight*kullback_loss/idx, kl_weight*kmeans_losses/idx))
@@ -252,6 +261,14 @@ def train_model(config):
     TEMPORAL_WINDOW = cfg['time_window']*2
     FUTURE_DECODER = cfg['prediction_decoder']
     FUTURE_STEPS = cfg['prediction_steps']
+    
+    if 'downsizing_factor' in cfg:
+      # Don't use every possible window for each epoch... 
+      # this is an attempt to reflect the effective sample size
+      # due to autocorrelation, while training
+      DOWNSIZING_FACTOR = cfg['downsizing_factor']
+    else:
+      DOWNSIZING_FACTOR = 1
 
     # RNN
     hidden_size_layer_1 = cfg['hidden_size_layer_1']
@@ -316,9 +333,16 @@ def train_model(config):
     trainset = SEQUENCE_DATASET(os.path.join(cfg['project_path'],"data", "train",""), data='train_seq.npy', train=True, temporal_window=TEMPORAL_WINDOW)
     testset = SEQUENCE_DATASET(os.path.join(cfg['project_path'],"data", "train",""), data='test_seq.npy', train=False, temporal_window=TEMPORAL_WINDOW)
 
-    train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True)
-    test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True)
+    ### Trying to do a vectorized dataloader
+    
+    train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
+    test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
 
+    #train_loader = Data.DataLoader(trainset, batch_size=None, shuffle=True, drop_last=True)
+    #test_loader = Data.DataLoader(testset, batch_size=None, shuffle=True, drop_last=True)
+    
+    ###
+    
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, amsgrad=True)
 
     if optimizer_scheduler:
@@ -336,11 +360,11 @@ def train_model(config):
                                                                          ANNEALTIME, TEMPORAL_WINDOW, FUTURE_DECODER,
                                                                          FUTURE_STEPS, scheduler, MSE_REC_REDUCTION,
                                                                          MSE_PRED_REDUCTION, KMEANS_LOSS, KMEANS_LAMBDA,
-                                                                         TRAIN_BATCH_SIZE, noise)
+                                                                         TRAIN_BATCH_SIZE, noise, downsizing_factor = DOWNSIZING_FACTOR)
 
         current_loss, test_loss, test_list = test(test_loader, epoch, model, optimizer,
                                                   BETA, weight, TEMPORAL_WINDOW, MSE_REC_REDUCTION,
-                                                  KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE)
+                                                  KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE, downsizing_factor = DOWNSIZING_FACTOR)
 
         # logging losses
         train_losses.append(train_loss)

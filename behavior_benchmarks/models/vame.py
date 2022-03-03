@@ -40,7 +40,8 @@ class vame():
     config_vame['scheduler_step_size'] = self.model_config['scheduler_step_size']
     config_vame['scheduler_gamma'] = self.model_config['scheduler_gamma']
     config_vame['kmeans_loss'] = self.model_config['zdims'] # Uses all singular values
-    config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']    
+    config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']
+    config_vame['downsizing_factor'] = self.model_config['downsizing_factor']
     
     with open(self.config_vame_fp, 'w') as file:
       yaml.dump(config_vame, file)
