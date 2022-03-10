@@ -6,6 +6,8 @@ import tqdm
 import functools
 import operator
 import concurrent.futures
+import itertools
+import os
 
 def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
     array = np.array(array)
@@ -122,14 +124,35 @@ def compute_R(prec, rec):
     r2 = (rec - over_segmentation - 1)/np.sqrt(2.)
     return (2 - np.abs(r1) - np.abs(r2))/2.
   
-def compute_single_score_randomized(choices, probs, pred_list, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames):
+def compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames):
   # sample mapping
-  mapping, _ = produce_random_cluster_to_label(choices, probs)
-  pred_mapped = np.array(list(map(mapping, pred_list)))
+  #print('producing mapping')
+  _, mapping_dict = produce_random_cluster_to_label(choices, probs)
+  #print('produced')
+  # pred_list = list(pred)
+  # #pred_mapped = np.array(list(map(mapping, pred_list)))
+  # pred_mapped = map(mapping, pred_list)
+  # pred_mapped = np.fromiter(pred_mapped, int, count = len(pred_list))
+  
+  ###
+  
+  outs = []
+  for i in mapping_dict:
+    # mostly vectorized way to assign i \mapsto mapping_dict[i]
+    m = pred == i
+    outs.append(m * mapping_dict[i])
+  pred_mapped = sum(outs)
+  
+  ###
+  
+  
+  #print('cast')
   pred_sub = pred_mapped[mask]
+  #print('masked')
   prec = precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
   rec = recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
   f1 = f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
+  #print('scored class')
 
   pred_bound = find_boundaries(pred_mapped)
   bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
@@ -144,6 +167,7 @@ def compute_single_score_randomized(choices, probs, pred_list, mask, gt_sub, gt_
                                                    )
   bf1 = compute_f1(bprec, brec)
   bR = compute_R(bprec, brec)
+  #print('scored boundary')
   return prec, rec, f1, bprec, brec, bf1, bR
   
 def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance_frames = 0, n_iter = 1):
@@ -156,7 +180,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     ### Estimate average classification scores
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
     gt_sub = gt[mask]
-    pred_list = list(pred)
+    #pred_list = list(pred)
     
     ### Also estimate average boundary scores
     gt_bound = find_boundaries(gt)
@@ -176,6 +200,30 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     
     
     print("Sampling to estimate averaged mapping based scores")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() + 4) as executor:
+      futures = list(tqdm.tqdm(executor.map(compute_single_score_randomized,
+                                            itertools.repeat(choices, n_iter),
+                                            itertools.repeat(probs, n_iter),
+                                            itertools.repeat(pred, n_iter), 
+                                            itertools.repeat(mask, n_iter), 
+                                            itertools.repeat(gt_sub, n_iter), 
+                                            itertools.repeat(gt_bound, n_iter),
+                                            itertools.repeat(gt_mask_boundaries, n_iter),
+                                            itertools.repeat(boundary_tolerance_frames, n_iter)), total = n_iter))
+    for future in futures:
+      single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future
+      prec.append(single_prec)
+      rec.append(single_rec)
+      f1.append(single_f1)
+      boundary_prec.append(single_bprec)
+      boundary_rec.append(single_brec)
+      boundary_f1.append(single_bf1)
+      boundary_R.append(single_bR)
+    
+    
+    ###first attempt to paralellize, doesn't work
+    
 #     with tqdm.tqdm(total=n_iter) as pbar:
     
 #       with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -193,30 +241,31 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
 #               pbar.update(1)
       
 #     Non-parallel version
-    for i in tqdm.tqdm(range(n_iter)):
-        # sample mapping
-        mapping, _ = produce_random_cluster_to_label(choices, probs)
-        pred_mapped = np.array(list(map(mapping, pred_list)))
-        pred_sub = pred_mapped[mask]
-        prec.append(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-        rec.append(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-        f1.append(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+#     for i in tqdm.tqdm(range(n_iter)):
+#         # sample mapping
+#         mapping, _ = produce_random_cluster_to_label(choices, probs)
+#         pred_mapped = np.array(list(map(mapping, pred_list)))
+#         pred_sub = pred_mapped[mask]
+#         prec.append(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+#         rec.append(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
+#         f1.append(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
         
-        pred_bound = find_boundaries(pred_mapped)
-        bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
-                                                              pred_bound,
-                                                              gt_mask_boundaries,
-                                                              tolerance_frames = boundary_tolerance_frames
-                                                             )
-        boundary_prec.append(bprec)
-        brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
-                                                          pred_bound,
-                                                          gt_mask_boundaries,
-                                                          tolerance_frames = boundary_tolerance_frames
-                                                         )
-        boundary_rec.append(brec)
-        boundary_f1.append(compute_f1(bprec, brec))
-        boundary_R.append(compute_R(bprec, brec))
+#         pred_bound = find_boundaries(pred_mapped)
+#         bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
+#                                                               pred_bound,
+#                                                               gt_mask_boundaries,
+#                                                               tolerance_frames = boundary_tolerance_frames
+#                                                              )
+#         boundary_prec.append(bprec)
+#         brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
+#                                                           pred_bound,
+#                                                           gt_mask_boundaries,
+#                                                           tolerance_frames = boundary_tolerance_frames
+#                                                          )
+#         boundary_rec.append(brec)
+#         boundary_f1.append(compute_f1(bprec, brec))
+#         boundary_R.append(compute_R(bprec, brec))
+###
         
     results['averaged_classification_precision'] = np.mean(prec)
     results['averaged_classification_recall'] = np.mean(rec)

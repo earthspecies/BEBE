@@ -34,7 +34,7 @@ def expand_config(config):
     
   elif config['model'] == 'vame':
     config['save_latents'] = True
-    config['predict_and_evaluate'] = False # We will read in discovered latents to kmeans model
+    config['predict_and_evaluate'] = True # Equivalent to putting discovered latents into kmeans model
 
   else:
     raise ValueError('model type not recognized')
@@ -144,7 +144,7 @@ def accept_default_model_configs(config):
   assert 'evaluation' in config
   
   if 'n_samples' not in config['evaluation']:
-    config['evaluation']['n_samples'] = 0 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
+    config['evaluation']['n_samples'] = 100 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
     
   model_type = config['model']
   model_config_name = model_type + "_config"

@@ -1,4 +1,4 @@
-experiment_name: kmeans
+experiment_name: kmeans28
 input_vars:
 - AccX
 - AccY
@@ -13,7 +13,7 @@ input_vars:
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
 model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
-num_clusters: 14
+num_clusters: 28
 read_latents: True
 data_latents_fp_glob: 
 - /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles/whiten_turtles/latents/*.npy

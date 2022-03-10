@@ -77,7 +77,10 @@ class vame():
     np.save(temp_train_fp, train_data)
     
     temp_test_fp = os.path.join(self.temp_data_dir, 'test_seq.npy')
-    np.save(temp_test_fp, test_data)
+    #np.save(temp_test_fp, test_data)
+    # We will use train data for model selection, to not affect validity of test metrics
+    # Better would be to have a explicit val set
+    np.save(temp_test_fp, train_data)
     
     # Modify config_vame as necessary
     num_features_vame = np.shape(train_data)[1] + 2

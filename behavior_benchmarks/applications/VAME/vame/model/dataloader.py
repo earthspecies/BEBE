@@ -52,11 +52,11 @@ class SEQUENCE_DATASET(Dataset):
             print('Initialize test data. Datapoints %d' %self.data_points)
         
     def __len__(self):        
-        return self.data_points - self.temporal_window
+        return self.data_points
 
     def __getitem__(self, index):
         temp_window = self.temporal_window
-        start = index
+        start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
         end = start+ temp_window
         
         #sequence = self.X[:,start:end] 

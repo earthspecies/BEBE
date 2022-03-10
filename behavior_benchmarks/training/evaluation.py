@@ -15,6 +15,7 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   ## Compute evaluation metrics
   
   # information-theoretic
+  
   y_true_sub = y_true[mask]
   y_pred_sub = y_pred[mask]
   homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
