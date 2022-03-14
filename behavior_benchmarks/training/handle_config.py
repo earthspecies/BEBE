@@ -35,6 +35,10 @@ def expand_config(config):
   elif config['model'] == 'vame':
     config['save_latents'] = True
     config['predict_and_evaluate'] = True # Equivalent to putting discovered latents into kmeans model
+    
+  elif config['model'] == 'hmm':
+    config['save_latents'] = False # we treat hmm latent states as predictions
+    config['predict_and_evaluate'] = True
 
   else:
     raise ValueError('model type not recognized')
@@ -190,6 +194,9 @@ def accept_default_model_configs(config):
                            }
     
   elif model_type == 'whiten':
+    default_model_config = {}
+  
+  elif model_type == 'hmm':
     default_model_config = {}
     
   ### apply defaults if unspecified

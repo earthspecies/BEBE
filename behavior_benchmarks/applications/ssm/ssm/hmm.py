@@ -302,6 +302,7 @@ class HMM(object):
             pi0 = self.init_state_distn.initial_state_distn
             Ps = self.transitions.transition_matrices(data, input, mask, tag)
             log_likes = self.observations.log_likelihoods(data, input, mask, tag)
+            
             ll += hmm_normalizer(pi0, Ps, log_likes)
             assert np.isfinite(ll)
         return ll
@@ -325,6 +326,7 @@ class HMM(object):
             pi0 = self.init_state_distn.initial_state_distn
             log_Ps = self.transitions.log_transition_matrices(data, input, mask, tag)
             log_likes = self.observations.log_likelihoods(data, input, mask, tag)
+            
 
             ell += np.sum(Ez[0] * np.log(pi0))
             ell += np.sum(Ezzp1 * log_Ps)

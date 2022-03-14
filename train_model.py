@@ -66,6 +66,9 @@ def main(config):
     
   elif config['model'] == 'whiten':
     model = models.whiten(config)
+    
+  elif config['model'] == 'hmm':
+    model = models.hmm(config)
 
   else:
     raise ValueError('model type not recognized')
