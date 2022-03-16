@@ -197,7 +197,12 @@ def accept_default_model_configs(config):
     default_model_config = {}
   
   elif model_type == 'hmm':
-    default_model_config = {}
+    default_model_config = {'time_bins' : 2500, 
+                            'prior_wait_sec' : 5., 
+                            'sticky_prior_strength' : 0., 
+                            'N_iters' : 50, 
+                            'lags' : 1
+                           }
     
   ### apply defaults if unspecified
       
