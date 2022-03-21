@@ -1,0 +1,36 @@
+experiment_name: gmm
+input_vars:
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/studd_squirrels
+model: gmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/studd_squirrels
+num_clusters: 10
+
+gmm_config:
+  max_iter: 100
+  n_init: 10
+  
+evaluation:
+  boundary_tolerance_sec: 1.0
+
+
+
+# config = {'experiment_name' : 'gmm_test',
+#          'model' : 'gmm',
+#          'num_components' : 8,
+#          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
+#          'input_vars' : ['AccX',
+#                          'AccY',
+#                          'AccZ',
+#                          'GyrX',
+#                          'GyrY',
+#                          'GyrZ',
+#                          'Depth'], 
+#          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
+#          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
+#          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
