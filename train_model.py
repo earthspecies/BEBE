@@ -69,6 +69,9 @@ def main(config):
     
   elif config['model'] == 'hmm':
     model = models.hmm(config)
+    
+  elif config['model'] == 'supervised_nn':
+    model = models.supervised_nn(config)
 
   else:
     raise ValueError('model type not recognized')

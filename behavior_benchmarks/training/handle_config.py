@@ -39,6 +39,10 @@ def expand_config(config):
   elif config['model'] == 'hmm':
     config['save_latents'] = False # we treat hmm latent states as predictions
     config['predict_and_evaluate'] = True
+    
+  elif config['model'] == 'supervised_nn':
+    config['save_latents'] = False
+    config['predict_and_evaluate'] = True
 
   else:
     raise ValueError('model type not recognized')
@@ -203,6 +207,9 @@ def accept_default_model_configs(config):
                             'N_iters' : 50, 
                             'lags' : 1
                            }
+    
+  elif model_type == 'supervised_nn':
+    default_model_config = {}
     
   ### apply defaults if unspecified
       
