@@ -200,7 +200,8 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     
     
     print("Sampling to estimate averaged mapping based scores")
-    
+  ### Second attempt to parallelize:
+  
     with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() + 4) as executor:
       futures = list(tqdm.tqdm(executor.map(compute_single_score_randomized,
                                             itertools.repeat(choices, n_iter),
@@ -265,7 +266,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
 #         boundary_rec.append(brec)
 #         boundary_f1.append(compute_f1(bprec, brec))
 #         boundary_R.append(compute_R(bprec, brec))
-###
+##
         
     results['averaged_classification_precision'] = np.mean(prec)
     results['averaged_classification_recall'] = np.mean(rec)

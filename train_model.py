@@ -135,7 +135,7 @@ def main(config):
     rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
 
     for file_ids in [config['train_file_ids'], config['test_file_ids']]:
-      for filename in list(rng.choice(file_ids, 3, replace = False)):
+      for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
         predictions_fp = os.path.join(config['predictions_dir'], filename)
         track_length = len(np.load(predictions_fp))
         if file_ids == config['train_file_ids']:

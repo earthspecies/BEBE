@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end_sample = 20000, vars_to_plot = None, target_fp = None):
     input_data = np.load(data_fp)
@@ -59,6 +60,14 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
     axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv')
     axes[-2].set_ylabel("Discovered motif number")
+    #axes[-2].set_yticks(range(config['num_clusters']))
+    
+    axes[-2].set_ylim(bottom=-0.5, top = config['num_clusters']-0.5)
+    major_tick_spacing = max(1, config['num_clusters'] // 8)
+    axes[-2].yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+    axes[-2].yaxis.set_minor_locator(MultipleLocator(1))
+    
+    
     axes[-2].set_title("Discovered behavioral motifs")
     axes[-2].tick_params(
         axis='x',          # changes apply to the x-axis
