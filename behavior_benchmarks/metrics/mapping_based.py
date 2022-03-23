@@ -330,7 +330,48 @@ def get_MAP_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance
     results['MAP_boundary_R'] = float(compute_R(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
     return results
   
-def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100):
+def get_supervised_scores(gt, pred, unknown_value=0, boundary_tolerance_frames = 0):
+    # Gets evaluation scores, assuming we have used a supervised model
+    results = {}
+    
+    ## To avoid issues with macro averaging in sklearn, we have to make sure there are no 'unknowns' that are predicted by the model
+    assert unknown_value == 0, "not implemented for unknown value other than 0"
+    unknown_shift = (pred == unknown_value).astype(int)
+    pred = pred + unknown_shift
+    assert np.all(pred < 5)
+    
+    ### Get optimized classification scores
+    mask = find_unknown_mask(gt, unknown_value = unknown_value)
+    gt_sub = gt[mask]
+    pred_sub = pred[mask]
+    
+    results['classification_precision'] = float(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    results['classification_recall'] = float(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    results['classification_f1'] = float(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    
+    ### Get optimized segmentation boundary scores    
+    gt_bound = find_boundaries(gt)
+    # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
+    gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
+    gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
+    gt_mask_boundaries = gt_mask_boundaries.astype(bool)
+    
+    pred_bound = find_boundaries(pred)
+    results['boundary_precision'] = float(boundary_precision_with_unknown_and_tolerance(gt_bound, 
+                                                                                            pred_bound, 
+                                                                                            gt_mask_boundaries, 
+                                                                                            tolerance_frames = boundary_tolerance_frames
+                                                                                           ))
+    results['boundary_recall'] = float(boundary_recall_with_unknown_and_tolerance(gt_bound,
+                                                                                      pred_bound,
+                                                                                      gt_mask_boundaries,
+                                                                                      tolerance_frames = boundary_tolerance_frames
+                                                                                     ))
+    results['boundary_f1'] = float(compute_f1(results['boundary_precision'], results['boundary_recall']))
+    results['boundary_R'] = float(compute_R(results['boundary_precision'], results['boundary_recall']))
+    return results
+  
+def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100, supervised = False):
     # Main function to produce mapping based scores
     
     # Compute choices and probabilities, essentially from confusion matrix
@@ -360,6 +401,12 @@ def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance
                                                             probs, 
                                                             unknown_value = unknown_value, 
                                                             boundary_tolerance_frames = boundary_tolerance_frames)
+    
+    if supervised:
+      mapping_based_score_dict['supervised_scores'] = get_supervised_scores(gt,
+                                                                            pred,
+                                                                            unknown_value=unknown_value,
+                                                                            boundary_tolerance_frames = boundary_tolerance_frames)
     
     return mapping_based_score_dict, choices, probs
     

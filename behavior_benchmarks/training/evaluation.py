@@ -15,7 +15,6 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   ## Compute evaluation metrics
   
   # information-theoretic
-  
   y_true_sub = y_true[mask]
   y_pred_sub = y_pred[mask]
   homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
@@ -26,6 +25,12 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   num_classes = len(config['metadata']['label_names'])
   boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
+  # scores for supervised model
+  if config['model'] == 'supervised_nn':
+    supervised = True
+  else: 
+    supervised = False
+  
   mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
                                                                y_pred, 
                                                                num_clusters, 
@@ -34,10 +39,15 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
                                                                unknown_value = unknown_label,
                                                                choices = choices,
                                                                probs = probs,
-                                                               n_samples = n_samples
+                                                               n_samples = n_samples, 
+                                                               supervised = supervised
                                                               )
-  evaluation_dict['averaged_scores'] = mapping_based['averaged_scores']
-  evaluation_dict['MAP_scores'] = mapping_based['MAP_scores']
+  for key in mapping_based:
+    evaluation_dict[key] = mapping_based[key]
+#  evaluation_dict['averaged_scores'] = mapping_based['averaged_scores']
+#  evaluation_dict['MAP_scores'] = mapping_based['MAP_scores']
+  
+  
   
   ## Save
   
