@@ -200,27 +200,27 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     
     
     print("Sampling to estimate averaged mapping based scores")
-  ### Second attempt to parallelize:
+#   ### Second attempt to parallelize, gets killed:
   
-    with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() + 4) as executor:
-      futures = list(tqdm.tqdm(executor.map(compute_single_score_randomized,
-                                            itertools.repeat(choices, n_iter),
-                                            itertools.repeat(probs, n_iter),
-                                            itertools.repeat(pred, n_iter), 
-                                            itertools.repeat(mask, n_iter), 
-                                            itertools.repeat(gt_sub, n_iter), 
-                                            itertools.repeat(gt_bound, n_iter),
-                                            itertools.repeat(gt_mask_boundaries, n_iter),
-                                            itertools.repeat(boundary_tolerance_frames, n_iter)), total = n_iter))
-    for future in futures:
-      single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future
-      prec.append(single_prec)
-      rec.append(single_rec)
-      f1.append(single_f1)
-      boundary_prec.append(single_bprec)
-      boundary_rec.append(single_brec)
-      boundary_f1.append(single_bf1)
-      boundary_R.append(single_bR)
+#     with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() + 4) as executor:
+#       futures = list(tqdm.tqdm(executor.map(compute_single_score_randomized,
+#                                             itertools.repeat(choices, n_iter),
+#                                             itertools.repeat(probs, n_iter),
+#                                             itertools.repeat(pred, n_iter), 
+#                                             itertools.repeat(mask, n_iter), 
+#                                             itertools.repeat(gt_sub, n_iter), 
+#                                             itertools.repeat(gt_bound, n_iter),
+#                                             itertools.repeat(gt_mask_boundaries, n_iter),
+#                                             itertools.repeat(boundary_tolerance_frames, n_iter)), total = n_iter))
+#     for future in futures:
+#       single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future
+#       prec.append(single_prec)
+#       rec.append(single_rec)
+#       f1.append(single_f1)
+#       boundary_prec.append(single_bprec)
+#       boundary_rec.append(single_brec)
+#       boundary_f1.append(single_bf1)
+#       boundary_R.append(single_bR)
     
     
     ###first attempt to paralellize, doesn't work
@@ -241,9 +241,18 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
 #               boundary_R.append(single_bR)
 #               pbar.update(1)
       
-#     Non-parallel version
-#     for i in tqdm.tqdm(range(n_iter)):
-#         # sample mapping
+
+    for i in tqdm.tqdm(range(n_iter)):
+        single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames)
+        prec.append(single_prec)
+        rec.append(single_rec)
+        f1.append(single_f1)
+        boundary_prec.append(single_bprec)
+        boundary_rec.append(single_brec)
+        boundary_f1.append(single_bf1)
+        boundary_R.append(single_bR)
+        #     Non-vectorized
+        # sample mapping
 #         mapping, _ = produce_random_cluster_to_label(choices, probs)
 #         pred_mapped = np.array(list(map(mapping, pred_list)))
 #         pred_sub = pred_mapped[mask]
@@ -266,7 +275,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
 #         boundary_rec.append(brec)
 #         boundary_f1.append(compute_f1(bprec, brec))
 #         boundary_R.append(compute_R(bprec, brec))
-##
+# ##
         
     results['averaged_classification_precision'] = np.mean(prec)
     results['averaged_classification_recall'] = np.mean(rec)
