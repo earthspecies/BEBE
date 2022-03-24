@@ -26,8 +26,8 @@ class supervised_nn():
     self.downsizing_factor = 4
     self.lr = 1e-3
     self.weight_decay = 1e-4
-    
-    
+    self.scheduler_epochs_between_step = 25
+    self.n_epochs = 2
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -39,7 +39,7 @@ class supervised_nn():
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = NeuralNetwork(self.n_features, self.n_classes).to(device)
+    self.model = LSTM_Classifier(self.n_features, self.n_classes).to(device)
     print(self.model)
   
   def load_model_inputs(self, filepath, read_latents = False):
@@ -48,7 +48,7 @@ class supervised_nn():
       #return np.load(filepath)
     else:
       
-      return np.load(filepath)[:, self.cols_included].T #[n_features, n_samples]
+      return np.load(filepath)[:, self.cols_included] #[n_samples, n_features]
     
   def load_labels(self, filepath):
     labels = np.load(filepath)[:, self.label_idx].astype(int)
@@ -64,9 +64,9 @@ class supervised_nn():
       test_fps = self.config['test_data_fp']
     
     train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 1)
+    train_data = np.concatenate(train_data, axis = 0)
     test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
-    test_data = np.concatenate(test_data, axis = 1)
+    test_data = np.concatenate(test_data, axis = 0)
     
     train_labels = [self.load_labels(fp) for fp in train_fps]
     train_labels = np.concatenate(train_labels, axis = 0)
@@ -83,14 +83,14 @@ class supervised_nn():
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
     optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
-    #scheduler = ExponentialLR(optimizer, gamma=0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, self.scheduler_epochs_between_step, gamma=0.1, last_epoch=- 1, verbose=False)
     
     train_loss = []
     test_loss = []
     train_acc = []
     test_acc = []
     
-    epochs = 10
+    epochs = self.n_epochs
     for t in range(epochs):
         print(f"Epoch {t}\n-------------------------------")
         l, a = self.train_epoch(train_dataloader, loss_fn, optimizer)
@@ -99,8 +99,7 @@ class supervised_nn():
         l, a = self.test_epoch(test_dataloader, loss_fn)
         test_loss.append(l)
         test_acc.append(a)
-        #scheduler.step()
-        #test(test_dataloader, model, loss_fn)
+        scheduler.step()
     print("Done!")
     
     # Save training progress
@@ -206,31 +205,14 @@ class supervised_nn():
     predictions, latents = self.predict(inputs)
     return predictions, latents
 
-class NeuralNetwork(nn.Module):
+class LSTM_Classifier(nn.Module):
     def __init__(self, n_features, n_classes):
-        super(NeuralNetwork, self).__init__()
-        self.conv_relu_stack = nn.Sequential(
-            nn.Conv1d(n_features, 8, 15, padding = 'same'),
-            nn.ReLU(),
-            nn.Conv1d(8, 8, 15, padding = 'same'),
-            nn.ReLU(),
-            nn.Conv1d(8, 8, 15, padding = 'same'),
-            nn.ReLU(),
-            nn.Conv1d(8, 8, 15, padding = 'same'),
-            nn.ReLU(),
-            nn.Conv1d(8, 8, 15, padding = 'same'),
-            nn.ReLU(),
-            nn.Conv1d(8, n_classes, 15, padding = 'same') 
-        )
+        super(LSTM_Classifier, self).__init__()
         
         self.head = nn.Conv1d(16, n_classes, 3, padding = 'same')
-        
         self.lstm = nn.LSTM(n_features, 8, num_layers = 1, bidirectional = True, batch_first = True)
 
     def forward(self, x):
-        #x = self.flatten(x)
-        # logits = self.conv_relu_stack(x)
-        
         hidden = self.lstm(x)[0]
         hidden = torch.transpose(hidden, 1,2)
         logits = self.head(hidden)

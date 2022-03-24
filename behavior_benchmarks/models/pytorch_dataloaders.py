@@ -9,7 +9,7 @@ class BEHAVIOR_DATASET(Dataset):
         self.data = data
         self.labels = labels
         
-        self.data_points = np.shape(self.data)[1]
+        self.data_points = np.shape(self.data)[0]
         
         if train:
             print('Initialize train data. Datapoints %d' %self.data_points)
@@ -23,7 +23,7 @@ class BEHAVIOR_DATASET(Dataset):
         start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
         end = start+ self.temporal_window
         
-        data_item = self.data[:, start:end].T
+        data_item = self.data[start:end, :]
         labels_item = self.labels[start:end] #[:, start:end]
             
         return torch.from_numpy(data_item), torch.from_numpy(labels_item)
