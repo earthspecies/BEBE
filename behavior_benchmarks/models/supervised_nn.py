@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 import torchmetrics
 from behavior_benchmarks.models.pytorch_dataloaders import BEHAVIOR_DATASET
 import tqdm
+from matplotlib import pyplot as plt
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -21,7 +22,13 @@ class supervised_nn():
     self.metadata = config['metadata']
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
+    ##
     self.downsizing_factor = 4
+    self.lr = 1e-3
+    self.weight_decay = 1e-4
+    
+    
+    ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
@@ -68,28 +75,63 @@ class supervised_nn():
     
     ## TODO: include idx for file number so we don't sample from multiple files
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, 80)
-    train_dataloader = DataLoader(train_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 4)
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, 512)
+    train_dataloader = DataLoader(train_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 0)
     
-    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, 80)
-    test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 4)
+    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, 512)
+    test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
-    optimizer = torch.optim.SGD(self.model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
+    #scheduler = ExponentialLR(optimizer, gamma=0.9)
+    
+    train_loss = []
+    test_loss = []
+    train_acc = []
+    test_acc = []
     
     epochs = 10
     for t in range(epochs):
         print(f"Epoch {t}\n-------------------------------")
-        self.train_epoch(train_dataloader, loss_fn, optimizer)
-        self.test_epoch(test_dataloader, loss_fn)
+        l, a = self.train_epoch(train_dataloader, loss_fn, optimizer)
+        train_loss.append(l)
+        train_acc.append(a)
+        l, a = self.test_epoch(test_dataloader, loss_fn)
+        test_loss.append(l)
+        test_acc.append(a)
+        #scheduler.step()
         #test(test_dataloader, model, loss_fn)
     print("Done!")
+    
+    # Save training progress
+    plt.plot(train_loss, label= 'train', marker = '.')
+    plt.plot(test_loss, label = 'test', marker = '.')
+    plt.title("Cross Entropy Loss")
+    plt.xlabel('Epoch')
+    plt.xticks(np.arange(len(train_loss)))
+    plt.ylabel('Loss')
+    loss_fp = os.path.join(self.config['output_dir'], 'loss.png')
+    plt.savefig(loss_fp)
+    plt.close()
+    
+    # Save training progress
+    plt.plot(train_acc, label= 'train', marker = '.')
+    plt.plot(test_acc, label = 'test', marker = '.')
+    plt.title("Mean accuracy")
+    plt.xlabel('Epoch')
+    plt.xticks(np.arange(len(train_acc)))
+    plt.ylabel('Accuracy')
+    acc_fp = os.path.join(self.config['output_dir'], 'acc.png')
+    plt.savefig(acc_fp)
+    plt.close()
+    
     ###
     
   def train_epoch(self, dataloader, loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.model.train()
-    f1_score = torchmetrics.F1Score(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
+    # Use accuracy instead of f1, since torchmetrics doesn't handle masking for precision as we want it to
+    acc_score = torchmetrics.Accuracy(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
     train_loss = 0
     num_batches_seen = 0
 
@@ -104,7 +146,7 @@ class supervised_nn():
         loss = loss_fn(pred, y)
         train_loss += loss.item()
 
-        f1_score.update(pred.cpu(), y.cpu())
+        acc_score.update(pred.cpu(), y.cpu())
 
         # Backpropagation
         optimizer.zero_grad()
@@ -113,16 +155,18 @@ class supervised_nn():
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
         
-    f1 = f1_score.compute()
+    acc = acc_score.compute()
     train_loss = train_loss / num_batches_seen
-    print("Train loss: %f, Train f1: %f" % (train_loss, f1))
+    print("Train loss: %f, Train accuracy: %f" % (train_loss, acc))
+    return train_loss, acc
     
   def test_epoch(self, dataloader, loss_fn):
     size = len(dataloader.dataset)
     num_batches_seen = 0
     self.model.eval()
     test_loss = 0
-    f1_score = torchmetrics.F1Score(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
+    # Use accuracy instead of f1, since torchmetrics doesn't handle masking for precision as we want it to
+    acc_score = torchmetrics.Accuracy(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
     
     with torch.no_grad():
         for i, (X, y) in enumerate(dataloader):
@@ -131,12 +175,12 @@ class supervised_nn():
             num_batches_seen += 1
             X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
             pred = self.model(X)
-            f1_score.update(pred.cpu(), y.cpu())
+            acc_score.update(pred.cpu(), y.cpu())
             test_loss += loss_fn(pred, y).item()
     test_loss /= num_batches_seen
-    f1 = f1_score.compute()
-    print("Test loss: %f, Test f1: %f" % (test_loss, f1))
-    
+    acc = acc_score.compute()
+    print("Test loss: %f, Test accuracy: %f" % (test_loss, acc))
+    return test_loss, acc
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
@@ -147,6 +191,7 @@ class supervised_nn():
     ###
     self.model.eval()
     with torch.no_grad():
+      data = data.T
       data = np.expand_dims(data, axis =0)
       data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
       preds = self.model(data)
@@ -177,9 +222,18 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
             nn.Conv1d(8, n_classes, 15, padding = 'same') 
         )
+        
+        self.head = nn.Conv1d(16, n_classes, 3, padding = 'same')
+        
+        self.lstm = nn.LSTM(n_features, 8, num_layers = 1, bidirectional = True, batch_first = True)
 
     def forward(self, x):
         #x = self.flatten(x)
-        logits = self.conv_relu_stack(x)
+        # logits = self.conv_relu_stack(x)
+        
+        hidden = self.lstm(x)[0]
+        hidden = torch.transpose(hidden, 1,2)
+        logits = self.head(hidden)
+                            
         return logits
 

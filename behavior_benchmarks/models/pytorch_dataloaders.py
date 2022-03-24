@@ -23,7 +23,7 @@ class BEHAVIOR_DATASET(Dataset):
         start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
         end = start+ self.temporal_window
         
-        data_item = self.data[:, start:end]
+        data_item = self.data[:, start:end].T
         labels_item = self.labels[start:end] #[:, start:end]
             
         return torch.from_numpy(data_item), torch.from_numpy(labels_item)
