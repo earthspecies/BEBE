@@ -23,11 +23,15 @@ class supervised_nn():
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
     ##
-    self.downsizing_factor = 4
-    self.lr = 1e-3
-    self.weight_decay = 1e-4
-    self.scheduler_epochs_between_step = 25
-    self.n_epochs = 2
+    self.downsizing_factor = self.model_config['downsizing_factor']
+    self.lr = self.model_config['lr']
+    self.weight_decay = self.model_config['weight_decay']
+    self.scheduler_epochs_between_step = self.model_config['scheduler_epochs_between_step']
+    self.n_epochs = self.model_config['n_epochs']
+    self.hidden_size = self.model_config['hidden_size']
+    self.num_layers = self.model_config['num_layers']
+    self.temporal_window_samples = self.model_config['temporal_window_samples']
+    self.batch_size = self.model_config['batch_size']
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -39,7 +43,7 @@ class supervised_nn():
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = LSTM_Classifier(self.n_features, self.n_classes).to(device)
+    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers).to(device)
     print(self.model)
   
   def load_model_inputs(self, filepath, read_latents = False):
@@ -64,22 +68,20 @@ class supervised_nn():
       test_fps = self.config['test_data_fp']
     
     train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 0)
+    #train_data = np.concatenate(train_data, axis = 0)
     test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
-    test_data = np.concatenate(test_data, axis = 0)
+    #test_data = np.concatenate(test_data, axis = 0)
     
     train_labels = [self.load_labels(fp) for fp in train_fps]
-    train_labels = np.concatenate(train_labels, axis = 0)
+    #train_labels = np.concatenate(train_labels, axis = 0)
     test_labels = [self.load_labels(fp) for fp in test_fps]
-    test_labels = np.concatenate(test_labels, axis = 0)
+    #test_labels = np.concatenate(test_labels, axis = 0)
     
-    ## TODO: include idx for file number so we don't sample from multiple files
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples)
+    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, 512)
-    train_dataloader = DataLoader(train_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 0)
-    
-    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, 512)
-    test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=True, drop_last=True, num_workers = 0)
+    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples)
+    test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
     optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
@@ -190,7 +192,7 @@ class supervised_nn():
     ###
     self.model.eval()
     with torch.no_grad():
-      data = data.T
+      data = data
       data = np.expand_dims(data, axis =0)
       data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
       preds = self.model(data)
@@ -206,15 +208,20 @@ class supervised_nn():
     return predictions, latents
 
 class LSTM_Classifier(nn.Module):
-    def __init__(self, n_features, n_classes):
+    def __init__(self, n_features, n_classes, hidden_size, num_layers):
         super(LSTM_Classifier, self).__init__()
         
-        self.head = nn.Conv1d(16, n_classes, 3, padding = 'same')
-        self.lstm = nn.LSTM(n_features, 8, num_layers = 1, bidirectional = True, batch_first = True)
+        self.head = nn.Conv1d(2*hidden_size, n_classes, 1, padding = 'same')
+        self.lstm = nn.LSTM(n_features, hidden_size, num_layers = num_layers, bidirectional = True, batch_first = True)
+        self.bn = torch.nn.BatchNorm1d(n_features)
 
     def forward(self, x):
+        
+        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
+        x = self.bn(x)
+        x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
         hidden = self.lstm(x)[0]
-        hidden = torch.transpose(hidden, 1,2)
+        hidden = torch.transpose(hidden, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         logits = self.head(hidden)
                             
         return logits

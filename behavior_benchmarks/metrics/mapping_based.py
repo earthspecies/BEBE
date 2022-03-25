@@ -338,7 +338,6 @@ def get_supervised_scores(gt, pred, unknown_value=0, boundary_tolerance_frames =
     assert unknown_value == 0, "not implemented for unknown value other than 0"
     unknown_shift = (pred == unknown_value).astype(int)
     pred = pred + unknown_shift
-    assert np.all(pred < 5)
     
     ### Get optimized classification scores
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
