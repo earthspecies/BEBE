@@ -217,7 +217,8 @@ def accept_default_model_configs(config):
                             'hidden_size' : 8,
                             'num_layers' : 1,
                             'temporal_window_samples' : 512, # used for training only, to subselect
-                            'batch_size' : 128
+                            'batch_size' : 512,
+                            'dropout' : 0
                            }
     
   ### apply defaults if unspecified

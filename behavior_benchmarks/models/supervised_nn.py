@@ -14,6 +14,9 @@ from matplotlib import pyplot as plt
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
+def _count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 class supervised_nn():
   def __init__(self, config):
     self.config = config
@@ -32,6 +35,7 @@ class supervised_nn():
     self.num_layers = self.model_config['num_layers']
     self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.batch_size = self.model_config['batch_size']
+    self.dropout = self.model_config['dropout']
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -43,8 +47,10 @@ class supervised_nn():
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers).to(device)
-    print(self.model)
+    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers, self.dropout).to(device)
+    #print(self.model)
+    print('Model parameters:')
+    print(_count_parameters(self.model))
   
   def load_model_inputs(self, filepath, read_latents = False):
     if read_latents:
@@ -135,11 +141,12 @@ class supervised_nn():
     acc_score = torchmetrics.Accuracy(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
     train_loss = 0
     num_batches_seen = 0
-
-    with tqdm.tqdm(dataloader, unit = "batch") as tepoch:
+    
+    num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
+    with tqdm.tqdm(dataloader, unit = "batch", total = num_batches_todo) as tepoch:
       for i, (X, y) in enumerate(tepoch):
-        if i % self.downsizing_factor != 0 :
-          continue
+        if i == num_batches_todo :
+          break
         num_batches_seen += 1
         X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
         # Compute prediction error
@@ -170,9 +177,10 @@ class supervised_nn():
     acc_score = torchmetrics.Accuracy(num_classes = self.n_classes, average = 'macro', mdmc_average = 'global', ignore_index = self.unknown_label)
     
     with torch.no_grad():
+        num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
         for i, (X, y) in enumerate(dataloader):
-            if i % self.downsizing_factor != 0:
-              continue
+            if i == num_batches_todo :
+              break
             num_batches_seen += 1
             X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
             pred = self.model(X)
@@ -208,17 +216,42 @@ class supervised_nn():
     return predictions, latents
 
 class LSTM_Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, hidden_size, num_layers):
+    def __init__(self, n_features, n_classes, hidden_size, num_layers, dropout):
         super(LSTM_Classifier, self).__init__()
         
         self.head = nn.Conv1d(2*hidden_size, n_classes, 1, padding = 'same')
-        self.lstm = nn.LSTM(n_features, hidden_size, num_layers = num_layers, bidirectional = True, batch_first = True)
+        self.lstm = nn.LSTM(n_features + 64, hidden_size, num_layers = num_layers, bidirectional = True, batch_first = True, dropout = dropout)
+        
+        self.conv1 = nn.Sequential(
+          nn.Conv1d(n_features,64,7, padding = 'same'),
+          torch.nn.BatchNorm1d(64),
+          nn.ReLU(),
+          nn.Conv1d(64,64,7, padding = 'same'),
+          torch.nn.BatchNorm1d(64),
+          nn.ReLU()
+        )
+        
+        self.conv2 = nn.Sequential(
+          nn.Conv1d(n_features + 64,64,7, padding = 'same'),
+          torch.nn.BatchNorm1d(64),
+          nn.ReLU(),
+          nn.Conv1d(64,64,7, padding = 'same'),
+          torch.nn.BatchNorm1d(64),
+          nn.ReLU()
+        )
+        
         self.bn = torch.nn.BatchNorm1d(n_features)
 
     def forward(self, x):
         
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
-        x = self.bn(x)
+        norm_inputs = self.bn(x)
+        
+        x = self.conv1(norm_inputs)
+        x = torch.cat([x, norm_inputs], axis = 1)
+        x = self.conv2(x)
+        x = torch.cat([x, norm_inputs], axis = 1)
+        
         x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
         hidden = self.lstm(x)[0]
         hidden = torch.transpose(hidden, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
