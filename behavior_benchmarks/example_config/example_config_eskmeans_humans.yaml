@@ -1,12 +1,12 @@
 experiment_name: eskmeans
 eskmeans_config:
-  boundary_init_lambda: 10.0
+  boundary_init_lambda: 20.0
   embed_length: 10
-  landmark_hop_size: 10
+  landmark_hop_size: 5
   n_epochs: 10
-  n_landmarks_max: 15
+  n_landmarks_max: 30
   batch_size: 2
-  time_power_term: .95
+  time_power_term: .85
 input_vars:
 - AccX
 - AccY

@@ -19,30 +19,37 @@ def expand_config(config):
   if config['model'] == 'gmm':
     config['save_latents'] = False
     config['predict_and_evaluate'] = True
+    config['unsupervised'] = True
     
   elif config['model'] == 'kmeans':
     config['save_latents'] = False
     config['predict_and_evaluate'] = True
+    config['unsupervised'] = True
       
   elif config['model'] == 'whiten':
     config['save_latents'] = True
     config['predict_and_evaluate'] = False
+    config['unsupervised'] = True
     
   elif config['model'] == 'eskmeans':
     config['save_latents'] = False
     config['predict_and_evaluate'] = True
+    config['unsupervised'] = True
     
   elif config['model'] == 'vame':
     config['save_latents'] = True
     config['predict_and_evaluate'] = True # Equivalent to putting discovered latents into kmeans model
+    config['unsupervised'] = True
     
   elif config['model'] == 'hmm':
     config['save_latents'] = False # we treat hmm latent states as predictions
     config['predict_and_evaluate'] = True
+    config['unsupervised'] = True
     
   elif config['model'] == 'supervised_nn':
     config['save_latents'] = False
     config['predict_and_evaluate'] = True
+    config['unsupervised'] = False
 
   else:
     raise ValueError('model type not recognized')
@@ -53,6 +60,8 @@ def expand_config(config):
   # Unglob data filepaths and deal with splits
 
   train_data_fp = []
+  val_data_fp = []
+  dev_data_fp = []
   test_data_fp = []
   
   data_fp_glob = os.path.join(config['dataset_dir'], 'clip_data', '*.npy')
@@ -62,14 +71,24 @@ def expand_config(config):
     clip_id = fp.split('/')[-1].split('.')[0]
     if clip_id in config['metadata']['train_clip_ids']:
       train_data_fp.append(fp)
-    else:
+      dev_data_fp.append(fp)
+    elif clip_id in config['metadata']['val_clip_ids']:
+      val_data_fp.append(fp)
+      dev_data_fp.append(fp)
+    elif clip_id in config['metadata']['test_clip_ids']:
       test_data_fp.append(fp)
+    else:
+      raise ValueError("Unrecognized clip id, check dataset construction")
     
   train_data_fp.sort()
   test_data_fp.sort()
+  val_data_fp.sort()
+  dev_data_fp.sort()
   
   config['train_data_fp'] = train_data_fp
   config['test_data_fp'] = test_data_fp
+  config['val_data_fp'] = val_data_fp
+  config['dev_data_fp'] = dev_data_fp
   
   # If 'read_latents' is True, then we use the specified latent fp's as model inputs
   # The original data is still kept track of, so we can plot it and use the ground-truth labels
@@ -77,6 +96,8 @@ def expand_config(config):
     # We assume latent filenames are the same as data filenames. They are distinguished by their filepaths
     train_data_latents_fp = []
     test_data_latents_fp = []
+    val_data_latents_fp = []
+    dev_data_latents_fp = []
     
     for x in config['data_latents_fp_glob']:
       # Generate splits based on metadata
@@ -85,14 +106,24 @@ def expand_config(config):
         clip_id = fp.split('/')[-1].split('.')[0]
         if clip_id in config['metadata']['train_clip_ids']:
           train_data_latents_fp.append(fp)
-        else:
+          dev_data_latents_fp.append(fp)
+        elif clip_id in config['metadata']['val_clip_ids']:
+          val_data_latents_fp.append(fp)
+          dev_data_latents_fp.append(fp)
+        elif clip_id in config['metadata']['test_clip_ids']:
           test_data_latents_fp.append(fp)
+        else:
+          raise ValueError("Unrecognized clip id")
     
     train_data_latents_fp.sort()
     test_data_latents_fp.sort()
+    dev_data_latents_fp.sort()
+    val_data_latents_fp.sort()
     
     config['train_data_latents_fp'] = train_data_latents_fp
     config['test_data_latents_fp'] = test_data_latents_fp
+    config['val_data_latents_fp'] = val_data_latents_fp
+    config['dev_data_latents_fp'] = dev_data_latents_fp
   
   else:
     config['read_latents'] = False
@@ -110,11 +141,22 @@ def expand_config(config):
   
   train_file_ids = [] # file_ids are of the form clip_id.npy, could also call them "filenames"
   test_file_ids = []
+  val_file_ids = []
+  dev_file_ids = []
   
   for fp in config['train_data_fp']:
     file_id = fp.split('/')[-1]
     file_id_to_data_fp[file_id] = fp
     train_file_ids.append(file_id)
+    dev_file_ids.append(file_id)
+    if not config['read_latents']:
+      file_id_to_model_input_fp[file_id] = fp
+  
+  for fp in config['val_data_fp']:
+    file_id = fp.split('/')[-1]
+    file_id_to_data_fp[file_id] = fp
+    val_file_ids.append(file_id)
+    dev_file_ids.append(file_id)
     if not config['read_latents']:
       file_id_to_model_input_fp[file_id] = fp
       
@@ -129,6 +171,9 @@ def expand_config(config):
     for fp in config['train_data_latents_fp']:
       file_id = fp.split('/')[-1]
       file_id_to_model_input_fp[file_id] = fp
+    for fp in config['val_data_latents_fp']:
+      file_id = fp.split('/')[-1]
+      file_id_to_model_input_fp[file_id] = fp
     for fp in config['test_data_latents_fp']:
       file_id = fp.split('/')[-1]
       file_id_to_model_input_fp[file_id] = fp
@@ -137,11 +182,15 @@ def expand_config(config):
   
   train_file_ids.sort()
   test_file_ids.sort()
+  val_file_ids.sort()
+  dev_file_ids.sort()
   
   config['file_id_to_data_fp'] = file_id_to_data_fp
   config['file_id_to_model_input_fp'] = file_id_to_model_input_fp
   config['train_file_ids'] = train_file_ids
   config['test_file_ids'] = test_file_ids
+  config['val_file_ids'] = val_file_ids
+  config['dev_file_ids'] = dev_file_ids
   
   return config
 
@@ -209,11 +258,11 @@ def accept_default_model_configs(config):
                            }
     
   elif model_type == 'supervised_nn':
-    default_model_config = {'downsizing_factor' : 4,
-                            'lr' : 1e-3,
+    default_model_config = {'downsizing_factor' : 128,
+                            'lr' : 0.01,
                             'weight_decay' : 1e-4,
-                            'scheduler_epochs_between_step' : 25,
-                            'n_epochs' : 100,
+                            'scheduler_epochs_between_step' : 100,
+                            'n_epochs' : 200,
                             'hidden_size' : 8,
                             'num_layers' : 1,
                             'temporal_window_samples' : 512, # used for training only, to subselect

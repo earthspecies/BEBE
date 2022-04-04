@@ -28,19 +28,19 @@ class hmm():
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
+      dev_fps = self.config['dev_data_latents_fp']
     else:
-      train_fps = self.config['train_data_fp']
+      dev_fps = self.config['dev_data_fp']
     
     #######
   
-    train_data = []
-    for fp in train_fps:
+    dev_data = []
+    for fp in dev_fps:
       obs = self.load_model_inputs(fp, read_latents = self.read_latents)
       obs_list = [obs[i* self.time_bins: (i+1)* self.time_bins, :] for i in range(len(obs)//self.time_bins)]
-      train_data.extend(obs_list)
+      dev_data.extend(obs_list)
       
-    self.obs_dim = np.shape(train_data[0])[1]
+    self.obs_dim = np.shape(dev_data[0])[1]
     
     ###
     # Compute transition matrix prior probabilities
@@ -61,7 +61,7 @@ class hmm():
     # This is a bit strange how it's written
     
     prior_strength = self.model_config['sticky_prior_strength'] # 0 is non-informative prior, 1. is as if we already have num_transitions_train_seen-many samples of evidence for the prior 
-    num_transitions_train_seen = len(train_data) * (self.time_bins-1)
+    num_transitions_train_seen = len(dev_data) * (self.time_bins-1)
     
     prior_scaling_factor = prior_strength * num_transitions_train_seen
     
@@ -79,7 +79,7 @@ class hmm():
                         )  
       
     N_iters = self.model_config['N_iters']
-    hmm_lls = self.model.fit(train_data, 
+    hmm_lls = self.model.fit(dev_data, 
                              method= "em", 
                              num_iters=N_iters, 
                              # num_epochs = N_iters,

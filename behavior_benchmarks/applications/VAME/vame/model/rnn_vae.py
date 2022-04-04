@@ -181,9 +181,9 @@ def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red
 
     with torch.no_grad():
         for idx, data_item in tqdm.tqdm(enumerate(test_loader)):
-            if idx % downsizing_factor != 0:
-              # hop the window by downsizing_factor
-              continue
+            # if idx % downsizing_factor != 0:
+            #   # hop the window by downsizing_factor
+            #   continue
               
             # we're only going to infer, so no autograd at all required
             data_item = Variable(data_item)
@@ -213,6 +213,9 @@ def test(test_loader, epoch, model, optimizer, BETA, kl_weight, seq_len, mse_red
             mse_loss += rec_loss.item()
             kullback_loss += kl_loss.item()
             kmeans_losses += kmeans_loss
+            
+            if idx > len(test_loader)//downsizing_factor:
+              break
             
 
     print('Test loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}'.format(test_loss / idx,
@@ -334,11 +337,9 @@ def train_model(config):
     """ DATASET """
     trainset = SEQUENCE_DATASET(os.path.join(cfg['project_path'],"data", "train",""), data='train_seq.npy', train=True, temporal_window=TEMPORAL_WINDOW)
     testset = SEQUENCE_DATASET(os.path.join(cfg['project_path'],"data", "train",""), data='test_seq.npy', train=False, temporal_window=TEMPORAL_WINDOW)
-
-    ### Trying to do a vectorized dataloader
     
     train_loader = Data.DataLoader(trainset, batch_size=TRAIN_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
-    test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=False, drop_last=True, num_workers = 8)
+    test_loader = Data.DataLoader(testset, batch_size=TEST_BATCH_SIZE, shuffle=True, drop_last=True, num_workers = 8)
 
     #train_loader = Data.DataLoader(trainset, batch_size=None, shuffle=True, drop_last=True)
     #test_loader = Data.DataLoader(testset, batch_size=None, shuffle=True, drop_last=True)

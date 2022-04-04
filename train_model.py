@@ -90,7 +90,12 @@ def main(config):
   choices = None # choices and probs are parameters for the mapping based metrics, we discover them using the train set on the first loop through
   probs = None
   
-  for file_ids in [config['train_file_ids'], config['test_file_ids']]:
+  if config['unsupervised']:
+    to_consider = [config['dev_file_ids'], config['test_file_ids']]
+  else:
+    to_consider = [config['train_file_ids'], config['val_file_ids'], config['test_file_ids']]
+  
+  for file_ids in to_consider:
     print("Generating predictions & latents based on trained model")
     all_predictions = []
     all_labels = []
@@ -122,7 +127,13 @@ def main(config):
     if file_ids == config['train_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "train_confusion_matrix.png")
-    else:
+    elif file_ids == config['val_file_ids']:
+      eval_output_fp = os.path.join(config['output_dir'], 'val_eval.yaml')
+      confusion_target_fp = os.path.join(config['visualization_dir'], "val_confusion_matrix.png")
+    elif file_ids == config['dev_file_ids']:
+      eval_output_fp = os.path.join(config['output_dir'], 'dev_eval.yaml')
+      confusion_target_fp = os.path.join(config['visualization_dir'], "dev_confusion_matrix.png")
+    elif file_ids == config['test_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
       
@@ -137,13 +148,17 @@ def main(config):
   if config['predict_and_evaluate']:
     rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
 
-    for file_ids in [config['train_file_ids'], config['test_file_ids']]:
+    for file_ids in to_consider:
       for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
         predictions_fp = os.path.join(config['predictions_dir'], filename)
         track_length = len(np.load(predictions_fp))
         if file_ids == config['train_file_ids']:
           target_filename = filename.split('.')[0] + '-train-track_visualization.png'
-        else:
+        elif file_ids == config['val_file_ids']:
+          target_filename = filename.split('.')[0] + '-val-track_visualization.png'
+        elif file_ids == config['dev_file_ids']:
+          target_filename = filename.split('.')[0] + '-dev-track_visualization.png'
+        elif file_ids == config['test_file_ids']:
           target_filename = filename.split('.')[0] + '-test-track_visualization.png'
         target_fp = os.path.join(config['visualization_dir'], target_filename)
         data_fp = config['file_id_to_data_fp'][filename]

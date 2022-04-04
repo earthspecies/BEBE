@@ -255,12 +255,12 @@ class eskmeans(object):
     total_samples = 0
     
     if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
+      dev_fps = self.config['dev_data_latents_fp']
     else:
-      train_fps = self.config['train_data_fp']
+      dev_fps = self.config['dev_data_fp']
     
     
-    for fp in train_fps:
+    for fp in dev_fps:
         input_data = self.load_model_inputs(fp, read_latents = self.read_latents)
         len_track = np.shape(input_data)[0]
         total_samples += len_track

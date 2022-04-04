@@ -17,7 +17,7 @@ num_clusters: 28
 
 gmm_config:
   max_iter: 100
-  n_init: 10
+  n_init: 1
   
 evaluation:
   boundary_tolerance_sec: 1.0

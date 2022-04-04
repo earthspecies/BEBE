@@ -60,30 +60,29 @@ class vame():
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
+      dev_fps = self.config['dev_data_latents_fp']
       test_fps = self.config['test_data_latents_fp']
     else:
-      train_fps = self.config['train_data_fp']
+      dev_fps = self.config['dev_data_fp']
       test_fps = self.config['test_data_fp']
       
     # Save off temp files
-    train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 0)
+    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = np.concatenate(dev_data, axis = 0)
     
     test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
     test_data = np.concatenate(test_data, axis = 0)
     
-    temp_train_fp = os.path.join(self.temp_data_dir, 'train_seq.npy')
-    np.save(temp_train_fp, train_data)
+    temp_dev_fp = os.path.join(self.temp_data_dir, 'train_seq.npy')
+    np.save(temp_dev_fp, dev_data)
     
     temp_test_fp = os.path.join(self.temp_data_dir, 'test_seq.npy')
     #np.save(temp_test_fp, test_data)
-    # We will use train data for model selection, to not affect validity of test metrics
-    # Better would be to have a explicit val set
-    np.save(temp_test_fp, train_data)
+    # We will use dev data for model selection
+    np.save(temp_test_fp, dev_data)
     
     # Modify config_vame as necessary
-    num_features_vame = np.shape(train_data)[1] + 2
+    num_features_vame = np.shape(dev_data)[1] + 2
     
     with open(self.config_vame_fp) as file:
       config_vame = yaml.load(file, Loader=yaml.FullLoader)
@@ -94,7 +93,7 @@ class vame():
       yaml.dump(config_vame, file)
     
     # Free memory
-    del train_data
+    del dev_data
     del test_data
     
     # Train

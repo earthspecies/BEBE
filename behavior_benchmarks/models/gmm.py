@@ -24,14 +24,14 @@ class gmm():
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
+      dev_fps = self.config['dev_data_latents_fp']
     else:
-      train_fps = self.config['train_data_fp']
+      dev_fps = self.config['dev_data_fp']
     
-    train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 0)
+    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = np.concatenate(dev_data, axis = 0)
 
-    self.model.fit(train_data)
+    self.model.fit(dev_data)
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")

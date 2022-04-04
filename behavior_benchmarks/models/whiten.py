@@ -30,25 +30,25 @@ class whiten():
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
+      dev_fps = self.config['dev_data_latents_fp']
     else:
-      train_fps = self.config['train_data_fp']
+      dev_fps = self.config['dev_data_fp']
     
-    train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    train_data = np.concatenate(train_data, axis = 0)
+    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = np.concatenate(dev_data, axis = 0)
     
     print("regularizing data")
-    self.data_means = np.mean(train_data, axis = 0, keepdims = True)
-    self.data_std = np.std(train_data, axis = 0, keepdims = True)
+    self.data_means = np.mean(dev_data, axis = 0, keepdims = True)
+    self.data_std = np.std(dev_data, axis = 0, keepdims = True)
     
-    train_data = train_data - self.data_means
-    train_data = train_data / self.data_std    
+    dev_data = dev_data - self.data_means
+    dev_data = dev_data / self.data_std    
     
     print("computing whitening transform")
     pca = PCA(n_components = 'mle', whiten = True)
-    pca.fit(train_data)  
+    pca.fit(dev_data)  
     self.whitener = pca
-    print("whitened using %d components out of %d input dimensions" % (pca.n_components_ , np.shape(train_data)[1]))
+    print("whitened using %d components out of %d input dimensions" % (pca.n_components_ , np.shape(dev_data)[1]))
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
