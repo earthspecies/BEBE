@@ -21,7 +21,7 @@ supervised_nn_config:
   dropout: 0.01
   hidden_size: 8
   lr: 0.01
-  n_epochs: 150
+  n_epochs: 300
   num_layers: 3
   scheduler_epochs_between_step: 100
   temporal_window_samples: 512

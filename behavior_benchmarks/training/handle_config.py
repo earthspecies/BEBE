@@ -261,13 +261,14 @@ def accept_default_model_configs(config):
     default_model_config = {'downsizing_factor' : 128,
                             'lr' : 0.01,
                             'weight_decay' : 1e-4,
-                            'scheduler_epochs_between_step' : 100,
+                            'scheduler_patience_epochs' : 10,
                             'n_epochs' : 200,
                             'hidden_size' : 8,
                             'num_layers' : 1,
                             'temporal_window_samples' : 512, # used for training only, to subselect
                             'batch_size' : 512,
-                            'dropout' : 0
+                            'dropout' : 0, 
+                            'best_model_patience' : 50
                            }
     
   ### apply defaults if unspecified

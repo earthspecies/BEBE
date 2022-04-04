@@ -30,13 +30,14 @@ class supervised_nn():
     self.downsizing_factor = self.model_config['downsizing_factor']
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
-    self.scheduler_epochs_between_step = self.model_config['scheduler_epochs_between_step']
+    self.scheduler_patience_epochs = self.model_config['scheduler_patience_epochs']
     self.n_epochs = self.model_config['n_epochs']
     self.hidden_size = self.model_config['hidden_size']
     self.num_layers = self.model_config['num_layers']
     self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
+    self.best_model_patience = self.model_config['best_model_patience']
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -100,7 +101,12 @@ class supervised_nn():
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
     loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum')
     optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, self.scheduler_epochs_between_step, gamma=0.1, last_epoch=- 1, verbose=False)
+    
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                           mode='min',
+                                                           factor=0.1, 
+                                                           patience=self.scheduler_patience_epochs, 
+                                                           threshold=0.0001)#torch.optim.lr_scheduler.StepLR(optimizer, self.scheduler_epochs_between_step, gamma=0.1, last_epoch=- 1, verbose=False)
     
     train_loss = []
     test_loss = []
@@ -108,6 +114,10 @@ class supervised_nn():
     train_acc = []
     test_acc = []
     val_acc = []
+    learning_rates = []
+    best_loss = np.infty
+    best_model_patience = -np.infty
+    best_model_path = os.path.join(self.config['temp_dir'], 'best_model.pth')
     
     epochs = self.n_epochs
     for t in range(epochs):
@@ -121,14 +131,36 @@ class supervised_nn():
         l, a = self.test_epoch(test_dataloader, loss_fn_no_reduce, name = "Test", loss_denom = num_examples_test* self.temporal_window_samples)
         test_loss.append(l)
         test_acc.append(a)
-        scheduler.step()
+        
+        
+        best_model_patience += 1
+        if val_loss[-1] < best_loss:
+          torch.save(self.model, best_model_path)
+          best_model_patience = 0
+          best_loss = val_loss[-1]
+          print("New best model, saving weights")
+          
+          
+        if best_model_patience == self.best_model_patience:
+          print("Training converged, reverting to best model found")
+          self.model = torch.load(best_model_path)
+          break
+        
+        learning_rates.append(optimizer.param_groups[0]["lr"])
+        scheduler.step(val_loss[-1])
+        
+    if best_model_patience < self.best_model_patience:
+      print("Training did not converge")
+      
     print("Done!")
     
-    # Save training progress
+    ## Save training progress
+    
+    # Loss
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     
     ax.plot(train_loss, label= 'train', marker = '.')
-    ax.plot(val_loss, label= 'train', marker = '.')
+    ax.plot(val_loss, label= 'val', marker = '.')
     ax.plot(test_loss, label = 'test', marker = '.')
     ax.legend()
     ax.set_title("Cross Entropy Loss")
@@ -141,12 +173,11 @@ class supervised_nn():
     loss_fp = os.path.join(self.config['output_dir'], 'loss.png')
     fig.savefig(loss_fp)
     plt.close()
-    
-    # Save training progress
-    
+
+    # Accuracy
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     ax.plot(train_acc, label= 'train', marker = '.')
-    ax.plot(val_acc, label= 'train', marker = '.')
+    ax.plot(val_acc, label= 'val', marker = '.')
     ax.plot(test_acc, label = 'test', marker = '.')
     ax.legend()
     ax.set_title("Mean accuracy")
@@ -157,6 +188,19 @@ class supervised_nn():
     ax.set_ylabel('Accuracy')
     acc_fp = os.path.join(self.config['output_dir'], 'acc.png')
     fig.savefig(acc_fp)
+    plt.close()
+    
+    # Learning Rate
+    fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+    ax.plot(learning_rates, marker = '.')
+    ax.set_title("Learning Rate")
+    ax.set_xlabel('Epoch')
+    major_tick_spacing = max(1, len(learning_rates) // 10)
+    ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
+    ax.xaxis.set_minor_locator(MultipleLocator(1))
+    ax.set_ylabel('Learning Rate')
+    lr_fp = os.path.join(self.config['output_dir'], 'learning_rate.png')
+    fig.savefig(lr_fp)
     plt.close()
     
     ###
