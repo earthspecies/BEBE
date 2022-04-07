@@ -4,8 +4,9 @@ import numpy as np
 import os
     
 class BEHAVIOR_DATASET(Dataset):
-    def __init__(self, data, labels, train, temporal_window_samples):
+    def __init__(self, data, labels, train, temporal_window_samples, rescale_param = 0):
         self.temporal_window = temporal_window_samples
+        self.rescale_param = rescale_param
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
         self.labels = labels # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
@@ -35,17 +36,30 @@ class BEHAVIOR_DATASET(Dataset):
 
     def __getitem__(self, index):
         clip_number = np.where(index >= self.data_start_indices)[0][-1] #which clip do I draw from?
-        start = index - self.data_start_indices[clip_number]
+        
+        data_item = self.data[clip_number]
+        labels_item = self.labels[clip_number]
         
         #start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
+        start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window
         
-        data_item = self.data[clip_number][start:end, :]
+        if self.train and self.rescale_param:
+          # rescale augmentation
+          max_rescale_size = int(self.rescale_param * self.temporal_window)
+          shift = self.rng.integers(-max_rescale_size, max_rescale_size)
+          end += shift
+          end = min(np.shape(data_item)[0], end)
+          samples = np.linspace(start, end, num = self.temporal_window, endpoint = False, dtype = int)
+          data_item = data_item[samples, :]
+          labels_item = labels_item[samples]
         
-        if self.train:
-          blur = self.rng.normal(scale = self.data_stds, size = (self.temporal_window, self.num_channels))
-          data_item = data_item +  2 * blur[:1, :] #+ blur
+        else:
+          data_item = data_item[start:end, :]
+          labels_item = labels_item[start:end] #[:, start:end]
         
-        labels_item = self.labels[clip_number][start:end] #[:, start:end]
+#         if self.train:
+#           blur = self.rng.normal(scale = self.data_stds, size = (self.temporal_window, self.num_channels))/8
+#           data_item = data_item +  2 * blur[:1, :] + blur
             
         return torch.from_numpy(data_item), torch.from_numpy(labels_item)

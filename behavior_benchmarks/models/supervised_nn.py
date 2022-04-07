@@ -38,6 +38,11 @@ class supervised_nn():
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
     self.best_model_patience = self.model_config['best_model_patience']
+    self.blur_scale = self.model_config['blur_scale']
+    self.jitter_scale = self.model_config['jitter_scale']
+    self.rescale_param = self.model_config['rescale_param']
+    self.scheduler_decay = self.model_config['scheduler_decay']
+    self.conv_stack_depth = self.model_config['conv_stack_depth']
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -49,7 +54,7 @@ class supervised_nn():
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers, self.dropout).to(device)
+    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers, self.dropout, self.conv_stack_depth).to(device)
     #print(self.model)
     print('Model parameters:')
     print(_count_parameters(self.model))
@@ -65,7 +70,7 @@ class supervised_nn():
   def load_labels(self, filepath):
     labels = np.load(filepath)[:, self.label_idx].astype(int)
     return labels 
-    
+    s
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
@@ -85,7 +90,7 @@ class supervised_nn():
     val_labels = [self.load_labels(fp) for fp in val_fps]
     test_labels = [self.load_labels(fp) for fp in test_fps]
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples)
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, rescale_param = self.rescale_param)    
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
     val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples)
@@ -102,11 +107,15 @@ class supervised_nn():
     loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum')
     optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
     
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                           mode='min',
-                                                           factor=0.1, 
-                                                           patience=self.scheduler_patience_epochs, 
-                                                           threshold=0.0001)#torch.optim.lr_scheduler.StepLR(optimizer, self.scheduler_epochs_between_step, gamma=0.1, last_epoch=- 1, verbose=False)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+    #                                                        mode='min',
+    #                                                        factor=self.scheduler_decay, 
+    #                                                        patience=self.scheduler_patience_epochs, 
+    #                                                        threshold=0.0001)
+    
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
+    #torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, 150, T_mult=2, eta_min=0, last_epoch=- 1, verbose=False)
+    #torch.optim.lr_scheduler.StepLR(optimizer, self.scheduler_epochs_between_step, gamma=0.1, last_epoch=- 1, verbose=False)
     
     train_loss = []
     test_loss = []
@@ -147,9 +156,10 @@ class supervised_nn():
           break
         
         learning_rates.append(optimizer.param_groups[0]["lr"])
-        scheduler.step(val_loss[-1])
+        scheduler.step()
         
     if best_model_patience < self.best_model_patience:
+      self.model = torch.load(best_model_path)
       print("Training did not converge")
       
     print("Done!")
@@ -199,6 +209,7 @@ class supervised_nn():
     ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
     ax.xaxis.set_minor_locator(MultipleLocator(1))
     ax.set_ylabel('Learning Rate')
+    ax.set_yscale('log')
     lr_fp = os.path.join(self.config['output_dir'], 'learning_rate.png')
     fig.savefig(lr_fp)
     plt.close()
@@ -220,6 +231,7 @@ class supervised_nn():
           break
         num_batches_seen += 1
         X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
+        
         # Compute prediction error
         pred = self.model(X)
         loss = loss_fn(pred, y)
@@ -230,6 +242,16 @@ class supervised_nn():
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
+        
+        # torch.nn.utils.clip_grad_norm(self.model.parameters(), 0.45)
+        
+        # total_norm = 0
+        # for p in self.model.parameters():
+        #     param_norm = p.grad.detach().data.norm(2)
+        #     total_norm += param_norm.item() ** 2
+        # total_norm = total_norm ** 0.5
+        # print(total_norm)
+        
         optimizer.step()
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
@@ -283,29 +305,36 @@ class supervised_nn():
     return predictions, latents
 
 class LSTM_Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, hidden_size, num_layers, dropout):
+    def __init__(self, n_features, n_classes, hidden_size, num_layers, dropout, conv_stack_depth, blur_scale = 0, jitter_scale = 0):
         super(LSTM_Classifier, self).__init__()
+        self.blur_scale = blur_scale
+        self.jitter_scale = jitter_scale
         
         self.head = nn.Conv1d(2*hidden_size, n_classes, 1, padding = 'same')
         self.lstm = nn.LSTM(n_features + 64, hidden_size, num_layers = num_layers, bidirectional = True, batch_first = True, dropout = dropout)
         
-        self.conv1 = nn.Sequential(
-          nn.Conv1d(n_features,64,7, padding = 'same'),
-          torch.nn.BatchNorm1d(64),
-          nn.ReLU(),
-          nn.Conv1d(64,64,7, padding = 'same'),
-          torch.nn.BatchNorm1d(64),
-          nn.ReLU()
-        )
+#         self.conv1 = nn.Sequential(
+#           nn.Conv1d(n_features,64,7, padding = 'same'),
+#           torch.nn.BatchNorm1d(64),
+#           nn.ReLU(),
+#           nn.Conv1d(64,64,7, padding = 'same'),
+#           torch.nn.BatchNorm1d(64),
+#           nn.ReLU()
+#         )
         
-        self.conv2 = nn.Sequential(
-          nn.Conv1d(n_features + 64,64,7, padding = 'same'),
-          torch.nn.BatchNorm1d(64),
-          nn.ReLU(),
-          nn.Conv1d(64,64,7, padding = 'same'),
-          torch.nn.BatchNorm1d(64),
-          nn.ReLU()
-        )
+#         self.conv2 = nn.Sequential(
+#           nn.Conv1d(n_features + 64,64,7, padding = 'same'),
+#           torch.nn.BatchNorm1d(64),
+#           nn.ReLU(),
+#           nn.Conv1d(64,64,7, padding = 'same'),
+#           torch.nn.BatchNorm1d(64),
+#           nn.ReLU()
+#         )
+        
+        self.conv_stack = [_conv_block(n_features, 64, 64, 7)]
+        for i in range(conv_stack_depth - 1):
+          self.conv_stack.append(_conv_block(64+n_features, 64 + n_features, 64 + n_features, 3)) 
+        self.conv_stack = nn.ModuleList(self.conv_stack)
         
         self.bn = torch.nn.BatchNorm1d(n_features)
         self.dropout = nn.Dropout(p = 0.01)
@@ -366,6 +395,14 @@ class LSTM_Classifier(nn.Module):
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         norm_inputs = self.bn(x)
         
+        if self.training:
+          size = norm_inputs.size()
+          blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
+          jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
+          norm_inputs = norm_inputs + blur + jitter
+          # Perform augmentations to normalized data
+          
+        
 #         x1 = self.down1(x)#512->256
 #         x2 = self.down2(x1)#256->128
 #         x3 = self.down3(x2)#128->64
@@ -381,10 +418,17 @@ class LSTM_Classifier(nn.Module):
 #         x1 = torch.cat([x1, x1u], axis = 1) #256
 #         logits = self.up1(x1)
         
-        x = self.conv1(norm_inputs)
+        x = self.conv_stack[0](norm_inputs)
         x = torch.cat([x, norm_inputs], axis = 1)
-        x = self.conv2(x)
-        x = torch.cat([x, norm_inputs], axis = 1)
+      
+        for layer in self.conv_stack[1:]:
+          x = layer(x) + x
+  
+  
+        # x = self.conv1(norm_inputs)
+        # x = torch.cat([x, norm_inputs], axis = 1)
+        # x = self.conv2(x)
+        # x = torch.cat([x, norm_inputs], axis = 1)
         
         x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
         hidden = self.lstm(x)[0]
@@ -392,4 +436,15 @@ class LSTM_Classifier(nn.Module):
         logits = self.head(hidden)
                             
         return logits
+      
+def _conv_block(in_dims, hidden_dims, out_dims, kernel_width):
+  block = nn.Sequential(
+    nn.Conv1d(in_dims,hidden_dims, kernel_width, padding = 'same'),
+    torch.nn.BatchNorm1d(hidden_dims),
+    nn.ReLU(),
+    nn.Conv1d(hidden_dims,out_dims,kernel_width, padding = 'same'),
+    torch.nn.BatchNorm1d(out_dims),
+    nn.ReLU()
+  )
+  return block
 
