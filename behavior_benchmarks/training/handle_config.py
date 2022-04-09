@@ -260,19 +260,17 @@ def accept_default_model_configs(config):
   elif model_type == 'supervised_nn':
     default_model_config = {'downsizing_factor' : 128,
                             'lr' : 0.01,
-                            'weight_decay' : 1e-4,
-                            'scheduler_patience_epochs' : 10,
-                            'scheduler_decay' : 0.1,
+                            'weight_decay' : 1e-3,
                             'n_epochs' : 200,
-                            'hidden_size' : 8,
-                            'num_layers' : 1,
+                            'hidden_size' : 32,
+                            'num_layers' : 2,
                             'temporal_window_samples' : 512, # used for training only, to subselect
                             'batch_size' : 512,
                             'dropout' : 0, 
-                            'best_model_patience' : 50,
                             'rescale_param' : 0,
                             'jitter_scale' : 0,
-                            'blur_scale' : 0
+                            'blur_scale' : 0,
+                            'conv_stack_depth' : 2
                            }
     
   ### apply defaults if unspecified
