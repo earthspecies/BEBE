@@ -6,8 +6,9 @@ def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
   metadata = config['metadata']
   label_names = metadata['label_names']
   unknown_idx = label_names.index('unknown')
+  num_clusters = config['num_clusters']
   
-  M = cm(all_labels, all_predictions)
+  M = cm(all_labels, all_predictions, labels = np.arange(num_clusters))
   to_plot_idx = np.arange(len(label_names))
   to_plot_idx = to_plot_idx[to_plot_idx != unknown_idx]
   M = M[to_plot_idx,:] # drop the unknown labels

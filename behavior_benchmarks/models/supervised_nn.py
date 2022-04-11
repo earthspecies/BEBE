@@ -256,13 +256,13 @@ class supervised_nn():
     ###
     self.model.eval()
     with torch.no_grad():
-      data = data
       data = np.expand_dims(data, axis =0)
       data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
       preds = self.model(data)
-      preds = preds.cpu()
-      preds = preds.squeeze(axis = 0)
-      preds = np.argmax(preds, axis = 0)
+      preds = preds.cpu().detach().numpy()
+      preds = np.squeeze(preds, axis = 0)
+      preds = np.argmax(preds, axis = 0).astype(np.uint8)
+      #print(preds.dtype)
     return preds, None
     ###
   

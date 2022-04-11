@@ -138,7 +138,10 @@ def main(config):
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
       
     if config['predict_and_evaluate']:
-      eval_dict, choices, probs = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+      if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
+        eval_dict, choices, probs = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+      else: 
+        eval_dict, _, _ = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
 
       # Save confusion matrix
       bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)

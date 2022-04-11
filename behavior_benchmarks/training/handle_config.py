@@ -201,7 +201,10 @@ def accept_default_model_configs(config):
   assert 'evaluation' in config
   
   if 'n_samples' not in config['evaluation']:
-    config['evaluation']['n_samples'] = 100 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
+    if config['model'] == 'supervised_nn':
+      config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
+    else:
+      config['evaluation']['n_samples'] = 100
     
   model_type = config['model']
   model_config_name = model_type + "_config"
