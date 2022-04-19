@@ -1,4 +1,4 @@
-experiment_name: supervised_nn
+experiment_name: supervised_nn2
 input_vars:
 - AccX
 - AccY
@@ -19,12 +19,13 @@ supervised_nn_config:
   downsizing_factor: 1024
   dropout: 0.01
   hidden_size: 16
-  lr: 0.01
-  n_epochs: 200
+  lr: 0.005
+  n_epochs: 300
   num_layers: 3
   temporal_window_samples: 2048
   weight_decay: 0.001
-  blur_scale: 0.02
-  jitter_scale: 0.02
+  blur_scale: 0.05
+  jitter_scale: 0
   rescale_param: 0
-  conv_stack_depth: 12
+  conv_stack_depth: 16
+  sparse_annotations: True

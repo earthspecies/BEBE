@@ -22,7 +22,7 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   
   # mapping-based
   num_clusters = config['num_clusters']
-  num_classes = len(config['metadata']['label_names'])
+  label_names = config['metadata']['label_names']
   boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
   # scores for supervised model
@@ -34,7 +34,7 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
                                                                y_pred, 
                                                                num_clusters, 
-                                                               num_classes, 
+                                                               label_names, 
                                                                boundary_tolerance_frames = boundary_tolerance_frames, 
                                                                unknown_value = unknown_label,
                                                                choices = choices,

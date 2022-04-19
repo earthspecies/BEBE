@@ -40,6 +40,7 @@ class supervised_nn():
     self.jitter_scale = self.model_config['jitter_scale']
     self.rescale_param = self.model_config['rescale_param']
     self.conv_stack_depth = self.model_config['conv_stack_depth']
+    self.sparse_annotations = self.model_config['sparse_annotations']
     ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -86,17 +87,31 @@ class supervised_nn():
     val_labels = [self.load_labels(fp) for fp in val_fps]
     test_labels = [self.load_labels(fp) for fp in test_fps]
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, rescale_param = self.rescale_param)    
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, rescale_param = self.rescale_param)
+    if self.sparse_annotations:
+      indices_to_keep = train_dataset.get_annotated_windows()
+      train_dataset = Subset(train_dataset, indices_to_keep)  
+      print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
     val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples)
+    if self.sparse_annotations:
+      indices_to_keep = val_dataset.get_annotated_windows()
+      val_dataset = Subset(val_dataset, indices_to_keep) 
+      
     num_examples_val = len(list(range(0, len(val_dataset), self.downsizing_factor)))
     val_dataset = Subset(val_dataset, list(range(0, len(val_dataset), self.downsizing_factor)))
+    print("Number windowed val examples after subselecting: %d" % len(val_dataset))
     val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
     test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples)
+    if self.sparse_annotations:
+      indices_to_keep = test_dataset.get_annotated_windows()
+      test_dataset = Subset(test_dataset, indices_to_keep)
+
     num_examples_test = len(list(range(0, len(test_dataset), self.downsizing_factor)))
     test_dataset = Subset(test_dataset, list(range(0, len(test_dataset), self.downsizing_factor)))
+    print("Number windowed test examples after subselecting: %d" % len(test_dataset))
     test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)

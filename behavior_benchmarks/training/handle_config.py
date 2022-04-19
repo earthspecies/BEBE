@@ -273,7 +273,8 @@ def accept_default_model_configs(config):
                             'rescale_param' : 0,
                             'jitter_scale' : 0,
                             'blur_scale' : 0,
-                            'conv_stack_depth' : 2
+                            'conv_stack_depth' : 2,
+                            'sparse_annotations' : False
                            }
     
   ### apply defaults if unspecified

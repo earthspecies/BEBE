@@ -199,48 +199,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
     boundary_R = []
     
     
-    print("Sampling to estimate averaged mapping based scores")
-#   ### Second attempt to parallelize, gets killed:
-  
-#     with concurrent.futures.ThreadPoolExecutor(max_workers = os.cpu_count() + 4) as executor:
-#       futures = list(tqdm.tqdm(executor.map(compute_single_score_randomized,
-#                                             itertools.repeat(choices, n_iter),
-#                                             itertools.repeat(probs, n_iter),
-#                                             itertools.repeat(pred, n_iter), 
-#                                             itertools.repeat(mask, n_iter), 
-#                                             itertools.repeat(gt_sub, n_iter), 
-#                                             itertools.repeat(gt_bound, n_iter),
-#                                             itertools.repeat(gt_mask_boundaries, n_iter),
-#                                             itertools.repeat(boundary_tolerance_frames, n_iter)), total = n_iter))
-#     for future in futures:
-#       single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future
-#       prec.append(single_prec)
-#       rec.append(single_rec)
-#       f1.append(single_f1)
-#       boundary_prec.append(single_bprec)
-#       boundary_rec.append(single_brec)
-#       boundary_f1.append(single_bf1)
-#       boundary_R.append(single_bR)
-    
-    
-    ###first attempt to paralellize, doesn't work
-    
-#     with tqdm.tqdm(total=n_iter) as pbar:
-    
-#       with concurrent.futures.ProcessPoolExecutor() as executor:
-#           futures = [executor.submit(compute_single_score_randomized, choices, probs, pred_list, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames) for _ in range(n_iter)]
-
-#           for future in concurrent.futures.as_completed(futures):
-#               single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = future.result()
-#               prec.append(single_prec)
-#               rec.append(single_rec)
-#               f1.append(single_f1)
-#               boundary_prec.append(single_bprec)
-#               boundary_rec.append(single_brec)
-#               boundary_f1.append(single_bf1)
-#               boundary_R.append(single_bR)
-#               pbar.update(1)
-      
+    print("Sampling to estimate averaged mapping based scores")      
 
     for i in tqdm.tqdm(range(n_iter)):
         single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames)
@@ -251,31 +210,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
         boundary_rec.append(single_brec)
         boundary_f1.append(single_bf1)
         boundary_R.append(single_bR)
-        #     Non-vectorized
-        # sample mapping
-#         mapping, _ = produce_random_cluster_to_label(choices, probs)
-#         pred_mapped = np.array(list(map(mapping, pred_list)))
-#         pred_sub = pred_mapped[mask]
-#         prec.append(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-#         rec.append(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
-#         f1.append(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 ))
         
-#         pred_bound = find_boundaries(pred_mapped)
-#         bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
-#                                                               pred_bound,
-#                                                               gt_mask_boundaries,
-#                                                               tolerance_frames = boundary_tolerance_frames
-#                                                              )
-#         boundary_prec.append(bprec)
-#         brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
-#                                                           pred_bound,
-#                                                           gt_mask_boundaries,
-#                                                           tolerance_frames = boundary_tolerance_frames
-#                                                          )
-#         boundary_rec.append(brec)
-#         boundary_f1.append(compute_f1(bprec, brec))
-#         boundary_R.append(compute_R(bprec, brec))
-# ##
         
     results['averaged_classification_precision'] = np.mean(prec)
     results['averaged_classification_recall'] = np.mean(rec)
@@ -288,7 +223,7 @@ def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary
       results[key] = float(results[key])    
     return results
   
-def get_MAP_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance_frames = 0):
+def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, boundary_tolerance_frames = 0):
     # For each cluster, looks for the label with highest overlap with that cluster
     # (i.e. the Maximimum a posteriori estimate)
     # Maps that cluster to that label, and computes precision, recall, etc
@@ -304,9 +239,20 @@ def get_MAP_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance
     gt_sub = gt[mask]
     pred_sub = pred_mapped[mask]
     
-    results['MAP_classification_precision'] = float(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
-    results['MAP_classification_recall'] = float(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
-    results['MAP_classification_f1'] = float(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    labels = np.arange(len(label_names))
+    labels = labels[labels != unknown_value]
+    
+    precisions = precision_score(gt_sub, pred_sub, average = None, zero_division =0)
+    results['MAP_classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
+    results['MAP_classification_precision_macro'] = float(np.mean(precisions))
+    
+    recalls = recall_score(gt_sub, pred_sub, average = None, zero_division =0)
+    results['MAP_classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
+    results['MAP_classification_recall_macro'] = float(np.mean(recalls))
+    
+    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    results['MAP_classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
+    results['MAP_classification_f1_macro'] = float(np.mean(f1s))
     
     ### Get optimized segmentation boundary scores    
     gt_bound = find_boundaries(gt)
@@ -330,7 +276,7 @@ def get_MAP_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance
     results['MAP_boundary_R'] = float(compute_R(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
     return results
   
-def get_supervised_scores(gt, pred, unknown_value=0, boundary_tolerance_frames = 0):
+def get_supervised_scores(gt, pred, label_names, unknown_value=0, boundary_tolerance_frames = 0):
     # Gets evaluation scores, assuming we have used a supervised model
     results = {}
     
@@ -344,9 +290,24 @@ def get_supervised_scores(gt, pred, unknown_value=0, boundary_tolerance_frames =
     gt_sub = gt[mask]
     pred_sub = pred[mask]
     
-    results['classification_precision'] = float(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
-    results['classification_recall'] = float(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
-    results['classification_f1'] = float(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    labels = np.arange(len(label_names))
+    labels = labels[labels != unknown_value]
+    
+    precisions = precision_score(gt_sub, pred_sub, average = None, zero_division =0)
+    results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
+    results['classification_precision_macro'] = float(np.mean(precisions))
+    
+    recalls = recall_score(gt_sub, pred_sub, average = None, zero_division =0)
+    results['classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
+    results['classification_recall_macro'] = float(np.mean(recalls))
+    
+    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
+    results['classification_f1_macro'] = float(np.mean(f1s))
+    
+    # results['classification_precision'] = float(precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    # results['classification_recall'] = float(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
+    # results['classification_f1'] = float(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
     
     ### Get optimized segmentation boundary scores    
     gt_bound = find_boundaries(gt)
@@ -370,8 +331,10 @@ def get_supervised_scores(gt, pred, unknown_value=0, boundary_tolerance_frames =
     results['boundary_R'] = float(compute_R(results['boundary_precision'], results['boundary_recall']))
     return results
   
-def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100, supervised = False):
+def mapping_based_scores(gt, pred, num_clusters, label_names, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100, supervised = False):
     # Main function to produce mapping based scores
+    
+    num_classes = len(label_names)
     
     # Compute choices and probabilities, essentially from confusion matrix
     if choices == None:
@@ -397,13 +360,15 @@ def mapping_based_scores(gt, pred, num_clusters, num_classes, boundary_tolerance
     mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
                                                             pred, 
                                                             choices, 
-                                                            probs, 
+                                                            probs,
+                                                            label_names,
                                                             unknown_value = unknown_value, 
                                                             boundary_tolerance_frames = boundary_tolerance_frames)
     
     if supervised:
       mapping_based_score_dict['supervised_scores'] = get_supervised_scores(gt,
                                                                             pred,
+                                                                            label_names,
                                                                             unknown_value=unknown_value,
                                                                             boundary_tolerance_frames = boundary_tolerance_frames)
     

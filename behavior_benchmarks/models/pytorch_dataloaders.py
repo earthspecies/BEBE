@@ -2,6 +2,7 @@ import torch
 from torch.utils.data.dataset import Dataset
 import numpy as np
 import os
+import tqdm
     
 class BEHAVIOR_DATASET(Dataset):
     def __init__(self, data, labels, train, temporal_window_samples, rescale_param = 0):
@@ -33,6 +34,24 @@ class BEHAVIOR_DATASET(Dataset):
         
     def __len__(self):        
         return self.data_points - len(self.data) * self.temporal_window
+      
+    def get_annotated_windows(self):
+        # Go through data, make a list of the indices of windows which actually have annotations.
+        # Useful for speeding up supervised train time for sparsely labeled datasets.
+        
+        indices_of_annotated_windows = []
+        print("Subselecting data to speed up training")
+        for index in tqdm.tqdm(range(self.__len__())):
+          clip_number = np.where(index >= self.data_start_indices)[0][-1] #which clip do I draw from?
+          labels_item = self.labels[clip_number]
+        
+          #start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
+          start = index - self.data_start_indices[clip_number]
+          end = start+ self.temporal_window
+          
+          if np.any(labels_item[start:end] != 0):
+            indices_of_annotated_windows.append(index)
+        return indices_of_annotated_windows
 
     def __getitem__(self, index):
         clip_number = np.where(index >= self.data_start_indices)[0][-1] #which clip do I draw from?
