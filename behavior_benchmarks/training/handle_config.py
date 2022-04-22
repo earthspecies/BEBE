@@ -50,6 +50,11 @@ def expand_config(config):
     config['save_latents'] = False
     config['predict_and_evaluate'] = True
     config['unsupervised'] = False
+    
+  elif config['model'] == 'vq_cpc':
+    config['save_latents'] = True
+    config['predict_and_evaluate'] = True
+    config['unsupervised'] = True
 
   else:
     raise ValueError('model type not recognized')
@@ -276,6 +281,9 @@ def accept_default_model_configs(config):
                             'conv_stack_depth' : 2,
                             'sparse_annotations' : False
                            }
+    
+  elif model_type == 'vq_cpc':
+    default_model_config = {}
     
   ### apply defaults if unspecified
       

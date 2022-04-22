@@ -72,6 +72,9 @@ def main(config):
     
   elif config['model'] == 'supervised_nn':
     model = models.supervised_nn(config)
+    
+  elif config['model'] == 'vq_cpc':
+    model = models.vq_cpc(config)
 
   else:
     raise ValueError('model type not recognized')

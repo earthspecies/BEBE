@@ -293,11 +293,11 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, boundary_toler
     labels = np.arange(len(label_names))
     labels = labels[labels != unknown_value]
     
-    precisions = precision_score(gt_sub, pred_sub, average = None, zero_division =0)
+    precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
     results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
     results['classification_precision_macro'] = float(np.mean(precisions))
     
-    recalls = recall_score(gt_sub, pred_sub, average = None, zero_division =0)
+    recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
     results['classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
     results['classification_recall_macro'] = float(np.mean(recalls))
     

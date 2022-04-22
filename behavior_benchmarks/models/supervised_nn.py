@@ -67,7 +67,7 @@ class supervised_nn():
   def load_labels(self, filepath):
     labels = np.load(filepath)[:, self.label_idx].astype(int)
     return labels 
-    s
+    
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
