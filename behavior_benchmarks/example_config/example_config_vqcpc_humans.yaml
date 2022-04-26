@@ -1,0 +1,32 @@
+experiment_name: vq_cpc_with_pooling
+input_vars:
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+- GyrX
+- GyrY
+- GyrZ
+model: vq_cpc
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+num_clusters: 24
+  
+evaluation:
+  boundary_tolerance_sec: 1.0
+  
+read_latents: false
+
+vq_cpc_config:
+  predict_proportion : .5
+  encoder_kernel_width: 3
+  downsizing_factor : 256
+  n_epochs : 200
+  conv_stack_hidden_size : 64
+  temporal_window_samples : 1024
+  batch_size : 64
+  conv_stack_depth : 12
+  z_dim : 8
+  c_dim : 16

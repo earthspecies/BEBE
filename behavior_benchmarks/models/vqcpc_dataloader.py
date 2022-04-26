@@ -41,11 +41,6 @@ class CPCDataset(Dataset):
         start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window     
         
-        individual_id = data_item[0, self.individual_idx]
-        data_item = data_item[start:end, :-2]
+        data_item = data_item[start:end, :]       
         
-        
-        ind_id_one_hot = np.zeros((31,))
-        ind_id_one_hot[int(individual_id)] = 1.        
-        
-        return torch.from_numpy(data_item), torch.from_numpy(ind_id_one_hot)
+        return torch.from_numpy(data_item)

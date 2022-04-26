@@ -37,22 +37,26 @@ class vq_cpc():
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
     ##
-    self.downsizing_factor = 256 #self.model_config['downsizing_factor']
-    self.lr = 4e-4 #self.model_config['lr']
+    self.downsizing_factor = self.model_config['downsizing_factor']
+    self.lr = self.model_config['lr']
     # self.weight_decay = self.model_config['weight_decay']
-    self.n_epochs = 300 #self.model_config['n_epochs']
-    self.hidden_size = 64 #self.model_config['hidden_size']
-    # self.num_layers_lstm = self.model_config['num_layers']
-    self.temporal_window_samples = 1024#self.model_config['temporal_window_samples']
-    self.batch_size = 64 #self.model_config['batch_size']
+    self.n_epochs = self.model_config['n_epochs']
+    self.conv_stack_hidden_size = self.model_config['conv_stack_hidden_size']
+    self.temporal_window_samples = self.model_config['temporal_window_samples']
+    self.predict_proportion = self.model_config['predict_proportion']
+    self.encoder_kernel_width = self.model_config['encoder_kernel_width']
+    self.batch_size =self.model_config['batch_size']
     # self.dropout = self.model_config['dropout']
     # self.blur_scale = self.model_config['blur_scale']
     # self.jitter_scale = self.model_config['jitter_scale']
     # self.rescale_param = self.model_config['rescale_param']
-    self.conv_stack_depth = 12 #self.model_config['conv_stack_depth']
-    # self.sparse_annotations = self.model_config['sparse_annotations']
-    self.z_dim = 8
-    self.c_dim = 16
+    self.conv_stack_depth = self.model_config['conv_stack_depth']
+    self.z_dim = self.model_config['z_dim']
+    self.c_dim = self.model_config['c_dim']
+    self.warmup_epochs = self.model_config['warmup_epochs']
+    self.initial_lr = self.model_config['initial_lr']
+    self.blur_scale = self.model_config['blur_scale']
+    self.jitter_scale = self.model_config['jitter_scale']
     # ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -65,8 +69,8 @@ class vq_cpc():
     self.n_features = len(self.cols_included)
     
     ##
-    self.model = Encoder(self.n_features, self.hidden_size, self.config['num_clusters'], self.z_dim, self.c_dim)
-    self.cpc = CPCLoss(1, self.batch_size, self.temporal_window_samples // 2, 8, self.z_dim, self.c_dim)
+    self.model = Encoder(self.n_features, self.conv_stack_hidden_size, self.config['num_clusters'], self.z_dim, self.c_dim, self.encoder_kernel_width, self.conv_stack_depth, blur_scale = self.blur_scale, jitter_scale = self.jitter_scale)
+    self.cpc = CPCLoss(1, self.batch_size, int(self.temporal_window_samples * self.predict_proportion), 8, self.z_dim, self.c_dim)
     self.model.to(device)
     self.cpc.to(device)
     ##
@@ -80,8 +84,7 @@ class vq_cpc():
       raise NotImplementedError("Supervised model is expected to read from raw data")
       #return np.load(filepath)
     else:
-      #### !!!!!!!!!!!!!!!!!!
-      return np.load(filepath)#[:, self.cols_included] #[n_samples, n_features]
+      return np.load(filepath)[:, self.cols_included] #[n_samples, n_features]
     
   def load_labels(self, filepath):
     labels = np.load(filepath)[:, self.label_idx].astype(int)
@@ -111,10 +114,6 @@ class vq_cpc():
     print("Number windowed test examples after subselecting: %d" % len(test_dataset))
     test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
-    
-    
-    
-    
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
     loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum')
     #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
@@ -122,12 +121,12 @@ class vq_cpc():
     
     optimizer = optim.Adam(
         chain(self.model.parameters(), self.cpc.parameters()),
-        lr=1e-5)
+        lr=self.initial_lr)
     
     scheduler = WarmupScheduler(
         optimizer,
-        warmup_epochs=150,
-        initial_lr=1e-5,
+        warmup_epochs=self.warmup_epochs,
+        initial_lr=self.initial_lr,
         max_lr=self.lr,
         milestones= [20000],
         gamma=0.25)
@@ -246,16 +245,15 @@ class vq_cpc():
     losses = []
     
     with tqdm(dataloader, unit = "batch", total = num_batches_todo) as tepoch:
-      for i, (X, Y) in enumerate(tepoch):
+      for i, X in enumerate(tepoch):
         if i == num_batches_todo :
           break
         X = X.type('torch.FloatTensor').to(device)
-        Y = Y.type('torch.FloatTensor').to(device)
         #X = X.view(cfg.training.n_speakers_per_batch *cfg.training.n_utterances_per_speaker,cfg.preprocessing.n_mels, -1)
 
         optimizer.zero_grad()
 
-        z, c, vq_loss, perplexity = self.model(X, Y)
+        z, c, vq_loss, perplexity = self.model(X)
         cpc_loss, accuracy = self.cpc(z, c)
         loss = cpc_loss + vq_loss
         
@@ -291,13 +289,12 @@ class vq_cpc():
     losses = []
     
     with torch.no_grad():
-      for i, (X, Y) in enumerate(dataloader):
+      for i, X in enumerate(dataloader):
         
         X = X.type('torch.FloatTensor').to(device)
-        Y = Y.type('torch.FloatTensor').to(device)
         #X = X.view(cfg.training.n_speakers_per_batch *cfg.training.n_utterances_per_speaker,cfg.preprocessing.n_mels, -1)
 
-        z, c, vq_loss, perplexity = self.model(X, Y)
+        z, c, vq_loss, perplexity = self.model(X)
         cpc_loss, accuracy = self.cpc(z, c)
         loss = cpc_loss + vq_loss
         
@@ -327,8 +324,16 @@ class vq_cpc():
     self.model.eval()
     with torch.no_grad():
       data = np.expand_dims(data, axis =0)
-      data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
-      latents, _, preds = self.model.encode(data)
+      
+      
+      
+      X = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+      latents, _, preds = self.model.encode(X)
+      
+      
+      # data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+      # latents, _, preds = self.model.encode(data)
+      ####
       preds = preds.cpu().detach().numpy()
       latents = latents.cpu().detach().numpy()
       # print("preds shape:")
@@ -348,7 +353,7 @@ class vq_cpc():
     return predictions, latents
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels, channels, n_embeddings, z_dim, c_dim):
+    def __init__(self, in_channels, channels, n_embeddings, z_dim, c_dim, kernel_width, conv_stack_depth, blur_scale = 0, jitter_scale = 0):
         super(Encoder, self).__init__()
         # self.conv = nn.Conv1d(in_channels, channels, 4, 2, 1, bias=False)
         # self.encoder = nn.Sequential(
@@ -368,27 +373,32 @@ class Encoder(nn.Module):
         #     nn.ReLU(True),
         #     nn.Linear(channels, z_dim),
         # )
-        self.codebook = VQEmbeddingEMA(n_embeddings, z_dim)
-        self.rnn = nn.LSTM(z_dim + 4, c_dim, batch_first=True)
         
-        self.conv_stack = [_conv_block(in_channels, channels, channels-in_channels, 7)]
-        conv_stack_depth = 12
+        self.blur_scale = blur_scale
+        self.jitter_scale = jitter_scale
+        
+        self.codebook = VQEmbeddingEMA(n_embeddings, z_dim)
+        self.rnn = nn.LSTM(z_dim, c_dim, batch_first=True)
+        
+        self.conv_stack = [_conv_block(in_channels, channels, channels-in_channels, kernel_width)]
         for i in range(conv_stack_depth - 1):
-          self.conv_stack.append(_conv_block(channels, channels, channels, 3)) 
+          self.conv_stack.append(_conv_block(channels, channels, channels, kernel_width)) 
         self.conv_stack = nn.ModuleList(self.conv_stack)
         #self.head = nn.Conv1d(channels, z_dim, 1, padding = 'same')
-        self.head = nn.Conv1d(channels, z_dim, 1, padding = 'same')
+        
+        pooling = nn.AvgPool1d(7, stride=1, padding=3, count_include_pad=False)
+        self.head = nn.Sequential(pooling, nn.Conv1d(channels, z_dim, 1, padding = 'same'))
+        
         self.bn = torch.nn.BatchNorm1d(in_channels)
         
-        self.id_embed = nn.Linear(31, 4)
 
-    def encode(self, x, y):
+    def encode(self, x):
         # z = self.conv(mel)
         # z = self.encoder(z.transpose(1, 2))
         
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         norm_inputs = self.bn(x)
-        
+        t
         # if self.training:
         #   # Perform augmentations to normalized data
         #   size = norm_inputs.size()
@@ -407,29 +417,23 @@ class Encoder(nn.Module):
         
         z, indices = self.codebook.encode(z)
         
-        # put in ind id
-        ind_embedding = self.id_embed(y)
-        ind_embedding = torch.unsqueeze(ind_embedding, 1)
-        ind_embedding_tiled = ind_embedding.repeat((1, z.size()[1],1))
-        z = torch.cat([z, ind_embedding_tiled], axis = 2)
-        
         
         c, _ = self.rnn(z)
         return z, c, indices
 
-    def forward(self, x, y):
+    def forward(self, x):
         # z = self.conv(mel)
         # z = self.encoder(z.transpose(1, 2))
         
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         norm_inputs = self.bn(x)
         
-        # if self.training:
-        #   # Perform augmentations to normalized data
-        #   size = norm_inputs.size()
-        #   blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
-        #   jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
-        #   norm_inputs = norm_inputs + blur + jitter 
+        if self.training:
+          # Perform augmentations to normalized data
+          size = norm_inputs.size()
+          blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
+          jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
+          norm_inputs = norm_inputs + blur + jitter 
         
         x = self.conv_stack[0](norm_inputs)
         x = torch.cat([x, norm_inputs], axis = 1)
@@ -439,15 +443,7 @@ class Encoder(nn.Module):
         
         x = self.head(x)
         z = torch.transpose(x, 1,2)
-        z, loss, perplexity = self.codebook(z)
-        
-        # put in ind id
-        
-        ind_embedding = self.id_embed(y)
-        ind_embedding = torch.unsqueeze(ind_embedding, 1)
-        ind_embedding_tiled = ind_embedding.repeat((1, z.size()[1],1))
-        z = torch.cat([z, ind_embedding_tiled], axis = 2)
-        
+        z, loss, perplexity = self.codebook(z)       
         
         c, _ = self.rnn(z)
         return z, c, loss, perplexity
@@ -617,4 +613,5 @@ def _conv_block(in_dims, hidden_dims, out_dims, kernel_width):
     torch.nn.BatchNorm1d(out_dims),
     nn.ReLU()
   )
+  
   return block
