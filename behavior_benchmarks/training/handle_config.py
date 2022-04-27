@@ -297,7 +297,8 @@ def accept_default_model_configs(config):
                             'warmup_epochs' : 150, 
                             'initial_lr' : 1e-5,
                             'blur_scale' : 0., 
-                            'jitter_scale' : 0.}
+                            'jitter_scale' : 0., 
+                            'pooling_factor' : 8}
     
   ### apply defaults if unspecified
       

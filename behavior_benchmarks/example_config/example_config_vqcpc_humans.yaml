@@ -1,4 +1,4 @@
-experiment_name: vq_cpc_with_pooling
+experiment_name: vq_cpc_with_pooling_and_downsampling32
 input_vars:
 - AccX
 - AccY
@@ -20,13 +20,19 @@ evaluation:
 read_latents: false
 
 vq_cpc_config:
-  predict_proportion : .5
-  encoder_kernel_width: 3
-  downsizing_factor : 256
-  n_epochs : 200
-  conv_stack_hidden_size : 64
-  temporal_window_samples : 1024
-  batch_size : 64
-  conv_stack_depth : 12
-  z_dim : 8
-  c_dim : 16
+  batch_size: 64
+  blur_scale: 0.0
+  c_dim: 16
+  conv_stack_depth: 12
+  conv_stack_hidden_size: 64
+  downsizing_factor: 256
+  encoder_kernel_width: 7
+  initial_lr: 1.0e-05
+  jitter_scale: 0.0
+  lr: 0.0004
+  n_epochs: 300
+  predict_proportion: 0.5
+  temporal_window_samples: 1024
+  warmup_epochs: 150
+  z_dim: 8
+  pooling_factor : 32

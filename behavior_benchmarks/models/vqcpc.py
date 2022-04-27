@@ -57,6 +57,7 @@ class vq_cpc():
     self.initial_lr = self.model_config['initial_lr']
     self.blur_scale = self.model_config['blur_scale']
     self.jitter_scale = self.model_config['jitter_scale']
+    self.pooling_factor = self.model_config['pooling_factor']
     # ##
     
     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -70,7 +71,7 @@ class vq_cpc():
     
     ##
     self.model = Encoder(self.n_features, self.conv_stack_hidden_size, self.config['num_clusters'], self.z_dim, self.c_dim, self.encoder_kernel_width, self.conv_stack_depth, blur_scale = self.blur_scale, jitter_scale = self.jitter_scale)
-    self.cpc = CPCLoss(1, self.batch_size, int(self.temporal_window_samples * self.predict_proportion), 8, self.z_dim, self.c_dim)
+    self.cpc = CPCLoss(1, self.batch_size, int(self.temporal_window_samples * self.predict_proportion / self.pooling_factor), 8, self.z_dim, self.c_dim)
     self.model.to(device)
     self.cpc.to(device)
     ##
@@ -353,26 +354,10 @@ class vq_cpc():
     return predictions, latents
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels, channels, n_embeddings, z_dim, c_dim, kernel_width, conv_stack_depth, blur_scale = 0, jitter_scale = 0):
+    def __init__(self, in_channels, channels, n_embeddings, z_dim, c_dim, kernel_width, conv_stack_depth, blur_scale = 0, jitter_scale = 0, pooling_factor = 1):
         super(Encoder, self).__init__()
         # self.conv = nn.Conv1d(in_channels, channels, 4, 2, 1, bias=False)
-        # self.encoder = nn.Sequential(
-        #     nn.LayerNorm(channels),
-        #     nn.ReLU(True),
-        #     nn.Linear(channels, channels, bias=False),
-        #     nn.LayerNorm(channels),
-        #     nn.ReLU(True),
-        #     nn.Linear(channels, channels, bias=False),
-        #     nn.LayerNorm(channels),
-        #     nn.ReLU(True),
-        #     nn.Linear(channels, channels, bias=False),
-        #     nn.LayerNorm(channels),
-        #     nn.ReLU(True),
-        #     nn.Linear(channels, channels, bias=False),
-        #     nn.LayerNorm(channels),
-        #     nn.ReLU(True),
-        #     nn.Linear(channels, z_dim),
-        # )
+        self.pool_size = pooling_factor
         
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
@@ -386,7 +371,7 @@ class Encoder(nn.Module):
         self.conv_stack = nn.ModuleList(self.conv_stack)
         #self.head = nn.Conv1d(channels, z_dim, 1, padding = 'same')
         
-        pooling = nn.AvgPool1d(7, stride=1, padding=3, count_include_pad=False)
+        pooling = nn.AvgPool1d(self.pool_size)
         self.head = nn.Sequential(pooling, nn.Conv1d(channels, z_dim, 1, padding = 'same'))
         
         self.bn = torch.nn.BatchNorm1d(in_channels)
@@ -397,6 +382,14 @@ class Encoder(nn.Module):
         # z = self.encoder(z.transpose(1, 2))
         
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
+        
+        
+        x_len_samples = x.size()[-1] 
+        pad_length = self.pool_size - (x_len_samples % self.pool_size)
+        
+        x = nn.functional.pad(x, (0, pad_length))
+        
+        
         norm_inputs = self.bn(x)
         
         x = self.conv_stack[0](norm_inputs)
@@ -406,12 +399,30 @@ class Encoder(nn.Module):
           x = layer(x) + x
         
         x = self.head(x)
-        z = torch.transpose(x, 1,2)
+        z = torch.transpose(x, 1,2) #[batch, seq_len, n_features]
         
         z, indices = self.codebook.encode(z)
         
         
         c, _ = self.rnn(z)
+        
+        # upsample predictions and quantized latents for analysis
+        upsampler = nn.Upsample(scale_factor=self.pool_size, mode='nearest')
+        
+        indices = torch.unsqueeze(indices, 1)
+        indices = upsampler(indices.type('torch.FloatTensor'))
+        indices = torch.squeeze(indices, 1)
+        indices = indices[:, :x_len_samples].type('torch.LongTensor')
+        
+        z = torch.transpose(z, 1,2) #[batch, n_features, seq_len]
+        z = upsampler(z)
+        z = z[:, :, :x_len_samples]
+        z = torch.transpose(z, 1,2) #[batch, seq_len, n_features]
+        
+        ##
+        # upsampling of c not currently implemented
+        ##
+        
         return z, c, indices
 
     def forward(self, x):
@@ -427,6 +438,10 @@ class Encoder(nn.Module):
           blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
           jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
           norm_inputs = norm_inputs + blur + jitter 
+          
+        x_len_samples = x.size()[-1] #int(x.size()[-1].item())
+        pad_length = x_len_samples % self.pool_size
+        x = nn.functional.pad(x, (0, pad_length))
         
         x = self.conv_stack[0](norm_inputs)
         x = torch.cat([x, norm_inputs], axis = 1)
