@@ -398,13 +398,6 @@ class Encoder(nn.Module):
         
         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         norm_inputs = self.bn(x)
-        t
-        # if self.training:
-        #   # Perform augmentations to normalized data
-        #   size = norm_inputs.size()
-        #   blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
-        #   jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
-        #   norm_inputs = norm_inputs + blur + jitter 
         
         x = self.conv_stack[0](norm_inputs)
         x = torch.cat([x, norm_inputs], axis = 1)
