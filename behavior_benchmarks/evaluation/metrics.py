@@ -8,6 +8,10 @@ import operator
 import concurrent.futures
 import itertools
 import os
+from sklearn.metrics import homogeneity_score
+ 
+def homogeneity(labels_coarse, labels_fine):
+  return homogeneity_score(labels_coarse, labels_fine)
 
 def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
     array = np.array(array)

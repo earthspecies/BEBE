@@ -1,6 +1,6 @@
 import os
-import glob
 import yaml
+import glob
 
 def expand_config(config):
   ## accepts a human-generated config dictionary
@@ -198,4 +198,42 @@ def accept_default_model_configs(config):
     if key not in config[model_config_name]:
       config[model_config_name][key] = default_model_config[key]
       
+  return config
+
+def experiment_setup(config):
+  # put in default parameters if they are unspecified
+  config = accept_default_model_configs(config)
+  
+  # create output directory
+  output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
+  config['output_dir'] = output_dir
+  
+  # accept various defaults
+  config = expand_config(config)
+  
+  ## save off input config
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+  target_fp = os.path.join(output_dir, "config.yaml")
+  with open(target_fp, 'w') as file:
+    yaml.dump(config, file)
+
+  # Set up the rest of the experiment
+
+  if not os.path.exists(config['predictions_dir']):
+    os.makedirs(config['predictions_dir'])
+    
+  if not os.path.exists(config['final_model_dir']):
+    os.makedirs(config['final_model_dir'])
+    
+  if not os.path.exists(config['visualization_dir']):
+    os.makedirs(config['visualization_dir'])
+    
+  if not os.path.exists(config['temp_dir']):
+    os.makedirs(config['temp_dir'])
+    
+  if config['save_latents'] and not os.path.exists(config['latents_output_dir']):
+    os.makedirs(config['latents_output_dir'])
+    
   return config

@@ -6,20 +6,21 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
-from behavior_benchmarks.models.pytorch_dataloaders import BEHAVIOR_DATASET
+from behavior_benchmarks.models.supervised_nn_utils import BEHAVIOR_DATASET
 import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
+
 
 def _count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 class supervised_nn():
   def __init__(self, config):
+    print(f"Using {device} device")
     self.config = config
     self.read_latents = config['read_latents']
     self.model_config = config['supervised_nn_config']

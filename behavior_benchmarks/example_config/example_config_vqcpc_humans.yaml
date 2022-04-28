@@ -1,4 +1,4 @@
-experiment_name: vq_cpc_with_pooling_and_downsampling32
+experiment_name: vq_cpc_with_test
 input_vars:
 - AccX
 - AccY
@@ -30,7 +30,7 @@ vq_cpc_config:
   initial_lr: 1.0e-05
   jitter_scale: 0.0
   lr: 0.0004
-  n_epochs: 300
+  n_epochs: 2
   predict_proportion: 0.5
   temporal_window_samples: 1024
   warmup_epochs: 150

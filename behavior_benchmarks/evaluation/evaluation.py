@@ -1,92 +1,63 @@
+import behavior_benchmarks.visualization as bbvis
+import behavior_benchmarks.evaluation.metrics as metrics
 import os
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-import yaml
-import sys
-import argparse
 import tqdm
-import shutil
+import yaml
 
-import behavior_benchmarks.models as models
-import behavior_benchmarks.training.evaluation as evaluation
-import behavior_benchmarks.training.handle_config as handle_config
-import behavior_benchmarks.visualization as bbvis
-
-def main(config):
+def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None, choices = None, probs = None):
   
-  # put in default parameters if they are unspecified
-  config = handle_config.accept_default_model_configs(config)
+  evaluation_dict = {}
+
+  ## subselect to remove frames with unknown label
+ 
+  unknown_label = config['metadata']['label_names'].index('unknown')
+  mask = y_true != unknown_label
+    
+  ## Compute evaluation metrics
   
-  # create output directory
-  output_dir = os.path.join(config['output_parent_dir'], config['experiment_name'])
+  # information-theoretic
+  y_true_sub = y_true[mask]
+  y_pred_sub = y_pred[mask]
+  homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
+  evaluation_dict['homogeneity'] = float(homogeneity)
   
-  ## save off input config
-  if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-
-  target_fp = os.path.join(output_dir, "config.yaml")
-  with open(target_fp, 'w') as file:
-    yaml.dump(config, file)
-
-  ## modify config to be passed around in future steps
-  config['output_dir'] = output_dir
-  config = handle_config.expand_config(config)
-
-  # Set up the rest of the experiment
-
-  if not os.path.exists(config['predictions_dir']):
-    os.makedirs(config['predictions_dir'])
-    
-  if not os.path.exists(config['final_model_dir']):
-    os.makedirs(config['final_model_dir'])
-    
-  if not os.path.exists(config['visualization_dir']):
-    os.makedirs(config['visualization_dir'])
-    
-  if not os.path.exists(config['temp_dir']):
-    os.makedirs(config['temp_dir'])
-    
-  if config['save_latents'] and not os.path.exists(config['latents_output_dir']):
-    os.makedirs(config['latents_output_dir'])
-
-  ## Instantiate model
-
-  if config['model'] == 'gmm':
-    model = models.gmm(config)
-    
-  elif config['model'] == 'kmeans':
-    model = models.kmeans(config)
-    
-  elif config['model'] == 'eskmeans':
-    model = models.eskmeans(config)
-    
-  elif config['model'] == 'vame':
-    model = models.vame(config)
-    
-  elif config['model'] == 'whiten':
-    model = models.whiten(config)
-    
-  elif config['model'] == 'hmm':
-    model = models.hmm(config)
-    
-  elif config['model'] == 'supervised_nn':
-    model = models.supervised_nn(config)
-    
-  elif config['model'] == 'vq_cpc':
-    model = models.vq_cpc(config)
-
-  else:
-    raise ValueError('model type not recognized')
-
-  # Train model
-  print("Training model")
-  model.fit()
+  # mapping-based
+  num_clusters = config['num_clusters']
+  label_names = config['metadata']['label_names']
+  boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
-  # Save model
+  # scores for supervised model
+  if config['model'] == 'supervised_nn':
+    supervised = True
+  else: 
+    supervised = False
   
-  model.save()
+  mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
+                                                               y_pred, 
+                                                               num_clusters, 
+                                                               label_names, 
+                                                               boundary_tolerance_frames = boundary_tolerance_frames, 
+                                                               unknown_value = unknown_label,
+                                                               choices = choices,
+                                                               probs = probs,
+                                                               n_samples = n_samples, 
+                                                               supervised = supervised
+                                                              )
+  for key in mapping_based:
+    evaluation_dict[key] = mapping_based[key]
+  
+  ## Save
+  
+  if output_fp is not None:
+    with open(output_fp, 'w') as file:
+      yaml.dump(evaluation_dict, file)
+      
+  ## In any case, return as a dict    
+  return evaluation_dict, choices, probs
 
+def generate_predictions_and_evaluate(model, config):
   # Generate predictions for each file
   # Simultaneously, keep track of all predictions at once
   
@@ -123,7 +94,6 @@ def main(config):
       all_labels.extend(labels)
 
     # Evaluate
-
     all_labels = np.array(all_labels)
     all_predictions = np.array(all_predictions)
     
@@ -142,9 +112,9 @@ def main(config):
       
     if config['predict_and_evaluate']:
       if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
-        eval_dict, choices, probs = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+        eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
       else: 
-        eval_dict, _, _ = evaluation.perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+        eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
 
       # Save confusion matrix
       bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
@@ -173,18 +143,5 @@ def main(config):
         else:
           start_sample = rng.integers(0, high = track_length - 20000)
           bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = start_sample, end_sample = start_sample + 20000)
-
-  # Clean up
-  shutil.rmtree(config['temp_dir'])
+          
   print("model outputs saved to %s " % config['output_dir'])
-
-if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--config', type=str, required=True)
-  args = parser.parse_args()
-  config_fp = args.config
-  
-  with open(config_fp) as file:
-    config = yaml.load(file, Loader=yaml.FullLoader)
-  
-  main(config)
