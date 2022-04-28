@@ -175,7 +175,6 @@ def main(config):
           bbvis.plot_track(data_fp, predictions_fp, config, eval_dict, target_fp = target_fp, start_sample = start_sample, end_sample = start_sample + 20000)
 
   # Clean up
-  
   shutil.rmtree(config['temp_dir'])
   print("model outputs saved to %s " % config['output_dir'])
 

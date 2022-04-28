@@ -1,4 +1,4 @@
-experiment_name: kmeans
+experiment_name: vame
 input_vars:
 - AccX
 - AccY
@@ -9,13 +9,24 @@ input_vars:
 - GyrX
 - GyrY
 - GyrZ
-model: kmeans
+model: vame
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
-num_clusters: 24
+save_latents: True
+num_clusters: 20
 read_latents: True
 data_latents_fp_glob: 
 - /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy
   
 evaluation:
   boundary_tolerance_sec: 0.5
+  
+vame_config:
+  batch_size : 256
+  max_epochs : 50
+  beta: 0 
+  zdims: 10
+  learning_rate : 0.0005
+  time_window_sec: 1.0
+  prediction_sec: 1.0
+  kmeans_lambda: 0.1

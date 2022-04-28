@@ -1,13 +1,9 @@
-experiment_name: kmeans
+experiment_name: vame_test
 input_vars:
 - AccX
 - AccY
 - AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
 - Depth
-model: kmeans
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 num_clusters: 8
@@ -16,4 +12,14 @@ data_latents_fp_glob:
 - /home/jupyter/behavior_benchmarks_outputs/ladds_seals/whiten_seals/latents/*.npy
   
 evaluation:
-  boundary_tolerance_sec: 1.0
+  boundary_tolerance_sec: 0.5
+  
+vame_config:
+  batch_size : 256
+  max_epochs : 20
+  beta: 0 
+  zdims: 10
+  learning_rate : 0.0005
+  time_window_sec: 1.0
+  prediction_sec: 1.0
+  kmeans_lambda: 0.1

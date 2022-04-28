@@ -8,6 +8,8 @@ def expand_config(config):
   
   config['predictions_dir'] = os.path.join(config['output_dir'], 'predictions')
   config['temp_dir'] = os.path.join(config['output_dir'], 'temp')
+  config['final_model_dir'] = os.path.join(config['output_dir'], "final_model")
+  config['visualization_dir'] = os.path.join(config['output_dir'], "visualizations")
   
   # load metadata
   metadata_fp = os.path.join(config['dataset_dir'], 'dataset_metadata.yaml')
@@ -16,48 +18,16 @@ def expand_config(config):
   
   # Based on model type, decide how to save latents, predictions, and evaluation
   
-  if config['model'] == 'gmm':
-    config['save_latents'] = False
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = True
+  default_config_fp = os.path.join('behavior_benchmarks', 'models', 'default_configs', config['model'] + '.yaml')
+  if not os.path.exists(default_config_fp):
+    raise ValueError('model type not recognized, make sure there is a default config file for your model')
     
-  elif config['model'] == 'kmeans':
-    config['save_latents'] = False
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = True
-      
-  elif config['model'] == 'whiten':
-    config['save_latents'] = True
-    config['predict_and_evaluate'] = False
-    config['unsupervised'] = True
-    
-  elif config['model'] == 'eskmeans':
-    config['save_latents'] = False
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = True
-    
-  elif config['model'] == 'vame':
-    config['save_latents'] = True
-    config['predict_and_evaluate'] = True # Equivalent to putting discovered latents into kmeans model
-    config['unsupervised'] = True
-    
-  elif config['model'] == 'hmm':
-    config['save_latents'] = False # we treat hmm latent states as predictions
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = True
-    
-  elif config['model'] == 'supervised_nn':
-    config['save_latents'] = False
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = False
-    
-  elif config['model'] == 'vq_cpc':
-    config['save_latents'] = True
-    config['predict_and_evaluate'] = True
-    config['unsupervised'] = True
-
-  else:
-    raise ValueError('model type not recognized')
+  with open(default_config_fp) as file:
+    default_config = yaml.load(file, Loader=yaml.FullLoader)
+  
+  config['save_latents'] = default_config['save_latents']
+  config['predict_and_evaluate'] = default_config['predict_and_evaluate']
+  config['unsupervised'] = default_config['unsupervised']
   
   if config['save_latents']:
     config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
@@ -133,18 +103,12 @@ def expand_config(config):
   else:
     config['read_latents'] = False
   
-  final_model_dir = os.path.join(config['output_dir'], "final_model")
-  config['final_model_dir'] = final_model_dir
-  
-  visualization_dir = os.path.join(config['output_dir'], "visualizations")
-  config['visualization_dir'] = visualization_dir
-  
   # Set up a dictionary to keep track of file id's, the data filepaths, and (potentially) the latent filepaths:
   
   file_id_to_data_fp = {}
   file_id_to_model_input_fp = {}
   
-  train_file_ids = [] # file_ids are of the form clip_id.npy, could also call them "filenames"
+  train_file_ids = [] # file_ids are of the form clip_id.npy, ie they are filenames
   test_file_ids = []
   val_file_ids = []
   dev_file_ids = []
@@ -199,10 +163,8 @@ def expand_config(config):
   
   return config
 
-
-
 def accept_default_model_configs(config):
-  
+  # Makes sure that all the entries of the config file are properly filled in.  
   assert 'evaluation' in config
   
   if 'n_samples' not in config['evaluation']:
@@ -210,6 +172,8 @@ def accept_default_model_configs(config):
       config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
     else:
       config['evaluation']['n_samples'] = 100
+      
+  ### set up model-specific config    
     
   model_type = config['model']
   model_config_name = model_type + "_config"
@@ -219,88 +183,16 @@ def accept_default_model_configs(config):
     
   ### look up default settings
   
-  if model_type == 'gmm':
-    default_model_config = {'max_iter' : 100,
-                            'n_init' : 1}
-      
-  elif model_type == 'kmeans':      
-    default_model_config = {'max_iter' : 100,
-                            'n_init' : 10}
+  default_config_fp = os.path.join('behavior_benchmarks', 'models', 'default_configs', config['model'] + '.yaml')
+  if not os.path.exists(default_config_fp):
+    raise ValueError('model type not recognized, make sure there is a default config file for your model')
     
-  elif model_type == 'eskmeans':
-    default_model_config = {'landmark_hop_size' : 10,
-                            'n_epochs' : 10,
-                            'n_landmarks_max' : 8,
-                            'embed_length' : 10,
-                            'boundary_init_lambda' : 4.,
-                            'max_track_len' : 10000,
-                            'batch_size' : 10,
-                            'time_power_term' : 1. ## 1 is standard. if between 0 and 1, it penalizes discovering short segments
-                           }
+  with open(default_config_fp) as file:
+    default_config = yaml.load(file, Loader=yaml.FullLoader)
     
-  elif model_type == 'vame':
-    default_model_config = {'batch_size' : 256,
-                            'max_epochs' : 500, 
-                            'beta': 1, ## Scalar multiplied by KL loss
-                            'zdims': 30, ## Latent space dimensionality
-                            'learning_rate' : 0.0005,
-                            'time_window_sec': 1.,
-                            'prediction_decoder': 1, ## Whether to predict future steps
-                            'prediction_sec': 0.5, ## How much to predict after encoded window
-                            'scheduler': 1,
-                            'scheduler_step_size': 100,
-                            'scheduler_gamma': 0.2,
-                            'kmeans_lambda': 0.1, ## Scalar multiplied by kmeans loss
-                            'downsizing_factor' : 4 ## Train more efficiently, account for autocorrelation
-                           }
-    
-  elif model_type == 'whiten':
-    default_model_config = {}
-  
-  elif model_type == 'hmm':
-    default_model_config = {'time_bins' : 2500, 
-                            'prior_wait_sec' : 5., 
-                            'sticky_prior_strength' : 0., 
-                            'N_iters' : 50, 
-                            'lags' : 1
-                           }
-    
-  elif model_type == 'supervised_nn':
-    default_model_config = {'downsizing_factor' : 128,
-                            'lr' : 0.01,
-                            'weight_decay' : 1e-3,
-                            'n_epochs' : 200,
-                            'hidden_size' : 32,
-                            'num_layers' : 2,
-                            'temporal_window_samples' : 512, # used for training only, to subselect
-                            'batch_size' : 512,
-                            'dropout' : 0, 
-                            'rescale_param' : 0,
-                            'jitter_scale' : 0,
-                            'blur_scale' : 0,
-                            'conv_stack_depth' : 2,
-                            'sparse_annotations' : False
-                           }
-    
-  elif model_type == 'vq_cpc':
-    default_model_config = {'predict_proportion' : 0.5, 
-                            'encoder_kernel_width' : 3,
-                            'downsizing_factor' : 256, 
-                            'lr' : 4e-4, 
-                            'n_epochs' : 300, 
-                            'conv_stack_hidden_size' : 64,  
-                            'temporal_window_samples' : 1024, 
-                            'batch_size' : 64, 
-                            'conv_stack_depth' : 12, 
-                            'z_dim' : 8, 
-                            'c_dim' : 16, 
-                            'warmup_epochs' : 150, 
-                            'initial_lr' : 1e-5,
-                            'blur_scale' : 0., 
-                            'jitter_scale' : 0., 
-                            'pooling_factor' : 8}
-    
-  ### apply defaults if unspecified
+  default_model_config = default_config['default_model_config']
+
+  ### apply defaults if unspecified in training config file
       
   for key in default_model_config:
     if key not in config[model_config_name]:

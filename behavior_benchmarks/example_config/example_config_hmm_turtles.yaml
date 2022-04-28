@@ -1,4 +1,4 @@
-experiment_name: kmeans28
+experiment_name: hmm_strong_prior
 input_vars:
 - AccX
 - AccY
@@ -11,12 +11,16 @@ input_vars:
 - GyrZ
 - Depth
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
-model: kmeans
+model: hmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
-num_clusters: 28
-read_latents: True
-data_latents_fp_glob: 
-- /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles/whiten_turtles/latents/*.npy
+num_clusters: 14
   
 evaluation:
   boundary_tolerance_sec: 1.0
+  
+hmm_config:
+  time_bins : 2500
+  prior_wait_sec : 5.
+  sticky_prior_strength : 3.
+  N_iters : 50
+  lags : 1
