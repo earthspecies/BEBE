@@ -10,9 +10,13 @@ The task is to predict, for each sample, a cluster label. So models should outpu
 
 We specify the number of discoverable cluster labels <img src="https://render.githubusercontent.com/render/math?math=M"> in the model setup. Having a static number of cluster labels makes it easier to compare different models. I have been using the number of cluster labels to be 4 times the number of ground truth class labels <img src="https://render.githubusercontent.com/render/math?math=N">. That is, <img src="https://render.githubusercontent.com/render/math?math=M = 4N">. Ground truth classes can be found in each dataset's metadata file.
 
-In order to evaluate model performance, we assume there is an unknown many-to-one function <img src="https://render.githubusercontent.com/render/math?math=F\colon \{1,\dots, M\} \to \{1,\dots, N\}">. ....todo....
-
 For unsupervised models, I have been lumping the `train` and `val` splits into `dev`, which I use for training. Model selection is performed in a supervised manner, using the entire `dev` split. For our proposed best model, it will be desireable to have unsupervised model selection, but I will consider this problem later on. For the supervised model, I use `train`, `val`, `test` splits in the typical way. Individuals only appear in one split.
+
+In order to evaluate model performance, we assume that each cluster is a subset of a single ground truth behavior class. That is, there is an unknown many-to-one function <img src="https://render.githubusercontent.com/render/math?math=F\colon \{1,\dots, M\} \to \{1,\dots, N\}"> which assigns each cluster to its true behavior label. We estimate <img src="https://render.githubusercontent.com/render/math?math=F"> by setting <img src="https://render.githubusercontent.com/render/math?math=\hat{F}(i) = \text{argmax}_j |c_i \cap l_j|">, where <img src="https://render.githubusercontent.com/render/math?math=c_i"> denotes the set of samples assigned to the <img src="https://render.githubusercontent.com/render/math?math=i^{th}"> cluster, and <img src="https://render.githubusercontent.com/render/math?math=l_j"> denotes the set of samples assigned to the <img src="https://render.githubusercontent.com/render/math?math=j^{th}"> label. We compute classification metrics using labels predicted by <img src="https://render.githubusercontent.com/render/math?math=\hat{F}">. This is reported as `macro MAP f1`, etc.
+
+We also report `consistency`, which takes values between 0 and 1. Let <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> be an estimate of <img src="https://render.githubusercontent.com/render/math?math=F"> as before, except now it is only based upon samples taken from individual <img src="https://render.githubusercontent.com/render/math?math=k">. `consistency` is a diagnostic tool which measures how <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> varies with <img src="https://render.githubusercontent.com/render/math?math=k">. A score of 1 is perfect, meaning that each cluster has the same semantic content across all individuals.
+
+There are some information-theoretic and probabilistic metrics which are legacy and no longer reported. I can explain why I did this in person.
 
 ## Install necessary Python packages:
 
@@ -48,4 +52,4 @@ Look at outputs directory, which was specified in config file. You can also find
 ## Known shortcomings
 
 - I haven't worried enough about model saving and loading, including checkpointing.
-- model and evaluation code should be better organized.
+- There is code that is less beautiful than desired
