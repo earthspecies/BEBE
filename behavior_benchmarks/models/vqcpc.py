@@ -9,6 +9,7 @@ import torchmetrics
 from behavior_benchmarks.models.vqcpc_utils import WarmupScheduler, CPCDataset, Encoder, CPCLoss
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from behavior_benchmarks.models.model_superclass import BehaviorModel
 
 from itertools import chain
 import torch.optim as optim
@@ -19,14 +20,15 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 def _count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-class vq_cpc():
+class vq_cpc(BehaviorModel):
   def __init__(self, config):
+    super(vq_cpc, self).__init__(config)
     # Get cpu or gpu device for training.
     print(f"Using {device} device")
-    self.config = config
-    self.read_latents = config['read_latents']
-    self.model_config = config['vq_cpc_config']
-    self.metadata = config['metadata']
+    # self.config = config
+    # self.read_latents = config['read_latents']
+    # self.model_config = config['vq_cpc_config']
+    # self.metadata = config['metadata']
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
     ##
@@ -53,8 +55,8 @@ class vq_cpc():
     self.pooling_factor = self.model_config['pooling_factor']
     # ##
     
-    cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
+    # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
+    # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
@@ -75,14 +77,10 @@ class vq_cpc():
   
   def load_model_inputs(self, filepath, read_latents = False):
     if read_latents:
-      raise NotImplementedError("Supervised model is expected to read from raw data")
+      raise NotImplementedError("cpc model is expected to read from raw data")
       #return np.load(filepath)
     else:
       return np.load(filepath)[:, self.cols_included] #[n_samples, n_features]
-    
-  def load_labels(self, filepath):
-    labels = np.load(filepath)[:, self.label_idx].astype(int)
-    return labels 
     
   def fit(self):
     ## get data. assume stored in memory for now
@@ -95,9 +93,6 @@ class vq_cpc():
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
     test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
-    
-    dev_labels = [self.load_labels(fp) for fp in dev_fps]
-    test_labels = [self.load_labels(fp) for fp in test_fps]
     
     ###
     dev_dataset = CPCDataset(dev_data, True, self.temporal_window_samples)
@@ -341,8 +336,8 @@ class vq_cpc():
     return preds, latents
     ###
   
-  def predict_from_file(self, fp):
-    inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
-    predictions, latents = self.predict(inputs)
-    return predictions, latents
+  # def predict_from_file(self, fp):
+  #   inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
+  #   predictions, latents = self.predict(inputs)
+  #   return predictions, latents
 

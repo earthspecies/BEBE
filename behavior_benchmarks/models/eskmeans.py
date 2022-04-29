@@ -8,6 +8,7 @@ import scipy.signal as signal
 import tqdm
 from behavior_benchmarks.applications.eskmeans import eskmeans_wordseg
 import concurrent.futures
+from behavior_benchmarks.models.model_superclass import BehaviorModel
 
 # Utility functions
 
@@ -103,19 +104,20 @@ def process_and_segment(input_data_keys, model, previous_means):
         
   return segmenter_record.copy(), ksegmenter.acoustic_model.mean_numerators.copy(), ksegmenter.acoustic_model.counts.copy()
 
-class eskmeans(object):
+class eskmeans(BehaviorModel):
   def __init__(self, config):
-    self.config = config
-    self.model_config = config['eskmeans_config']
-    self.read_latents = config['read_latents']
+    super(eskmeans, self).__init__(config)
+    # self.config = config
+    # self.model_config = config['eskmeans_config']
+    # self.read_latents = config['read_latents']
     self.model = None
-    self.metadata = config['metadata']
+    # self.metadata = config['metadata']
     # chop up each track into something computationally tractable
     self.max_track_len = self.model_config['max_track_len']
     self.time_power_term = self.model_config['time_power_term'] ## Positive float. when 1., we get standard behavior. when <1, we penalize making short segments
       
-    cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
+#     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
+#     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     self.landmark_hop_size = self.model_config['landmark_hop_size']
     self.n_epochs = self.model_config['n_epochs']
@@ -125,11 +127,11 @@ class eskmeans(object):
     self.boundary_init_lambda = self.model_config['boundary_init_lambda']
     self.batch_size = self.model_config['batch_size']
     
-  def load_model_inputs(self, filepath, read_latents = False):
-    if read_latents:
-      return np.load(filepath)
-    else:
-      return np.load(filepath)[:, self.cols_included]
+  # def load_model_inputs(self, filepath, read_latents = False):
+  #   if read_latents:
+  #     return np.load(filepath)
+  #   else:
+  #     return np.load(filepath)[:, self.cols_included]
     
   def process_embeddings(self, embedding_mats, vec_ids_dict, use_temp = True):
       """

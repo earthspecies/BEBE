@@ -10,6 +10,7 @@ from behavior_benchmarks.models.supervised_nn_utils import BEHAVIOR_DATASET
 import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from behavior_benchmarks.models.model_superclass import BehaviorModel
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -17,13 +18,14 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 def _count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-class supervised_nn():
+class supervised_nn(BehaviorModel):
   def __init__(self, config):
+    super(supervised_nn, self).__init__(config)
     print(f"Using {device} device")
-    self.config = config
-    self.read_latents = config['read_latents']
-    self.model_config = config['supervised_nn_config']
-    self.metadata = config['metadata']
+    # self.config = config
+    # self.read_latents = config['read_latents']
+    # self.model_config = config['supervised_nn_config']
+    # self.metadata = config['metadata']
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
     ##
@@ -43,8 +45,8 @@ class supervised_nn():
     self.sparse_annotations = self.model_config['sparse_annotations']
     ##
     
-    cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
+    # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
+    # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
@@ -281,10 +283,10 @@ class supervised_nn():
     return preds, None
     ###
   
-  def predict_from_file(self, fp):
-    inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
-    predictions, latents = self.predict(inputs)
-    return predictions, latents
+  # def predict_from_file(self, fp):
+  #   inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
+  #   predictions, latents = self.predict(inputs)
+  #   return predictions, latents
 
 class LSTM_Classifier(nn.Module):
     def __init__(self, n_features, n_classes, hidden_size, num_layers_lstm, dropout, conv_stack_depth, blur_scale = 0, jitter_scale = 0):

@@ -4,10 +4,12 @@ import pickle
 import os
 import shutil
 import behavior_benchmarks.applications.VAME.vame as VAME
+from behavior_benchmarks.models.model_superclass import BehaviorModel
 import torch
 
-class vame():
+class vame(BehaviorModel):
   def __init__(self, config):
+    super(vame, self).__init__(config)
     
     use_gpu = torch.cuda.is_available()
     if use_gpu:
@@ -16,14 +18,14 @@ class vame():
         print('GPU used:',torch.cuda.get_device_name(0))
     
     
-    self.config = config
-    self.read_latents = config['read_latents']
-    self.model_config = config['vame_config']
+    # self.config = config
+    # self.read_latents = config['read_latents']
+    # self.model_config = config['vame_config']
     self.model = None
-    self.metadata = config['metadata']
+    # self.metadata = config['metadata']
       
-    cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
+    # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
+    # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     # Set up temporary VAME directory to follow the VAME package's formatting conventions
     project = 'temp_vame_project'
@@ -60,11 +62,11 @@ class vame():
       os.makedirs(self.temp_data_dir)
     
   
-  def load_model_inputs(self, filepath, read_latents = False):
-    if read_latents:
-      return np.load(filepath)
-    else:
-      return np.load(filepath)[:, self.cols_included]
+  # def load_model_inputs(self, filepath, read_latents = False):
+  #   if read_latents:
+  #     return np.load(filepath)
+  #   else:
+  #     return np.load(filepath)[:, self.cols_included]
     
   def fit(self):
     ## get data. assume stored in memory for now
