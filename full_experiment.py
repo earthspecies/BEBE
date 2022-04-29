@@ -11,7 +11,8 @@ import behavior_benchmarks.training.train_model as train_model
 def main(config):
   expanded_config = experiment_setup.experiment_setup(config)
   model = train_model.train_model(expanded_config)
-  evaluation.generate_predictions_and_evaluate(model, expanded_config)
+  evaluation.generate_predictions(model, expanded_config)
+  evaluation.generate_evaluations(expanded_config)
   
   # Clean up
   shutil.rmtree(config['temp_dir'])
