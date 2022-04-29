@@ -4,9 +4,18 @@ import pickle
 import os
 import shutil
 import behavior_benchmarks.applications.VAME.vame as VAME
+import torch
 
 class vame():
   def __init__(self, config):
+    
+    use_gpu = torch.cuda.is_available()
+    if use_gpu:
+        print("Using CUDA")
+        print('GPU active:',torch.cuda.is_available())
+        print('GPU used:',torch.cuda.get_device_name(0))
+    
+    
     self.config = config
     self.read_latents = config['read_latents']
     self.model_config = config['vame_config']

@@ -14,7 +14,6 @@ from matplotlib.ticker import MultipleLocator
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-
 def _count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 

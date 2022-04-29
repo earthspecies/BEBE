@@ -26,11 +26,7 @@ from behavior_benchmarks.applications.VAME.vame.model.rnn_model import RNN_VAE, 
 
 # make sure torch uses cuda for GPU computing
 use_gpu = torch.cuda.is_available()
-if use_gpu:
-    print("Using CUDA")
-    print('GPU active:',torch.cuda.is_available())
-    print('GPU used:',torch.cuda.get_device_name(0))
-else:
+if not use_gpu:
     torch.device("cpu")
 
 def reconstruction_loss(x, x_tilde, reduction):
