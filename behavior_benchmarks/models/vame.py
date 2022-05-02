@@ -6,6 +6,7 @@ import shutil
 import behavior_benchmarks.applications.VAME.vame as VAME
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 import torch
+from matplotlib import pyplot as plt
 
 class vame(BehaviorModel):
   def __init__(self, config):
@@ -108,7 +109,16 @@ class vame(BehaviorModel):
     del test_data
     
     # Train
-    VAME.train_model(self.config_vame_fp)
+    train_losses, test_losses, kmeans_losses, kl_losses, weight_values, mse_losses, fut_losses = VAME.train_model(self.config_vame_fp)
+    plt.plot(train_losses, label = 'train_loss')
+    plt.plot(test_losses, label = 'test_loss')
+    plt.plot(kmeans_losses, label = 'train_kmeans_loss')
+    plt.plot(weight_values, label = 'weight_value')
+    plt.plot(mse_losses, label = 'train_mse_loss')
+    plt.plot(fut_losses, label = 'train_future_loss')
+    plt.legend()
+    plt.savefig(os.path.join(self.config['visualization_dir'], 'training_progress.png'))
+    plt.close()
     
   def save(self):
     if os.path.exists(self.config['final_model_dir']):

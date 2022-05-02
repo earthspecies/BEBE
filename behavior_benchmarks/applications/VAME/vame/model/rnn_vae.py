@@ -424,3 +424,5 @@ def train_model(config):
               'with vame.evaluate_model(). If your satisfied you can continue. \n'
               'Use vame.pose_segmentation() to identify behavioral motifs! \n'
               'OPTIONAL: You can re-run vame.train_model() to improve performance.')
+    
+    return train_losses, test_losses, kmeans_losses, kl_losses, weight_values, mse_losses, fut_losses

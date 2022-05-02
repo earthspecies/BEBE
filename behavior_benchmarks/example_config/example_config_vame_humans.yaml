@@ -23,7 +23,7 @@ evaluation:
   
 vame_config:
   batch_size : 256
-  max_epochs : 50
+  max_epochs : 100
   beta: 1
   zdims: 10
   learning_rate : 0.0005
