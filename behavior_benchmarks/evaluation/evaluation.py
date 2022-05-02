@@ -96,6 +96,8 @@ def generate_evaluations(config):
     to_consider = [config['train_file_ids'], config['val_file_ids'], config['test_file_ids']]
   
   for file_ids in to_consider:
+    all_predictions_dict = {}
+    all_labels_dict = {}
     all_predictions = []
     all_labels = []
 
@@ -105,30 +107,64 @@ def generate_evaluations(config):
         raise ValueError("you need to save off all the model predictions before performing evaluation")
       
       predictions = np.load(predictions_fp)
+      predictions = list(predictions)
 
       labels_idx = config['metadata']['clip_column_names'].index('label')
       data_fp = config['file_id_to_data_fp'][filename]
-      labels = list(np.load(data_fp)[:, labels_idx])  
-
-      all_predictions.extend(list(predictions))
+      labels = list(np.load(data_fp)[:, labels_idx])
+      
+      clip_id = filename.split('.')[0]
+      individual_id = config['metadata']['clip_id_to_individual_id'][clip_id]
+      
+      if individual_id in all_predictions_dict:
+        all_predictions_dict[individual_id].extend(predictions)
+        all_labels_dict[individual_id].extend(labels)
+      else:
+        all_predictions_dict[individual_id] = predictions
+        all_labels_dict[individual_id] = labels
+      
+      all_predictions.extend(predictions)
       all_labels.extend(labels)
+        
+    # Per-individual evaluation
+    label_names = config['metadata']['label_names'].copy()
+    label_names.remove('unknown')
+    
+    individual_f1s = {label_name : [] for label_name in label_names}
+    # individual_precs = {label_name : [] for label_name in label_names}
+    # individual_recs = {label_name : [] for label_name in label_names}
+    
+    for individual_id in all_predictions_dict:
+      predictions = np.array(all_predictions_dict[individual_id])
+      labels = np.array(all_labels_dict[individual_id])
+      
+      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None, n_samples = config['evaluation']['n_samples'])
+      
+      for label_name in label_names:
+        individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
+        # individual_precs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_precision'][label_name])
+        # individual_recs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_recall'][label_name])
 
-    # Evaluate
+    # Evaluate    
     all_labels = np.array(all_labels)
     all_predictions = np.array(all_predictions)
     
     if file_ids == config['train_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "train_confusion_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "train_f1_consistency_matrix.png")
     elif file_ids == config['val_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'val_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "val_confusion_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "val_f1_consistency_matrix.png")
     elif file_ids == config['dev_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'dev_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "dev_confusion_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "dev_f1_consistency_matrix.png")
     elif file_ids == config['test_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "test_f1_consistency_matrix.png")
       
 
     if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
@@ -138,6 +174,9 @@ def generate_evaluations(config):
 
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
+    
+    # Save consistency plot
+    bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
   
   # Save example figures
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
