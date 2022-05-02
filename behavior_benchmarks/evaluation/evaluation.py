@@ -99,7 +99,7 @@ def generate_evaluations(config):
     all_predictions = []
     all_labels = []
 
-    for filename in tqdm.tqdm(file_ids):      
+    for filename in file_ids:      
       predictions_fp = os.path.join(config['predictions_dir'], filename)
       if not os.path.exists(predictions_fp):
         raise ValueError("you need to save off all the model predictions before performing evaluation")

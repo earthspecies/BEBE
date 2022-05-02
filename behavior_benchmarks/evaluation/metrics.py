@@ -174,58 +174,58 @@ def compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound
   #print('scored boundary')
   return prec, rec, f1, bprec, brec, bf1, bR
   
-def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance_frames = 0, n_iter = 1):
-    # For each cluster, samples a label according to proportion of overlap
-    # Maps that cluster to that label, and computes precision, recall, etc
-    # Does this n_iter times and computes the average
-    # (finding the exact value would be intractable)
-    # Returns a dict including the MAP mapping from clusters to labels
-    results = {}
-    ### Estimate average classification scores
-    mask = find_unknown_mask(gt, unknown_value = unknown_value)
-    gt_sub = gt[mask]
-    #pred_list = list(pred)
+# def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance_frames = 0, n_iter = 1):
+#     # For each cluster, samples a label according to proportion of overlap
+#     # Maps that cluster to that label, and computes precision, recall, etc
+#     # Does this n_iter times and computes the average
+#     # (finding the exact value would be intractable)
+#     # Returns a dict including the MAP mapping from clusters to labels
+#     results = {}
+#     ### Estimate average classification scores
+#     mask = find_unknown_mask(gt, unknown_value = unknown_value)
+#     gt_sub = gt[mask]
+#     #pred_list = list(pred)
     
-    ### Also estimate average boundary scores
-    gt_bound = find_boundaries(gt)
-    # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
-    gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
-    gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
-    gt_mask_boundaries = gt_mask_boundaries.astype(bool)
+#     ### Also estimate average boundary scores
+#     gt_bound = find_boundaries(gt)
+#     # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
+#     gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
+#     gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
+#     gt_mask_boundaries = gt_mask_boundaries.astype(bool)
     
-    ### initialize
-    prec = []
-    rec = []
-    f1 = []
-    boundary_prec = []
-    boundary_rec = []
-    boundary_f1 = []
-    boundary_R = []
+#     ### initialize
+#     prec = []
+#     rec = []
+#     f1 = []
+#     boundary_prec = []
+#     boundary_rec = []
+#     boundary_f1 = []
+#     boundary_R = []
     
     
-    print("Sampling to estimate averaged mapping based scores")      
+#     print("Sampling to estimate averaged mapping based scores")      
 
-    for i in tqdm.tqdm(range(n_iter)):
-        single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames)
-        prec.append(single_prec)
-        rec.append(single_rec)
-        f1.append(single_f1)
-        boundary_prec.append(single_bprec)
-        boundary_rec.append(single_brec)
-        boundary_f1.append(single_bf1)
-        boundary_R.append(single_bR)
+#     for i in tqdm.tqdm(range(n_iter)):
+#         single_prec, single_rec, single_f1, single_bprec, single_brec, single_bf1, single_bR = compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames)
+#         prec.append(single_prec)
+#         rec.append(single_rec)
+#         f1.append(single_f1)
+#         boundary_prec.append(single_bprec)
+#         boundary_rec.append(single_brec)
+#         boundary_f1.append(single_bf1)
+#         boundary_R.append(single_bR)
         
         
-    results['averaged_classification_precision'] = np.mean(prec)
-    results['averaged_classification_recall'] = np.mean(rec)
-    results['averaged_classification_f1'] = np.mean(f1)
-    results['averaged_boundary_precision'] = np.mean(boundary_prec)
-    results['averaged_boundary_recall'] = np.mean(boundary_rec)
-    results['averaged_boundary_f1'] = np.mean(boundary_f1)
-    results['averaged_boundary_R'] = np.mean(boundary_R)
-    for key in results:
-      results[key] = float(results[key])    
-    return results
+#     results['averaged_classification_precision'] = np.mean(prec)
+#     results['averaged_classification_recall'] = np.mean(rec)
+#     results['averaged_classification_f1'] = np.mean(f1)
+#     results['averaged_boundary_precision'] = np.mean(boundary_prec)
+#     results['averaged_boundary_recall'] = np.mean(boundary_rec)
+#     results['averaged_boundary_f1'] = np.mean(boundary_f1)
+#     results['averaged_boundary_R'] = np.mean(boundary_R)
+#     for key in results:
+#       results[key] = float(results[key])    
+#     return results
   
 def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, boundary_tolerance_frames = 0):
     # For each cluster, looks for the label with highest overlap with that cluster
@@ -350,16 +350,16 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, boundary_tolerance
     
     mapping_based_score_dict = {}
     
-    if n_samples > 0:
-      mapping_based_score_dict['averaged_scores'] = estimate_averaged_scores(gt, 
-                                                                             pred, 
-                                                                             choices, 
-                                                                             probs, 
-                                                                             unknown_value=unknown_value, 
-                                                                             boundary_tolerance_frames = boundary_tolerance_frames, 
-                                                                             n_iter = n_samples)
-    else:
-      mapping_based_score_dict['averaged_scores'] = None
+    # if n_samples > 0:
+    #   mapping_based_score_dict['averaged_scores'] = estimate_averaged_scores(gt, 
+    #                                                                          pred, 
+    #                                                                          choices, 
+    #                                                                          probs, 
+    #                                                                          unknown_value=unknown_value, 
+    #                                                                          boundary_tolerance_frames = boundary_tolerance_frames, 
+    #                                                                          n_iter = n_samples)
+    # else:
+    mapping_based_score_dict['averaged_scores'] = None
     
     mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
                                                             pred, 
