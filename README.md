@@ -14,9 +14,11 @@ For unsupervised models, I have been lumping the `train` and `val` splits into `
 
 In order to evaluate model performance, we assume that each cluster is a subset of a single ground truth behavior class. That is, there is an unknown many-to-one function <img src="https://render.githubusercontent.com/render/math?math=F\colon \{1,\dots, M\} \to \{1,\dots, N\}"> which assigns each cluster to its true behavior label. We estimate <img src="https://render.githubusercontent.com/render/math?math=F"> by setting <img src="https://render.githubusercontent.com/render/math?math=\hat{F}(i) = \text{argmax}_j |c_i \cap l_j|">, where <img src="https://render.githubusercontent.com/render/math?math=c_i"> denotes the set of samples assigned to the <img src="https://render.githubusercontent.com/render/math?math=i^{th}"> cluster, and <img src="https://render.githubusercontent.com/render/math?math=l_j"> denotes the set of samples assigned to the <img src="https://render.githubusercontent.com/render/math?math=j^{th}"> label. We compute classification metrics using labels predicted by <img src="https://render.githubusercontent.com/render/math?math=\hat{F}">. This is reported as `macro MAP f1`, etc.
 
-We also report `consistency`, which takes values between 0 and 1. Let <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> be an estimate of <img src="https://render.githubusercontent.com/render/math?math=F"> as before, except now it is only based upon samples taken from individual <img src="https://render.githubusercontent.com/render/math?math=k">. `consistency` is a diagnostic tool which measures how <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> varies with <img src="https://render.githubusercontent.com/render/math?math=k">. A score of 1 is perfect, meaning that each cluster has the same semantic content across all individuals.
+We also save off two `consistency` plots, which are meant to be diagnostic tools to see if a model is able to disentangle behavior from individual identity. Let <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> be an estimate of <img src="https://render.githubusercontent.com/render/math?math=F"> as before, except now it is only based upon samples taken from individual <img src="https://render.githubusercontent.com/render/math?math=k">. The `consistency` plot measures how <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> varies with <img src="https://render.githubusercontent.com/render/math?math=k">, by plotting individual-wise `f1` scores computed using <img src="https://render.githubusercontent.com/render/math?math=\hat{F}_k"> in comparison with overall `f1` score computed using <img src="https://render.githubusercontent.com/render/math?math=\hat{F}">.
 
-There are some information-theoretic and probabilistic metrics which are legacy and no longer reported. I can explain why I did this in person.
+We also report cluster homogeneity, which is an information theoretic metric.
+
+There are some legacy metrics, such as `average f1` and `R score` which should be ignored. I can explain why in person.
 
 ## Install necessary Python packages:
 
@@ -27,7 +29,11 @@ pip install -e .
 
 ## Get data
 
-Copy formatted data from GCP to local drive (the GCP drive is `behavior_benchmarks`). The humans (HAR), dogs, and turtles datasets are all very nice, so for now you should focus on those. HAR is very easy for supervised models but still challenging for unsupervised models. The seals dataset is weird, and the polar bears dataset is huge. Ignore them for now.
+Copy formatted data from GCP to local drive (the GCP drive is `behavior_benchmarks`). For now, we will focus on the following datasets:
+- humans (HAR)
+- dogs
+- turtles 
+HAR is very easy for supervised models but still challenging for unsupervised models. The seals dataset is weird, but small enough to rapidly test if code runs. The polar bears dataset is huge.
 
 ## Set up experiment
 
