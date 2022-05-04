@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_deep
+experiment_name: supervised_nn_deep_10
 input_vars:
 - AccX
 - AccY
@@ -9,7 +9,7 @@ input_vars:
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears
 model: supervised_nn
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/pagano_bears
-num_clusters: 11
+num_clusters: 12
   
 evaluation:
   boundary_tolerance_sec: 1.0
@@ -23,8 +23,8 @@ supervised_nn_config:
   n_epochs: 200
   num_layers: 3
   temporal_window_samples: 2048
-  weight_decay: 0.001
-  blur_scale: 0.02
+  weight_decay: 0.0001
+  blur_scale: 0
   jitter_scale: 0
   rescale_param: 0
   conv_stack_depth: 48

@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_deep_simpler
+experiment_name: supervised_nn
 input_vars:
 - AccX
 - AccY
@@ -6,10 +6,12 @@ input_vars:
 - StaticAccX
 - StaticAccY
 - StaticAccZ
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears
+- Depth
+- Speed
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/friedlaender_whales
 model: supervised_nn
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/pagano_bears
-num_clusters: 11
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/friedlaender_whales
+num_clusters: 6
   
 evaluation:
   boundary_tolerance_sec: 1.0
@@ -24,7 +26,7 @@ supervised_nn_config:
   num_layers: 3
   temporal_window_samples: 2048
   weight_decay: 0.0001
-  blur_scale: 0.02
+  blur_scale: 0
   jitter_scale: 0
   rescale_param: 0
   conv_stack_depth: 48
