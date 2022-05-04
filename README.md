@@ -29,11 +29,13 @@ pip install -e .
 
 ## Get data
 
-Copy formatted data from GCP to local drive (the GCP drive is `behavior_benchmarks`). For now, we will focus on the following datasets:
+Copy formatted data from GCP to local drive (the GCP drive is `behavior_benchmarks`). To do this, make sure your machine is linked to the earthspecies cloud storage and run `gcsfuse --implicit-dirs behavior_benchmarks MOUNTING_DIR`. Here `MOUNTING_DIR` should be a path to an empty directory.
+
+For now, we will focus on getting highest macro f1 scores for the following datasets:
 - humans (HAR)
 - dogs
 - turtles 
-HAR is very easy for supervised models but still challenging for unsupervised models. The seals dataset is weird, but small enough to rapidly test if code runs. The polar bears dataset is huge.
+HAR is very easy for supervised models but still challenging for unsupervised models. The seals dataset is weird, but small enough to rapidly test if code runs. The polar bears dataset is huge. The whales dataset is very new!
 
 ## Set up experiment
 
