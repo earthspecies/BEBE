@@ -12,6 +12,10 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 
+import torchaudio
+import torchaudio.functional as F
+import torchaudio.transforms as T
+
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -41,8 +45,12 @@ class supervised_nn(BehaviorModel):
     self.blur_scale = self.model_config['blur_scale']
     self.jitter_scale = self.model_config['jitter_scale']
     self.rescale_param = self.model_config['rescale_param']
-    self.conv_stack_depth = self.model_config['conv_stack_depth']
     self.sparse_annotations = self.model_config['sparse_annotations']
+    self.n_fft = self.model_config['n_fft']
+    self.hop_length = self.model_config['hop_length']
+    self.power = self.model_config['power']
+    self.spec_ker_size = self.model_config['spec_ker_size']
+    self.ts_ker_size = self.model_config['ts_ker_size']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -54,7 +62,18 @@ class supervised_nn(BehaviorModel):
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = LSTM_Classifier(self.n_features, self.n_classes, self.hidden_size, self.num_layers_lstm, self.dropout, self.conv_stack_depth).to(device)
+    self.model = LSTM_Classifier(self.n_features,
+                                 self.n_classes,
+                                 self.hidden_size,
+                                 self.num_layers_lstm,
+                                 self.dropout, 
+                                 blur_scale = self.blur_scale,
+                                 jitter_scale = self.jitter_scale,
+                                 n_fft = self.n_fft,
+                                 hop_length = self.hop_length,
+                                 power = self.power,
+                                 spec_ker_size = self.spec_ker_size,
+                                 ts_ker_size = self.ts_ker_size).to(device)
     #print(self.model)
     print('Model parameters:')
     print(_count_parameters(self.model))
@@ -280,64 +299,207 @@ class supervised_nn(BehaviorModel):
       preds = np.squeeze(preds, axis = 0)
       preds = np.argmax(preds, axis = 0).astype(np.uint8)
       #print(preds.dtype)
-    return preds, None
-    ###
-  
-  # def predict_from_file(self, fp):
-  #   inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
-  #   predictions, latents = self.predict(inputs)
-  #   return predictions, latents
+    return preds, None  
 
+# # v4:  
 class LSTM_Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, hidden_size, num_layers_lstm, dropout, conv_stack_depth, blur_scale = 0, jitter_scale = 0):
+    def __init__(self,
+                 n_features,
+                 n_classes,
+                 hidden_size,
+                 num_layers_lstm,
+                 dropout,
+                 blur_scale = 0,
+                 jitter_scale = 0,
+                 n_fft = 128,
+                 hop_length = 32,
+                 power = 0.5,
+                 spec_ker_size = 3,
+                 ts_ker_size = 5):
         super(LSTM_Classifier, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
         
-        self.head = nn.Conv1d(2*hidden_size, n_classes, 1, padding = 'same')
-        self.lstm = nn.LSTM(n_features + 64, hidden_size, num_layers = num_layers_lstm, bidirectional = True, batch_first = True, dropout = dropout)
-        
-        self.conv_stack = [_conv_block(n_features, 64, 64, 7)]
-        for i in range(conv_stack_depth - 1):
-          self.conv_stack.append(_conv_block(64+n_features, 64 + n_features, 64 + n_features, 3)) 
-        self.conv_stack = nn.ModuleList(self.conv_stack)
-        
+        #
         self.bn = torch.nn.BatchNorm1d(n_features)
-        self.dropout = nn.Dropout(p = 0.01)
+        
+        # Spectrogram 
+        self.hop_length = hop_length
+        self.n_fft = n_fft
+        n_freq_bins = n_fft //2 + 1
+
+        self.spectrogram = T.Spectrogram(
+            n_fft=self.n_fft,
+            win_length=None,
+            hop_length=self.hop_length,
+            center=True,
+            pad_mode="reflect",
+            power=power,
+        )
+        
+        # Spectrogram fe params
+        n_channels_out_spec = 64
+        ker_size = spec_ker_size
+        self.spec_fe = Spectrogram_FeatureExtractor(n_freq_bins, n_channels_out_spec, ker_size)
+        
+        # Time sereies fe
+        ker_width = ts_ker_size
+        n_channels_out_ts = 128
+        self.ts_fe = TimeSeries_FeatureExtractor(n_features, n_channels_out_ts, ker_width)
+        
+        into_lstm_channels = n_features*n_channels_out_spec + n_channels_out_ts
+        self.lstm = nn.LSTM(into_lstm_channels, hidden_size, num_layers = num_layers_lstm, bidirectional = True, batch_first = True, dropout = dropout)
+        self.head = nn.Conv1d(2* hidden_size, n_classes, 1, padding = 'same')
+        
 
     def forward(self, x):
+        # x: [batch, seq_len, num_feat]
         
-        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
-        norm_inputs = self.bn(x)
+        seq_len = x.size()[1]
+        num_feat = x.size()[2]
+        n_time_bins_spec = seq_len // self.hop_length + 1
+        
+        ## setup
+        x = torch.transpose(x, 1,2)
+        x = self.bn(x)
         
         if self.training:
           # Perform augmentations to normalized data
-          size = norm_inputs.size()
-          blur = self.blur_scale * torch.randn(size, device = norm_inputs.device)
-          jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = norm_inputs.device)
-          norm_inputs = norm_inputs + blur + jitter 
+          blur = self.blur_scale * torch.randn(x.size(), device = x.device)
+          x = x + blur
         
-        x = self.conv_stack[0](norm_inputs)
-        x = torch.cat([x, norm_inputs], axis = 1)
-      
-        for layer in self.conv_stack[1:]:
-          x = layer(x) + x
         
+        ## Generate spectral representations
+        # x_spec is a list of tensors of shape (batch, n_freq_bins, n_time_bins)
+        # where n_freq_bins = n_fft // 2 + 1
+        # and n_time_bins = seq_len // hop_len + 1
+        x_spec = [self.spectrogram(x[:, i, :]) for i in range(num_feat)]
+        x_spec = [torch.unsqueeze(y, 1) for y in x_spec]
+        
+        ## Extract spectrogram features
+        x_spec = [self.spec_fe(y) for y in x_spec] # list of tensors of shape (batch, n_channels, n_time_bins)
+        
+        ## Extract time series features
+        x_ts = self.ts_fe(x)
+        
+        # resample to duration of x_spec
+        x_ts = nn.functional.interpolate(x_ts, size=n_time_bins_spec, mode='nearest-exact')
+        
+        # concat
+        x = torch.cat(x_spec + [x_ts], axis = 1)
+        
+        # lstm
         x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
-        hidden = self.lstm(x)[0]
-        hidden = torch.transpose(hidden, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
-        logits = self.head(hidden)
+        x = self.lstm(x)[0]
+        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
+        
+        # make final predictions and upsample
+        logits = self.head(x)
+        logits = nn.functional.interpolate(logits, size=seq_len, mode='nearest-exact') 
                             
         return logits
+
+class TimeSeries_FeatureExtractor(nn.Module):
+    def __init__(self, n_channels_in, n_channels_out, ker_width):
+        super(TimeSeries_FeatureExtractor, self).__init__()
+        layer1_in_channels = n_channels_in
+        layer1_out_channels = n_channels_in *2
+        layer2_in_channels = layer1_in_channels + layer1_out_channels
+        layer2_out_channels = n_channels_in *4
+        layer3_in_channels = layer2_in_channels + layer2_out_channels
+        layer3_out_channels = n_channels_in *8
+        layer4_in_channels = layer3_in_channels + layer3_out_channels
+        layer4_out_channels = n_channels_in *16
+        
+        head_in_channels = layer4_in_channels + layer4_out_channels
+        head_out_channels = n_channels_out
+        
+        self.layer1 = _conv_block_1d(layer1_in_channels, layer1_out_channels, ker_width)
+        self.layer2 = _conv_block_1d(layer2_in_channels, layer2_out_channels, ker_width)
+        self.layer3 = _conv_block_1d(layer3_in_channels, layer3_out_channels, ker_width)
+        self.layer4 = _conv_block_1d(layer4_in_channels, layer4_out_channels, ker_width)
+        self.head = _conv_block_1d(head_in_channels, head_out_channels, ker_width)
+        
+
+    def forward(self, x):
+        # x: tensor of shape [batch, n_channels_in, seq_len]
+        # returns time_series_features: tensor of shape [batch, n_channels_out, out_seq_len]
+        # where out_seq_len is approximately seq_len // 16
+        
+        x1 = self.layer1(x) # conv, bn, relu -> (batch, layer1_out_channels, seq_len)
+        x = torch.cat([x,x1], axis = 1) # concat -> (batch, layer2_in_channels, seq_len)
+        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer2_in_channels, seq_len //2 +1)
+        x2 = self.layer2(x) # conv, bn, relu -> (batch, layer2_out_channels, ...)
+        x = torch.cat([x,x2], axis = 1) # concat -> (batch, layer3_in_channels, ...)
+        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer3_in_channels, ...)
+        x3 = self.layer3(x) # conv, bn, relu -> (batch, layer3_out_channels, ...)
+        x = torch.cat([x, x3], axis =1)# concat -> (batch, layer4_in_channels, ...)
+        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer4_in_channels, ...)
+        x4 = self.layer4(x)# conv, bn, relu -> (batch, layer4_out_channels, ...)
+        x = torch.cat([x,x4], axis = 1)# concat -> (batch, head_in_channels, ...)
+        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, head_in_channels, ...)
+        time_series_features = self.head(x) # conv, bn, relu -> (batch, head_out_channels, ...)
+        return time_series_features
       
-def _conv_block(in_dims, hidden_dims, out_dims, kernel_width):
+class Spectrogram_FeatureExtractor(nn.Module):
+    def __init__(self, n_freq_bins, n_channels_out, ker_size):
+        super(Spectrogram_FeatureExtractor, self).__init__()
+        
+        layer1_in_channels = 1
+        layer1_out_channels = 8
+        layer2_in_channels = layer1_in_channels + layer1_out_channels
+        layer2_out_channels = 16
+        layer3_in_channels = layer2_in_channels + layer2_out_channels
+        layer3_out_channels = 32
+        layer4_in_channels = layer3_in_channels + layer3_out_channels
+        layer4_out_channels = 64
+        
+        head_in_channels = layer4_in_channels + layer4_out_channels
+        head_out_channels = n_channels_out
+        
+        self.layer1 = _conv_block_2d(layer1_in_channels, layer1_out_channels, ker_size)
+        self.layer2 = _conv_block_2d(layer2_in_channels, layer2_out_channels, ker_size)
+        self.layer3 = _conv_block_2d(layer3_in_channels, layer3_out_channels, ker_size)
+        self.layer4 = _conv_block_2d(layer4_in_channels, layer4_out_channels, ker_size)
+        self.head = _conv_block_2d(head_in_channels, head_out_channels, ker_size)
+        self.bn = torch.nn.BatchNorm2d(1)
+        
+
+    def forward(self, x):
+        # x: tensor of shape (batch, 1, n_freq_bins, n_time_bins)
+        # returns spectrogram_features: tensor of shape (batch, n_channels_out, n_time_bins)
+        
+        x = self.bn(x)
+        x1 = self.layer1(x) # 3x3 conv, bn, relu -> (batch, layer1_out_channels, n_freq_bins, n_time_bins)
+        x = torch.cat([x1, x], axis = 1)# concat -> (batch, layer2_in_channels, n_freq_bins, n_time_bins)
+        x = nn.AvgPool2d((2,1), padding=(1, 0))(x)# mean_pool -> (batch, layer2_in_channels, n_freq_bins //2 + 1, n_time_bins)
+        x2 = self.layer2(x) # 3x3 conv, bn, relu -> (batch, layer2_out_channels, n_freq_bins //2 + 1, n_time_bins)
+        x = torch.cat([x2, x], axis = 1) # concat -> (batch, layer3_in_channels, n_freq_bins //2 + 1, n_time_bins)
+        x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer3_in_channels, .., n_time_bins)
+        x3 = self.layer3(x) # 3x3 conv, bn, relu -> (batch, layer3_out_channels, ..., n_time_bins)
+        x = torch.cat([x3, x], axis = 1)# concat -> (batch, layer4_in_channels, ..., n_time_bins)
+        x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer4_in_channels, ..., n_time_bins)
+        x4 = self.layer4(x) # 3x3 conv, bn, relu -> (batch, layer4_out_channels, ..., n_time_bins
+        x = torch.cat([x4, x], axis = 1) # concat -> (batch, head_in_channels, ..., n_time_bins)
+        x = self.head(x) # 1x1 conv, bn, relu -> (batch, n_channels_out, ..., n_time_bins)
+        x_height = x.size()[2]
+        x = nn.AvgPool2d((x_height,1), padding=0)(x) # mean_pool -> (batch, n_channels_out, 1, n_time_bins)
+        
+        spectrogram_features = torch.squeeze(x, 2) # -> (batch, n_channels_out, n_time_bins)
+        return spectrogram_features
+
+def _conv_block_2d(in_channels, out_channels, kernel_size):
   block = nn.Sequential(
-    nn.Conv1d(in_dims,hidden_dims, kernel_width, bias= False, padding = 'same'),
-    torch.nn.BatchNorm1d(hidden_dims),
-    nn.ReLU(),
-    nn.Conv1d(hidden_dims,out_dims,kernel_width, bias= False, padding = 'same'),
-    torch.nn.BatchNorm1d(out_dims),
+    nn.Conv2d(in_channels, out_channels, kernel_size, padding='same', bias=False),
+    torch.nn.BatchNorm2d(out_channels),
     nn.ReLU()
   )
   return block
 
+def _conv_block_1d(in_channels, out_channels, kernel_width):
+  block = nn.Sequential(
+    nn.Conv1d(in_channels, out_channels, kernel_width, padding='same', bias=False),
+    torch.nn.BatchNorm1d(out_channels),
+    nn.ReLU()
+  )
+  return block

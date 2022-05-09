@@ -1,4 +1,4 @@
-experiment_name: supervised_nn
+experiment_name: supervised_nn_may9i
 input_vars:
 - AccX
 - AccY
@@ -11,23 +11,23 @@ input_vars:
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/friedlaender_whales
 model: supervised_nn
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/friedlaender_whales
-num_clusters: 6
+num_clusters: 5
   
 evaluation:
   boundary_tolerance_sec: 1.0
 
 supervised_nn_config:
   batch_size: 64
-  downsizing_factor: 1024
-  dropout: 0.01
-  hidden_size: 32
-  lr: 0.01
-  n_epochs: 200
-  num_layers: 3
-  temporal_window_samples: 2048
-  weight_decay: 0.0001
+  downsizing_factor: 2048
+  dropout: 0.
+  hidden_size: 8
+  lr: 0.005
+  n_epochs: 80
+  num_layers: 1
+  temporal_window_samples: 8192
+  weight_decay: 0.001
   blur_scale: 0
   jitter_scale: 0
-  rescale_param: 0
-  conv_stack_depth: 48
-  sparse_annotations: True
+  rescale_param: 0.05
+  power: 2.0
+  sparse_annotations: False

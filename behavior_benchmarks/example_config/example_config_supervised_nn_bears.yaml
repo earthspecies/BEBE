@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_deep_10
+experiment_name: supervised_nn_2
 input_vars:
 - AccX
 - AccY
@@ -15,7 +15,7 @@ evaluation:
   boundary_tolerance_sec: 1.0
 
 supervised_nn_config:
-  batch_size: 64
+  batch_size: 128
   downsizing_factor: 1024
   dropout: 0.01
   hidden_size: 32
@@ -23,7 +23,7 @@ supervised_nn_config:
   n_epochs: 200
   num_layers: 3
   temporal_window_samples: 2048
-  weight_decay: 0.0001
+  weight_decay: 0.001
   blur_scale: 0
   jitter_scale: 0
   rescale_param: 0

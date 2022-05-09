@@ -152,19 +152,19 @@ def generate_evaluations(config):
     if file_ids == config['train_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "train_confusion_matrix.png")
-      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "train_f1_consistency_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "train_f1_consistency.png")
     elif file_ids == config['val_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'val_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "val_confusion_matrix.png")
-      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "val_f1_consistency_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "val_f1_consistency.png")
     elif file_ids == config['dev_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'dev_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "dev_confusion_matrix.png")
-      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "dev_f1_consistency_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "dev_f1_consistency.png")
     elif file_ids == config['test_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
-      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "test_f1_consistency_matrix.png")
+      f1_consistency_target_fp = os.path.join(config['visualization_dir'], "test_f1_consistency.png")
       
 
     if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
