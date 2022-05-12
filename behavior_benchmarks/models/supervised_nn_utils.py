@@ -5,12 +5,17 @@ import os
 import tqdm
     
 class BEHAVIOR_DATASET(Dataset):
-    def __init__(self, data, labels, train, temporal_window_samples, rescale_param = 0):
+    def __init__(self, data, labels, train, temporal_window_samples, config, rescale_param = 0):
         self.temporal_window = temporal_window_samples
         self.rescale_param = rescale_param
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
         self.labels = labels # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
+        
+        label_names = config['metadata']['label_names']
+        self.num_classes = len(label_names)
+        self.unknown_idx = label_names.index('unknown')
+        
         
         self.data_points = sum([np.shape(x)[0] for x in self.data])
         
@@ -34,6 +39,17 @@ class BEHAVIOR_DATASET(Dataset):
         
     def __len__(self):        
         return self.data_points - len(self.data) * self.temporal_window
+      
+    def get_class_proportions(self):
+        all_labels = np.concatenate(self.labels)
+        counts = []
+        for i in range(self.num_classes):
+          counts.append(len(all_labels[all_labels == i]))
+        
+        total_labels = sum(counts[:self.unknown_idx] + counts[self.unknown_idx + 1:])
+        weights = np.array([x/total_labels for x in counts], dtype = 'float')
+        return torch.from_numpy(weights).type(torch.FloatTensor)
+          
       
     def get_annotated_windows(self):
         # Go through data, make a list of the indices of windows which actually have annotations.
@@ -82,3 +98,5 @@ class BEHAVIOR_DATASET(Dataset):
 #           data_item = data_item +  2 * blur[:1, :] + blur
             
         return torch.from_numpy(data_item), torch.from_numpy(labels_item)
+
+  

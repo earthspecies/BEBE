@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_may9i
+experiment_name: supervised_nn_may11_s4_test
 input_vars:
 - AccX
 - AccY
@@ -17,17 +17,17 @@ evaluation:
   boundary_tolerance_sec: 1.0
 
 supervised_nn_config:
-  batch_size: 64
+  batch_size: 32
   downsizing_factor: 2048
   dropout: 0.
-  hidden_size: 8
-  lr: 0.005
-  n_epochs: 80
-  num_layers: 1
+  hidden_size: 32
+  lr: 0.01
+  n_epochs: 2
+  num_layers: 16
   temporal_window_samples: 8192
   weight_decay: 0.001
   blur_scale: 0
   jitter_scale: 0
-  rescale_param: 0.05
-  power: 2.0
+  rescale_param: 0
   sparse_annotations: False
+  weight_factor : 0.5

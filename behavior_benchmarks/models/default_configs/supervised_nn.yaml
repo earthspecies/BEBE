@@ -7,7 +7,7 @@ default_model_config:
   lr : 0.01
   weight_decay : 1e-3
   n_epochs : 100
-  hidden_size : 16
+  hidden_size : 8
   num_layers : 1
   temporal_window_samples : 512 
   # used for training only, to subselect
@@ -16,10 +16,8 @@ default_model_config:
   rescale_param : 0
   jitter_scale : 0
   blur_scale : 0
-  n_fft : 128
-  hop_length : 32
-  power : 1.0
-  spec_ker_size : 3
-  ts_ker_size : 5
+  conv_stack_depth : 0
+  weight_factor : 0.5
+  conv_features : 32
   sparse_annotations : False
 

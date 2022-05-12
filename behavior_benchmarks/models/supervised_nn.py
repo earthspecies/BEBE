@@ -11,6 +11,7 @@ import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from behavior_benchmarks.models.model_superclass import BehaviorModel
+from behavior_benchmarks.applications.S4.S4 import S4
 
 import torchaudio
 import torchaudio.functional as F
@@ -38,7 +39,7 @@ class supervised_nn(BehaviorModel):
     self.weight_decay = self.model_config['weight_decay']
     self.n_epochs = self.model_config['n_epochs']
     self.hidden_size = self.model_config['hidden_size']
-    self.num_layers_lstm = self.model_config['num_layers']
+    self.n_s4_blocks = self.model_config['num_layers']
     self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
@@ -46,11 +47,7 @@ class supervised_nn(BehaviorModel):
     self.jitter_scale = self.model_config['jitter_scale']
     self.rescale_param = self.model_config['rescale_param']
     self.sparse_annotations = self.model_config['sparse_annotations']
-    self.n_fft = self.model_config['n_fft']
-    self.hop_length = self.model_config['hop_length']
-    self.power = self.model_config['power']
-    self.spec_ker_size = self.model_config['spec_ker_size']
-    self.ts_ker_size = self.model_config['ts_ker_size']
+    self.weight_factor = self.model_config['weight_factor']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -62,18 +59,14 @@ class supervised_nn(BehaviorModel):
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
-    self.model = LSTM_Classifier(self.n_features,
-                                 self.n_classes,
-                                 self.hidden_size,
-                                 self.num_layers_lstm,
-                                 self.dropout, 
-                                 blur_scale = self.blur_scale,
-                                 jitter_scale = self.jitter_scale,
-                                 n_fft = self.n_fft,
-                                 hop_length = self.hop_length,
-                                 power = self.power,
-                                 spec_ker_size = self.spec_ker_size,
-                                 ts_ker_size = self.ts_ker_size).to(device)
+    self.model = Classifier(self.n_features,
+                            self.n_classes,
+                            hidden_size = self.hidden_size,
+                            n_s4_blocks = self.n_s4_blocks,
+                            dropout = self.dropout,
+                            blur_scale = self.blur_scale,
+                            jitter_scale = self.jitter_scale).to(device)
+    
     #print(self.model)
     print('Model parameters:')
     print(_count_parameters(self.model))
@@ -108,14 +101,14 @@ class supervised_nn(BehaviorModel):
     val_labels = [self.load_labels(fp) for fp in val_fps]
     test_labels = [self.load_labels(fp) for fp in test_fps]
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, rescale_param = self.rescale_param)
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, self.config, rescale_param = self.rescale_param)
     if self.sparse_annotations:
       indices_to_keep = train_dataset.get_annotated_windows()
       train_dataset = Subset(train_dataset, indices_to_keep)  
       print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
-    val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples)
+    val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples, self.config)
     if self.sparse_annotations:
       indices_to_keep = val_dataset.get_annotated_windows()
       val_dataset = Subset(val_dataset, indices_to_keep) 
@@ -125,7 +118,7 @@ class supervised_nn(BehaviorModel):
     print("Number windowed val examples after subselecting: %d" % len(val_dataset))
     val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
-    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples)
+    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples, self.config)
     if self.sparse_annotations:
       indices_to_keep = test_dataset.get_annotated_windows()
       test_dataset = Subset(test_dataset, indices_to_keep)
@@ -135,8 +128,11 @@ class supervised_nn(BehaviorModel):
     print("Number windowed test examples after subselecting: %d" % len(test_dataset))
     test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
-    loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label)
-    loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum')
+    proportions = train_dataset.get_class_proportions()
+    weight = (proportions ** self.weight_factor).to(device)
+    loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label, weight = weight)
+    
+    loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum', weight = weight)
     optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay, amsgrad = True)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
@@ -219,6 +215,16 @@ class supervised_nn(BehaviorModel):
     
     ###
     
+  def focal_loss(self, logits, target):
+    alpha = 5.
+    gamma = 5.
+    ce_loss_unreduced = nn.functional.cross_entropy(logits, target, ignore_index= self.unknown_label, reduction='none')
+    #probs = nn.functional.softmax(logits, dim=1)
+    #probs = torch.amax(probs, dim = 1)
+    probs = torch.exp(-ce_loss_unreduced)
+    loss = alpha*((1.-probs)**gamma)* ce_loss_unreduced
+    return torch.mean(loss)
+    
   def train_epoch(self, dataloader, loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.model.train()
@@ -291,215 +297,303 @@ class supervised_nn(BehaviorModel):
   def predict(self, data):
     ###
     self.model.eval()
-    with torch.no_grad():
-      data = np.expand_dims(data, axis =0)
-      data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
-      preds = self.model(data)
-      preds = preds.cpu().detach().numpy()
-      preds = np.squeeze(preds, axis = 0)
-      preds = np.argmax(preds, axis = 0).astype(np.uint8)
-      #print(preds.dtype)
+    alldata= data
+    
+    predslist = []
+    for i in range(0, np.shape(alldata)[0], 100000):
+      data = alldata[i:i+100000, :] # window to acommodate more hidden states without making edits to CUDA kernel
+    
+      with torch.no_grad():
+        data = np.expand_dims(data, axis =0)
+        data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+        preds = self.model(data)
+        preds = preds.cpu().detach().numpy()
+        preds = np.squeeze(preds, axis = 0)
+        preds = np.argmax(preds, axis = 0).astype(np.uint8)
+        
+        predslist.append(preds)
+    preds = np.concatenate(predslist)
     return preds, None  
+      
+class S4Block(nn.Module):
+    def __init__(self, H, dropout= 0.):
+      super(S4Block, self).__init__()
+      self.bn1 = nn.BatchNorm1d(H)
+      self.s4 = S4(H, bidirectional = True)
+      self.linear1 = nn.Conv1d(H, H, 1)
+      self.bn2 = nn.BatchNorm1d(H)
+      self.linear2 = nn.Conv1d(H, 2*H, 1)
+      self.linear3 = nn.Conv1d(2*H, H, 1)
+      
+      self.dropout = dropout
+      
+    def forward(self, x):
+      y = x
+      x = self.bn1(x)
+      x = self.s4(x)[0]
+      x = nn.functional.gelu(x)
+      if self.training and self.dropout:
+        x = nn.functional.dropout(x, p=self.dropout)
+      x = self.linear1(x)
+      x = y+ x
+      
+      y = x
+      x = self.bn2(x)
+      x = self.linear2(x)
+      x = nn.functional.gelu(x)
+      x = self.linear3(x)
+      x = y+ x
+      return x
 
-# # v4:  
-class LSTM_Classifier(nn.Module):
-    def __init__(self,
-                 n_features,
-                 n_classes,
-                 hidden_size,
-                 num_layers_lstm,
-                 dropout,
-                 blur_scale = 0,
-                 jitter_scale = 0,
-                 n_fft = 128,
-                 hop_length = 32,
-                 power = 0.5,
-                 spec_ker_size = 3,
-                 ts_ker_size = 5):
-        super(LSTM_Classifier, self).__init__()
+#v6 lol
+class Classifier(nn.Module):
+    def __init__(self, n_features, n_classes, hidden_size, n_s4_blocks, dropout, blur_scale = 0, jitter_scale = 0):
+        super(Classifier, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
         
-        #
-        self.bn = torch.nn.BatchNorm1d(n_features)
+        self.embedding = nn.Conv1d(n_features, hidden_size, 1, padding = 'same', bias = False) 
+        self.head = nn.Conv1d(hidden_size, n_classes, 1, padding = 'same')
+        #self.gru = nn.GRU(conv_features, hidden_size, num_layers = num_layers_gru, bidirectional = True, batch_first = True, dropout = dropout)
+          
+        self.s4_blocks = [S4Block(hidden_size, dropout = dropout) for i in range(n_s4_blocks)]
+        self.s4_blocks = nn.ModuleList(self.s4_blocks)
         
-        # Spectrogram 
-        self.hop_length = hop_length
-        self.n_fft = n_fft
-        n_freq_bins = n_fft //2 + 1
-
-        self.spectrogram = T.Spectrogram(
-            n_fft=self.n_fft,
-            win_length=None,
-            hop_length=self.hop_length,
-            center=True,
-            pad_mode="reflect",
-            power=power,
-        )
-        
-        # Spectrogram fe params
-        n_channels_out_spec = 64
-        ker_size = spec_ker_size
-        self.spec_fe = Spectrogram_FeatureExtractor(n_freq_bins, n_channels_out_spec, ker_size)
-        
-        # Time sereies fe
-        ker_width = ts_ker_size
-        n_channels_out_ts = 128
-        self.ts_fe = TimeSeries_FeatureExtractor(n_features, n_channels_out_ts, ker_width)
-        
-        into_lstm_channels = n_features*n_channels_out_spec + n_channels_out_ts
-        self.lstm = nn.LSTM(into_lstm_channels, hidden_size, num_layers = num_layers_lstm, bidirectional = True, batch_first = True, dropout = dropout)
-        self.head = nn.Conv1d(2* hidden_size, n_classes, 1, padding = 'same')
-        
-
     def forward(self, x):
-        # x: [batch, seq_len, num_feat]
         
-        seq_len = x.size()[1]
-        num_feat = x.size()[2]
-        n_time_bins_spec = seq_len // self.hop_length + 1
-        
-        ## setup
-        x = torch.transpose(x, 1,2)
-        x = self.bn(x)
-        
+        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         if self.training:
           # Perform augmentations to normalized data
-          blur = self.blur_scale * torch.randn(x.size(), device = x.device)
-          x = x + blur
+          size = x.size()
+          if self.blur_scale:
+            blur = self.blur_scale * torch.randn(size, device = x.device)
+          else:
+            blur = 0.
+          if self.jitter_scale:
+            jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = x.device)
+          else:
+            jitter = 0.
+          x = x + blur + jitter 
         
+        x = self.embedding(x)
+        for block in self.s4_blocks:
+          x = block(x)
         
-        ## Generate spectral representations
-        # x_spec is a list of tensors of shape (batch, n_freq_bins, n_time_bins)
-        # where n_freq_bins = n_fft // 2 + 1
-        # and n_time_bins = seq_len // hop_len + 1
-        x_spec = [self.spectrogram(x[:, i, :]) for i in range(num_feat)]
-        x_spec = [torch.unsqueeze(y, 1) for y in x_spec]
-        
-        ## Extract spectrogram features
-        x_spec = [self.spec_fe(y) for y in x_spec] # list of tensors of shape (batch, n_channels, n_time_bins)
-        
-        ## Extract time series features
-        x_ts = self.ts_fe(x)
-        
-        # resample to duration of x_spec
-        x_ts = nn.functional.interpolate(x_ts, size=n_time_bins_spec, mode='nearest-exact')
-        
-        # concat
-        x = torch.cat(x_spec + [x_ts], axis = 1)
-        
-        # lstm
-        x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
-        x = self.lstm(x)[0]
-        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
-        
-        # make final predictions and upsample
         logits = self.head(x)
-        logits = nn.functional.interpolate(logits, size=seq_len, mode='nearest-exact') 
+        return logits  
+
+# # # v4:  
+# class LSTM_Classifier(nn.Module):
+#     def __init__(self,
+#                  n_features,
+#                  n_classes,
+#                  hidden_size,
+#                  num_layers_lstm,
+#                  dropout,
+#                  blur_scale = 0,
+#                  jitter_scale = 0,
+#                  n_fft = 128,
+#                  hop_length = 32,
+#                  power = 1.0,
+#                  spec_ker_size = 3,
+#                  ts_ker_size = 5):
+#         super(LSTM_Classifier, self).__init__()
+#         self.blur_scale = blur_scale
+#         self.jitter_scale = jitter_scale
+        
+#         #
+#         self.bn = torch.nn.BatchNorm1d(n_features)
+        
+#         # Spectrogram 
+#         self.hop_length = hop_length
+#         self.n_fft = n_fft
+#         n_freq_bins = n_fft //2 + 1
+
+#         self.spectrogram = T.Spectrogram(
+#             n_fft=self.n_fft,
+#             win_length=None,
+#             hop_length=self.hop_length,
+#             center=True,
+#             pad_mode="reflect",
+#             power=power,
+#         )
+        
+#         # Spectrogram fe params
+#         n_channels_out_spec = 64
+#         ker_size = spec_ker_size
+#         self.spec_fe = Spectrogram_FeatureExtractor(n_freq_bins, n_channels_out_spec, ker_size)
+        
+#         # Time sereies fe
+#         ker_width = ts_ker_size
+#         n_channels_out_ts = 128
+#         self.ts_fe = TimeSeries_FeatureExtractor(n_features, n_channels_out_ts, ker_width)
+        
+#         into_lstm_channels = n_features*n_channels_out_spec + n_channels_out_ts
+#         self.lstm = nn.LSTM(into_lstm_channels, hidden_size, num_layers = num_layers_lstm, bidirectional = True, batch_first = True, dropout = dropout)
+#         self.head = nn.Conv1d(2* hidden_size, n_classes, 1, padding = 'same')
+        
+
+#     def forward(self, x):
+#         # x: [batch, seq_len, num_feat]
+        
+#         seq_len = x.size()[1]
+#         num_feat = x.size()[2]
+#         n_time_bins_spec = seq_len // self.hop_length + 1
+        
+#         ## setup
+#         x = torch.transpose(x, 1,2)
+#         x = self.bn(x)
+        
+#         if self.training:
+#           # Perform augmentations to normalized data
+#           blur = self.blur_scale * torch.randn(x.size(), device = x.device)
+#           x = x + blur
+        
+        
+#         ## Generate spectral representations
+#         # x_spec is a list of tensors of shape (batch, n_freq_bins, n_time_bins)
+#         # where n_freq_bins = n_fft // 2 + 1
+#         # and n_time_bins = seq_len // hop_len + 1
+#         x_spec = [self.spectrogram(x[:, i, :]) for i in range(num_feat)]
+        
+#         x_spec = [torch.unsqueeze(y, 2) for y in x_spec]
+#         x_spec = [self.dropout(y) for y in x_spec]
+#         x_spec = [torch.transpose(y, 1,2) for y in x_spec]
+        
+        
+        
+#         #x_spec = [torch.unsqueeze(y, 1) for y in x_spec]
+        
+#         ## Extract spectrogram features
+#         x_spec = [self.spec_fe(y) for y in x_spec] # list of tensors of shape (batch, n_channels, n_time_bins)
+        
+#         ## Extract time series features
+#         x_ts = self.ts_fe(x)
+        
+#         # resample to duration of x_spec
+#         x_ts = nn.functional.interpolate(x_ts, size=n_time_bins_spec, mode='nearest-exact')
+        
+#         # concat
+#         x = torch.cat(x_spec + [x_ts], axis = 1)
+        
+#         # lstm
+#         x = torch.transpose(x, 1,2) # [batch, n_features, seq_len] -> [batch, seq_len, n_features]
+#         x = self.lstm(x)[0]
+#         x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
+        
+#         # make final predictions and upsample
+#         logits = self.head(x)
+#         logits = nn.functional.interpolate(logits, size=seq_len, mode='nearest-exact') 
                             
-        return logits
+#         return logits
 
-class TimeSeries_FeatureExtractor(nn.Module):
-    def __init__(self, n_channels_in, n_channels_out, ker_width):
-        super(TimeSeries_FeatureExtractor, self).__init__()
-        layer1_in_channels = n_channels_in
-        layer1_out_channels = n_channels_in *2
-        layer2_in_channels = layer1_in_channels + layer1_out_channels
-        layer2_out_channels = n_channels_in *4
-        layer3_in_channels = layer2_in_channels + layer2_out_channels
-        layer3_out_channels = n_channels_in *8
-        layer4_in_channels = layer3_in_channels + layer3_out_channels
-        layer4_out_channels = n_channels_in *16
+# class TimeSeries_FeatureExtractor(nn.Module):
+#     def __init__(self, n_channels_in, n_channels_out, ker_width):
+#         super(TimeSeries_FeatureExtractor, self).__init__()
+#         layer1_in_channels = n_channels_in
+#         layer1_out_channels = 128
+#         layer2_in_channels = layer1_in_channels + layer1_out_channels
+#         layer2_out_channels = 128
+#         layer3_in_channels = layer2_in_channels + layer2_out_channels
+#         layer3_out_channels = 128
+#         layer4_in_channels = layer3_in_channels + layer3_out_channels
+#         layer4_out_channels = 128
         
-        head_in_channels = layer4_in_channels + layer4_out_channels
-        head_out_channels = n_channels_out
+#         head_in_channels = layer4_in_channels + layer4_out_channels
+#         head_out_channels = n_channels_out
         
-        self.layer1 = _conv_block_1d(layer1_in_channels, layer1_out_channels, ker_width)
-        self.layer2 = _conv_block_1d(layer2_in_channels, layer2_out_channels, ker_width)
-        self.layer3 = _conv_block_1d(layer3_in_channels, layer3_out_channels, ker_width)
-        self.layer4 = _conv_block_1d(layer4_in_channels, layer4_out_channels, ker_width)
-        self.head = _conv_block_1d(head_in_channels, head_out_channels, ker_width)
+#         self.layer1 = _conv_block_1d(layer1_in_channels, layer1_out_channels, ker_width)
+#         self.layer2 = _conv_block_1d(layer1_out_channels, layer2_out_channels, ker_width)
+#         self.layer3 = _conv_block_1d(layer2_out_channels, layer3_out_channels, ker_width)
+#         self.layer4 = _conv_block_1d(layer3_out_channels, layer4_out_channels, ker_width)
+#         self.head = _conv_block_1d(layer4_out_channels, head_out_channels, ker_width)
         
 
-    def forward(self, x):
-        # x: tensor of shape [batch, n_channels_in, seq_len]
-        # returns time_series_features: tensor of shape [batch, n_channels_out, out_seq_len]
-        # where out_seq_len is approximately seq_len // 16
+#     def forward(self, x):
+#         # x: tensor of shape [batch, n_channels_in, seq_len]
+#         # returns time_series_features: tensor of shape [batch, n_channels_out, out_seq_len]
+#         # where out_seq_len is approximately seq_len // 16
         
-        x1 = self.layer1(x) # conv, bn, relu -> (batch, layer1_out_channels, seq_len)
-        x = torch.cat([x,x1], axis = 1) # concat -> (batch, layer2_in_channels, seq_len)
-        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer2_in_channels, seq_len //2 +1)
-        x2 = self.layer2(x) # conv, bn, relu -> (batch, layer2_out_channels, ...)
-        x = torch.cat([x,x2], axis = 1) # concat -> (batch, layer3_in_channels, ...)
-        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer3_in_channels, ...)
-        x3 = self.layer3(x) # conv, bn, relu -> (batch, layer3_out_channels, ...)
-        x = torch.cat([x, x3], axis =1)# concat -> (batch, layer4_in_channels, ...)
-        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer4_in_channels, ...)
-        x4 = self.layer4(x)# conv, bn, relu -> (batch, layer4_out_channels, ...)
-        x = torch.cat([x,x4], axis = 1)# concat -> (batch, head_in_channels, ...)
-        x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, head_in_channels, ...)
-        time_series_features = self.head(x) # conv, bn, relu -> (batch, head_out_channels, ...)
-        return time_series_features
+#         x1 = self.layer1(x) # conv, bn, relu -> (batch, layer1_out_channels, seq_len)
+#         x = x1 #torch.cat([x,x1], axis = 1) # concat -> (batch, layer2_in_channels, seq_len)
+#         x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer2_in_channels, seq_len //2 +1)
+#         x2 = self.layer2(x) # conv, bn, relu -> (batch, layer2_out_channels, ...)
+#         x = x2 + x #torch.cat([x,x2], axis = 1) # concat -> (batch, layer3_in_channels, ...)
+#         x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer3_in_channels, ...)
+#         x3 = self.layer3(x) # conv, bn, relu -> (batch, layer3_out_channels, ...)
+#         x = x3 + x #torch.cat([x, x3], axis =1)# concat -> (batch, layer4_in_channels, ...)
+#         x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, layer4_in_channels, ...)
+#         x4 = self.layer4(x)# conv, bn, relu -> (batch, layer4_out_channels, ...)
+#         x = x4 + x #torch.cat([x,x4], axis = 1)# concat -> (batch, head_in_channels, ...)
+#         x = nn.AvgPool1d(2, padding=1)(x)# average_pool -> (batch, head_in_channels, ...)
+#         time_series_features = self.head(x) # conv, bn, relu -> (batch, head_out_channels, ...)
+#         return time_series_features
       
-class Spectrogram_FeatureExtractor(nn.Module):
-    def __init__(self, n_freq_bins, n_channels_out, ker_size):
-        super(Spectrogram_FeatureExtractor, self).__init__()
+# class Spectrogram_FeatureExtractor(nn.Module):
+#     def __init__(self, n_freq_bins, n_channels_out, ker_size):
+#         super(Spectrogram_FeatureExtractor, self).__init__()
         
-        layer1_in_channels = 1
-        layer1_out_channels = 8
-        layer2_in_channels = layer1_in_channels + layer1_out_channels
-        layer2_out_channels = 16
-        layer3_in_channels = layer2_in_channels + layer2_out_channels
-        layer3_out_channels = 32
-        layer4_in_channels = layer3_in_channels + layer3_out_channels
-        layer4_out_channels = 64
+#         layer1_in_channels = 1
+#         layer1_out_channels = 64
+#         layer2_in_channels = layer1_in_channels + layer1_out_channels
+#         layer2_out_channels = 64
+#         layer3_in_channels = layer2_in_channels + layer2_out_channels
+#         layer3_out_channels = 64
+#         layer4_in_channels = layer3_in_channels + layer3_out_channels
+#         layer4_out_channels = 64
         
-        head_in_channels = layer4_in_channels + layer4_out_channels
-        head_out_channels = n_channels_out
+#         head_in_channels = layer4_in_channels + layer4_out_channels
+#         head_out_channels = n_channels_out
         
-        self.layer1 = _conv_block_2d(layer1_in_channels, layer1_out_channels, ker_size)
-        self.layer2 = _conv_block_2d(layer2_in_channels, layer2_out_channels, ker_size)
-        self.layer3 = _conv_block_2d(layer3_in_channels, layer3_out_channels, ker_size)
-        self.layer4 = _conv_block_2d(layer4_in_channels, layer4_out_channels, ker_size)
-        self.head = _conv_block_2d(head_in_channels, head_out_channels, ker_size)
-        self.bn = torch.nn.BatchNorm2d(1)
+#         self.layer1 = _conv_block_2d(layer1_in_channels, layer1_out_channels, ker_size)
+#         self.layer2 = _conv_block_2d(layer1_out_channels, layer2_out_channels, ker_size)
+#         self.layer3 = _conv_block_2d(layer2_out_channels, layer3_out_channels, ker_size)
+#         self.layer4 = _conv_block_2d(layer3_out_channels, layer4_out_channels, ker_size)
+#         self.head = _conv_block_2d(layer4_out_channels, head_out_channels, ker_size)
+#         self.bn = torch.nn.BatchNorm2d(1)
         
 
-    def forward(self, x):
-        # x: tensor of shape (batch, 1, n_freq_bins, n_time_bins)
-        # returns spectrogram_features: tensor of shape (batch, n_channels_out, n_time_bins)
+#     def forward(self, x):
+#         # x: tensor of shape (batch, 1, n_freq_bins, n_time_bins)
+#         # returns spectrogram_features: tensor of shape (batch, n_channels_out, n_time_bins)
         
-        x = self.bn(x)
-        x1 = self.layer1(x) # 3x3 conv, bn, relu -> (batch, layer1_out_channels, n_freq_bins, n_time_bins)
-        x = torch.cat([x1, x], axis = 1)# concat -> (batch, layer2_in_channels, n_freq_bins, n_time_bins)
-        x = nn.AvgPool2d((2,1), padding=(1, 0))(x)# mean_pool -> (batch, layer2_in_channels, n_freq_bins //2 + 1, n_time_bins)
-        x2 = self.layer2(x) # 3x3 conv, bn, relu -> (batch, layer2_out_channels, n_freq_bins //2 + 1, n_time_bins)
-        x = torch.cat([x2, x], axis = 1) # concat -> (batch, layer3_in_channels, n_freq_bins //2 + 1, n_time_bins)
-        x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer3_in_channels, .., n_time_bins)
-        x3 = self.layer3(x) # 3x3 conv, bn, relu -> (batch, layer3_out_channels, ..., n_time_bins)
-        x = torch.cat([x3, x], axis = 1)# concat -> (batch, layer4_in_channels, ..., n_time_bins)
-        x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer4_in_channels, ..., n_time_bins)
-        x4 = self.layer4(x) # 3x3 conv, bn, relu -> (batch, layer4_out_channels, ..., n_time_bins
-        x = torch.cat([x4, x], axis = 1) # concat -> (batch, head_in_channels, ..., n_time_bins)
-        x = self.head(x) # 1x1 conv, bn, relu -> (batch, n_channels_out, ..., n_time_bins)
-        x_height = x.size()[2]
-        x = nn.AvgPool2d((x_height,1), padding=0)(x) # mean_pool -> (batch, n_channels_out, 1, n_time_bins)
+#         x = self.bn(x)
+#         x1 = self.layer1(x) # 3x3 conv, bn, relu -> (batch, layer1_out_channels, n_freq_bins, n_time_bins)
+#         x = x1 #torch.cat([x1, x], axis = 1)# concat -> (batch, layer2_in_channels, n_freq_bins, n_time_bins)
+#         x = nn.AvgPool2d((2,1), padding=(1, 0))(x)# mean_pool -> (batch, layer2_in_channels, n_freq_bins //2 + 1, n_time_bins)
+#         x2 = self.layer2(x) # 3x3 conv, bn, relu -> (batch, layer2_out_channels, n_freq_bins //2 + 1, n_time_bins)
+#         x = x +x2 #torch.cat([x2, x], axis = 1) # concat -> (batch, layer3_in_channels, n_freq_bins //2 + 1, n_time_bins)
+#         x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer3_in_channels, .., n_time_bins)
+#         x3 = self.layer3(x) # 3x3 conv, bn, relu -> (batch, layer3_out_channels, ..., n_time_bins)
+#         x = x +x3 #torch.cat([x3, x], axis = 1)# concat -> (batch, layer4_in_channels, ..., n_time_bins)
+#         x = nn.AvgPool2d((2,1), padding=(1, 0))(x) # mean_pool -> (batch, layer4_in_channels, ..., n_time_bins)
+#         x4 = self.layer4(x) # 3x3 conv, bn, relu -> (batch, layer4_out_channels, ..., n_time_bins
+#         x = x + x4 #torch.cat([x4, x], axis = 1) # concat -> (batch, head_in_channels, ..., n_time_bins)
+#         x = self.head(x) # 1x1 conv, bn, relu -> (batch, n_channels_out, ..., n_time_bins)
+#         x_height = x.size()[2]
+#         x = nn.AvgPool2d((x_height,1), padding=0)(x) # mean_pool -> (batch, n_channels_out, 1, n_time_bins)
         
-        spectrogram_features = torch.squeeze(x, 2) # -> (batch, n_channels_out, n_time_bins)
-        return spectrogram_features
+#         spectrogram_features = torch.squeeze(x, 2) # -> (batch, n_channels_out, n_time_bins)
+#         return spectrogram_features
 
-def _conv_block_2d(in_channels, out_channels, kernel_size):
-  block = nn.Sequential(
-    nn.Conv2d(in_channels, out_channels, kernel_size, padding='same', bias=False),
-    torch.nn.BatchNorm2d(out_channels),
-    nn.ReLU()
-  )
-  return block
+# def _conv_block_2d(in_channels, out_channels, kernel_size):
+#   block = nn.Sequential(
+#     nn.Conv2d(in_channels, out_channels, kernel_size, padding='same', bias=False),
+#     torch.nn.BatchNorm2d(out_channels),
+#     nn.ReLU(),
+#     nn.Conv2d(out_channels, out_channels, kernel_size, padding='same', bias=False),
+#     torch.nn.BatchNorm2d(out_channels),
+#     nn.ReLU()
+#   )
+#   return block
 
-def _conv_block_1d(in_channels, out_channels, kernel_width):
-  block = nn.Sequential(
-    nn.Conv1d(in_channels, out_channels, kernel_width, padding='same', bias=False),
-    torch.nn.BatchNorm1d(out_channels),
-    nn.ReLU()
-  )
-  return block
+# def _conv_block_1d(in_channels, out_channels, kernel_width):
+#   block = nn.Sequential(
+#     nn.Conv1d(in_channels, out_channels, kernel_width, padding='same', bias=False),
+#     torch.nn.BatchNorm1d(out_channels),
+#     nn.ReLU(),
+#     nn.Conv1d(out_channels, out_channels, kernel_width, padding='same', bias=False),
+#     torch.nn.BatchNorm1d(out_channels),
+#     nn.ReLU()
+#   )
+#   return block
