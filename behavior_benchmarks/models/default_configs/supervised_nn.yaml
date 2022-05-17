@@ -18,6 +18,6 @@ default_model_config:
   blur_scale : 0
   conv_stack_depth : 0
   weight_factor : 0.5
-  conv_features : 32
   sparse_annotations : False
+  state_size : 64
 

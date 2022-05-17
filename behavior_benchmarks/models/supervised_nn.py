@@ -48,6 +48,7 @@ class supervised_nn(BehaviorModel):
     self.rescale_param = self.model_config['rescale_param']
     self.sparse_annotations = self.model_config['sparse_annotations']
     self.weight_factor = self.model_config['weight_factor']
+    self.state_size = self.model_config['state_size']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -62,6 +63,7 @@ class supervised_nn(BehaviorModel):
     self.model = Classifier(self.n_features,
                             self.n_classes,
                             hidden_size = self.hidden_size,
+                            state_size = self.state_size,
                             n_s4_blocks = self.n_s4_blocks,
                             dropout = self.dropout,
                             blur_scale = self.blur_scale,
@@ -213,18 +215,6 @@ class supervised_nn(BehaviorModel):
     fig.savefig(lr_fp)
     plt.close()
     
-    ###
-    
-  def focal_loss(self, logits, target):
-    alpha = 5.
-    gamma = 5.
-    ce_loss_unreduced = nn.functional.cross_entropy(logits, target, ignore_index= self.unknown_label, reduction='none')
-    #probs = nn.functional.softmax(logits, dim=1)
-    #probs = torch.amax(probs, dim = 1)
-    probs = torch.exp(-ce_loss_unreduced)
-    loss = alpha*((1.-probs)**gamma)* ce_loss_unreduced
-    return torch.mean(loss)
-    
   def train_epoch(self, dataloader, loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.model.train()
@@ -300,8 +290,9 @@ class supervised_nn(BehaviorModel):
     alldata= data
     
     predslist = []
-    for i in range(0, np.shape(alldata)[0], 100000):
-      data = alldata[i:i+100000, :] # window to acommodate more hidden states without making edits to CUDA kernel
+    pred_len = 10000
+    for i in range(0, np.shape(alldata)[0], pred_len):
+      data = alldata[i:i+pred_len, :] # window to acommodate more hidden states without making edits to CUDA kernel
     
       with torch.no_grad():
         data = np.expand_dims(data, axis =0)
@@ -316,25 +307,19 @@ class supervised_nn(BehaviorModel):
     return preds, None  
       
 class S4Block(nn.Module):
-    def __init__(self, H, dropout= 0.):
+    def __init__(self, H, N, dropout= 0.):
       super(S4Block, self).__init__()
       self.bn1 = nn.BatchNorm1d(H)
-      self.s4 = S4(H, bidirectional = True)
+      self.s4 = S4(H, d_state = N, bidirectional = True, dropout = dropout)
       self.linear1 = nn.Conv1d(H, H, 1)
       self.bn2 = nn.BatchNorm1d(H)
       self.linear2 = nn.Conv1d(H, 2*H, 1)
       self.linear3 = nn.Conv1d(2*H, H, 1)
       
-      self.dropout = dropout
-      
     def forward(self, x):
       y = x
       x = self.bn1(x)
       x = self.s4(x)[0]
-      x = nn.functional.gelu(x)
-      if self.training and self.dropout:
-        x = nn.functional.dropout(x, p=self.dropout)
-      x = self.linear1(x)
       x = y+ x
       
       y = x
@@ -347,7 +332,7 @@ class S4Block(nn.Module):
 
 #v6 lol
 class Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, hidden_size, n_s4_blocks, dropout, blur_scale = 0, jitter_scale = 0):
+    def __init__(self, n_features, n_classes, hidden_size, state_size, n_s4_blocks, dropout, blur_scale = 0, jitter_scale = 0):
         super(Classifier, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
@@ -356,7 +341,7 @@ class Classifier(nn.Module):
         self.head = nn.Conv1d(hidden_size, n_classes, 1, padding = 'same')
         #self.gru = nn.GRU(conv_features, hidden_size, num_layers = num_layers_gru, bidirectional = True, batch_first = True, dropout = dropout)
           
-        self.s4_blocks = [S4Block(hidden_size, dropout = dropout) for i in range(n_s4_blocks)]
+        self.s4_blocks = [S4Block(hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)]
         self.s4_blocks = nn.ModuleList(self.s4_blocks)
         
     def forward(self, x):

@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_spec_plus_learned_rep
+experiment_name: supervised_nn_s4
 input_vars:
 - AccX
 - AccY
@@ -19,15 +19,18 @@ evaluation:
   
 read_latents: false
 supervised_nn_config:
-  batch_size: 128
-  downsizing_factor: 256
+  batch_size: 32
+  downsizing_factor: 512
+  dropout: 0.
   hidden_size: 8
-  lr: 0.01
-  n_epochs: 20
-  num_layers: 1
+  lr: 0.001
+  n_epochs: 150
+  num_layers: 4
   temporal_window_samples: 2048
   weight_decay: 0.001
-  dropout: 0
-  blur_scale: 0
+  blur_scale: 0.02
   jitter_scale: 0
   rescale_param: 0
+  sparse_annotations: False
+  weight_factor : 0.5
+
