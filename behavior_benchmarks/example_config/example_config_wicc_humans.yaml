@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_s4
+experiment_name: wicc
 input_vars:
 - AccX
 - AccY
@@ -9,16 +9,16 @@ input_vars:
 - GyrX
 - GyrY
 - GyrZ
-model: supervised_nn
+model: wicc
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
-num_clusters: 8
+num_clusters: 24
   
 evaluation:
   boundary_tolerance_sec: 1.0
   
 read_latents: false
-supervised_nn_config:
+wicc_config:
   batch_size: 32
   downsizing_factor: 512
   dropout: 0.
@@ -28,9 +28,10 @@ supervised_nn_config:
   num_layers: 2
   temporal_window_samples: 2048
   weight_decay: 0.001
-  blur_scale: 0.02
+  blur_scale: 0
   jitter_scale: 0
-  rescale_param: 0
   sparse_annotations: False
-  weight_factor : 0.5
+  context_window_samples : 1
+  downsample_rate : 1
+  max_iter_gmm : 100
 

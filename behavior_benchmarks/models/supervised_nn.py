@@ -39,7 +39,7 @@ class supervised_nn(BehaviorModel):
     self.weight_decay = self.model_config['weight_decay']
     self.n_epochs = self.model_config['n_epochs']
     self.hidden_size = self.model_config['hidden_size']
-    self.n_s4_blocks = self.model_config['num_layers']
+    self.n_s4_blocks = self.model_config['num_layers'] ## Total layers is num_layers * 3 tiers
     self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
@@ -49,6 +49,7 @@ class supervised_nn(BehaviorModel):
     self.sparse_annotations = self.model_config['sparse_annotations']
     self.weight_factor = self.model_config['weight_factor']
     self.state_size = self.model_config['state_size']
+    self.downsample_rate = self.model_config['downsample_rate']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -65,6 +66,7 @@ class supervised_nn(BehaviorModel):
                             hidden_size = self.hidden_size,
                             state_size = self.state_size,
                             n_s4_blocks = self.n_s4_blocks,
+                            downsample_rate = self.downsample_rate,
                             dropout = self.dropout,
                             blur_scale = self.blur_scale,
                             jitter_scale = self.jitter_scale).to(device)
@@ -290,7 +292,7 @@ class supervised_nn(BehaviorModel):
     alldata= data
     
     predslist = []
-    pred_len = 10000
+    pred_len = self.temporal_window_samples
     for i in range(0, np.shape(alldata)[0], pred_len):
       data = alldata[i:i+pred_len, :] # window to acommodate more hidden states without making edits to CUDA kernel
     
@@ -309,21 +311,20 @@ class supervised_nn(BehaviorModel):
 class S4Block(nn.Module):
     def __init__(self, H, N, dropout= 0.):
       super(S4Block, self).__init__()
-      self.bn1 = nn.BatchNorm1d(H)
-      self.s4 = S4(H, d_state = N, bidirectional = True, dropout = dropout)
-      self.linear1 = nn.Conv1d(H, H, 1)
-      self.bn2 = nn.BatchNorm1d(H)
-      self.linear2 = nn.Conv1d(H, 2*H, 1)
-      self.linear3 = nn.Conv1d(2*H, H, 1)
+      self.ln1 = nn.LayerNorm(H)
+      self.s4 = S4(H, d_state = N, bidirectional = True, dropout = dropout, transposed = False)
+      self.ln2 = nn.LayerNorm(H)
+      self.linear2 = nn.Linear(H, 2*H)
+      self.linear3 = nn.Linear(2*H, H)
       
     def forward(self, x):
       y = x
-      x = self.bn1(x)
+      x = self.ln1(x)
       x = self.s4(x)[0]
       x = y+ x
       
       y = x
-      x = self.bn2(x)
+      x = self.ln2(x)
       x = self.linear2(x)
       x = nn.functional.gelu(x)
       x = self.linear3(x)
@@ -332,21 +333,35 @@ class S4Block(nn.Module):
 
 #v6 lol
 class Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, hidden_size, state_size, n_s4_blocks, dropout, blur_scale = 0, jitter_scale = 0):
+    def __init__(self, n_features, n_classes, hidden_size, state_size, n_s4_blocks, downsample_rate, dropout, blur_scale = 0, jitter_scale = 0):
         super(Classifier, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
         
-        self.embedding = nn.Conv1d(n_features, hidden_size, 1, padding = 'same', bias = False) 
-        self.head = nn.Conv1d(hidden_size, n_classes, 1, padding = 'same')
+        self.embedding = nn.Linear(n_features, hidden_size)
+       
         #self.gru = nn.GRU(conv_features, hidden_size, num_layers = num_layers_gru, bidirectional = True, batch_first = True, dropout = dropout)
-          
-        self.s4_blocks = [S4Block(hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)]
-        self.s4_blocks = nn.ModuleList(self.s4_blocks)
+        
+        
+        
+        self.bn = nn.BatchNorm1d(n_features)
+        self.downsample_rate = downsample_rate
+        feature_expansion_factor = 2
+        self.down1 = nn.Conv1d(hidden_size, feature_expansion_factor * hidden_size, self.downsample_rate, stride = self.downsample_rate)
+        self.down2 = nn.Conv1d(feature_expansion_factor * hidden_size, (feature_expansion_factor ** 2) * hidden_size, self.downsample_rate, stride = self.downsample_rate)
+        
+        self.s4_blocks_1 = nn.ModuleList([S4Block(hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
+        self.s4_blocks_2 = nn.ModuleList([S4Block(feature_expansion_factor * hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
+        self.s4_blocks_3 = nn.ModuleList([S4Block((feature_expansion_factor ** 2) * hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
+        self.head = nn.Conv1d((feature_expansion_factor ** 2) * hidden_size, n_classes, 1, padding = 'same')
         
     def forward(self, x):
+        seq_len = x.size()[-2]
         
-        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
+        x = torch.transpose(x, -1, -2)
+        x = self.bn(x)
+        x = torch.transpose(x, -1, -2)
+        
         if self.training:
           # Perform augmentations to normalized data
           size = x.size()
@@ -355,16 +370,34 @@ class Classifier(nn.Module):
           else:
             blur = 0.
           if self.jitter_scale:
-            jitter = self.jitter_scale *torch.randn((size[0], size[1], 1), device = x.device)
+            jitter = self.jitter_scale *torch.randn((size[0], 1, size[2]), device = x.device)
           else:
             jitter = 0.
           x = x + blur + jitter 
         
         x = self.embedding(x)
-        for block in self.s4_blocks:
+        
+        for block in self.s4_blocks_1:
+          x = block(x)
+          
+        x = torch.transpose(x, -1, -2)
+        x = self.down1(x)
+        x = torch.transpose(x, -1, -2)
+        
+        for block in self.s4_blocks_2:
+          x = block(x)
+          
+        x = torch.transpose(x, -1, -2)
+        x = self.down2(x)
+        x = torch.transpose(x, -1, -2)
+        
+        for block in self.s4_blocks_3:
           x = block(x)
         
+        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
         logits = self.head(x)
+        
+        logits = nn.functional.interpolate(logits, size=seq_len, mode='nearest-exact')
         return logits  
 
 # # # v4:  

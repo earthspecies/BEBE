@@ -6,3 +6,4 @@ from behavior_benchmarks.models.vame import vame
 from behavior_benchmarks.models.hmm import hmm
 from behavior_benchmarks.models.supervised_nn import supervised_nn
 from behavior_benchmarks.models.vqcpc import vq_cpc
+from behavior_benchmarks.models.wicc import wicc

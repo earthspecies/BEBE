@@ -26,6 +26,9 @@ def train_model(config):
     
   elif config['model'] == 'vq_cpc':
     model = models.vq_cpc(config)
+    
+  elif config['model'] == 'wicc':
+    model = models.wicc(config)
 
   else:
     raise ValueError('model type not recognized')
