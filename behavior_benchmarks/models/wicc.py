@@ -87,10 +87,8 @@ class wicc(BehaviorModel):
     
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
-      test_fps = self.config['test_data_latents_fp']
     else:
       dev_fps = self.config['dev_data_fp']
-      test_fps = self.config['test_data_fp']
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
@@ -102,8 +100,8 @@ class wicc(BehaviorModel):
     if not os.path.exists(self.pseudolabel_dir):
       os.makedirs(self.pseudolabel_dir)
     
-    print("Generating pseudo-labels for dev and test data")
-    for fp in tqdm.tqdm(dev_fps + test_fps):
+    print("Generating pseudo-labels for dev data")
+    for fp in tqdm.tqdm(dev_fps):
       data = self.load_model_inputs(fp, read_latents = self.read_latents)
       pseudolabels = gmm.predict(data)
       target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
@@ -115,38 +113,34 @@ class wicc(BehaviorModel):
     ## get data. assume stored in memory for now
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
-      test_fps = self.config['test_data_latents_fp']
     else:
       dev_fps = self.config['dev_data_fp']
-      test_fps = self.config['test_data_fp']
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
-    test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
     
     ## Load up pseudo-labels
     
     dev_pseudolabels = [self.load_pseudolabels(fp) for fp in self.config['dev_file_ids']]
-    test_pseudolabels = [self.load_pseudolabels(fp) for fp in self.config['test_file_ids']]
     
     dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, True, self.temporal_window_samples, self.context_window_samples)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
 
-    test_dataset = BEHAVIOR_DATASET(test_data, test_pseudolabels, False, self.temporal_window_samples, self.context_window_samples)
-    num_examples_test = len(list(range(0, len(test_dataset), self.downsizing_factor)))
-    test_dataset = Subset(test_dataset, list(range(0, len(test_dataset), self.downsizing_factor)))
-    print("Number windowed test examples after subselecting: %d" % len(test_dataset))
-    test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
+    # test_dataset = BEHAVIOR_DATASET(test_data, test_pseudolabels, False, self.temporal_window_samples, self.context_window_samples)
+    # num_examples_test = len(list(range(0, len(test_dataset), self.downsizing_factor)))
+    # test_dataset = Subset(test_dataset, list(range(0, len(test_dataset), self.downsizing_factor)))
+    # print("Number windowed test examples after subselecting: %d" % len(test_dataset))
+    # test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = -1)
     loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = -1, reduction = 'sum')
-    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters(), 'weight_decay' : self.weight_decay}], lr=self.lr, amsgrad = True)
+    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}], lr=self.lr, amsgrad = True)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
     
     dev_loss = []
-    test_loss = []
+    # test_loss = []
     dev_acc = []
-    test_acc = []
+    # test_acc = []
     learning_rates = []
     
     epochs = self.n_epochs
@@ -155,12 +149,12 @@ class wicc(BehaviorModel):
         l, a = self.train_epoch(t, dev_dataloader, loss_fn, optimizer)
         dev_loss.append(l)
         dev_acc.append(a)
-        l, a = self.test_epoch(t, test_dataloader, 
-                               loss_fn_no_reduce, 
-                               name = "Test", 
-                               loss_denom = num_examples_test* self.temporal_window_samples * self.context_window_samples)
-        test_loss.append(l)
-        test_acc.append(a)
+        # # l, a = self.test_epoch(t, test_dataloader, 
+        # #                        loss_fn_no_reduce, 
+        # #                        name = "Test", 
+        # #                        loss_denom = num_examples_test* self.temporal_window_samples * self.context_window_samples)
+        # test_loss.append(l)
+        # test_acc.append(a)
         
         learning_rates.append(optimizer.param_groups[0]["lr"])
         scheduler.step()
@@ -173,7 +167,7 @@ class wicc(BehaviorModel):
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     
     ax.plot(dev_loss, label= 'dev', marker = '.')
-    ax.plot(test_loss, label = 'test', marker = '.')
+    # ax.plot(test_loss, label = 'test', marker = '.')
     ax.legend()
     ax.set_title("Cross Entropy Loss")
     ax.set_xlabel('Epoch')
@@ -189,7 +183,7 @@ class wicc(BehaviorModel):
     # Accuracy
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     ax.plot(dev_acc, label= 'dev', marker = '.')
-    ax.plot(test_acc, label = 'test', marker = '.')
+    # ax.plot(test_acc, label = 'test', marker = '.')
     ax.legend()
     ax.set_title("Mean accuracy")
     ax.set_xlabel('Epoch')
@@ -219,7 +213,7 @@ class wicc(BehaviorModel):
     size = len(dataloader.dataset)
     self.encoder.train()
     gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
-    # acc_score = torchmetrics.Accuracy(mdmc_average = 'global', ignore_index = -1)
+    acc_score = torchmetrics.Accuracy(mdmc_average = 'global')
     train_loss = 0
     num_batches_seen = 0
     
@@ -237,8 +231,10 @@ class wicc(BehaviorModel):
         logits = self.decoder(q)
         loss = loss_fn(logits, y)
         train_loss += loss.item()
-
-        # acc_score.update(logits.cpu(), y.cpu())
+        
+        labels_adjusted = y.cpu()
+        labels_adjusted = torch.maximum(labels_adjusted, torch.zeros_like(labels_adjusted)) # torchmetrics doesn't handle -1 labels so we treat them as gmm cluster number 0. introduces small error
+        acc_score.update(logits.cpu(), labels_adjusted)
 
         # Backpropagation
         optimizer.zero_grad()
@@ -248,33 +244,11 @@ class wicc(BehaviorModel):
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
         
-    # acc = acc_score.compute()
-    acc = 0.
+    acc = acc_score.compute()
+    # acc = 0.
     train_loss = train_loss / num_batches_seen
     print("Train loss: %f, Train accuracy: %f, Temperature: %f" % (train_loss, acc, gumbel_tau))
     return train_loss, acc
-    
-  def test_epoch(self, t, dataloader, loss_fn, name = "Test", loss_denom = 0):
-    size = len(dataloader.dataset)
-    self.encoder.eval()
-    test_loss = 0
-    gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
-    # acc_score = torchmetrics.Accuracy(mdmc_average = 'global', ignore_index = -1)
-    
-    with torch.no_grad():
-        num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
-        for i, (X, y) in enumerate(dataloader):
-            X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
-            latent_logits = self.encoder(X)
-            q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1)
-            logits = self.decoder(q)
-            # acc_score.update(logits.cpu(), y.cpu())
-            test_loss += loss_fn(logits, y).item()
-    test_loss /= loss_denom
-    #acc = acc_score.compute()
-    acc = 0.
-    print("%s loss: %f, %s accuracy: %f, Temperature: %f" % (name, test_loss, name, acc, gumbel_tau))
-    return test_loss, acc
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
