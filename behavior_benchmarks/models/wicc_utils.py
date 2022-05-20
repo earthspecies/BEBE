@@ -5,10 +5,11 @@ import os
 import tqdm
 
 class BEHAVIOR_DATASET(Dataset):
-    def __init__(self, data, labels, train, temporal_window_samples, context_window_samples):
+    def __init__(self, data, labels, ids, train, temporal_window_samples, context_window_samples, dim_individual_embedding):
         self.temporal_window = temporal_window_samples
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
+        self.ids = ids
         self.labels = labels # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
         
         self.data_points = sum([np.shape(x)[0] for x in self.data])
@@ -25,10 +26,9 @@ class BEHAVIOR_DATASET(Dataset):
         assert counter == self.data_points - len(self.data) * self.temporal_window
         self.data_start_indices = np.array(self.data_start_indices)
         
-        self.data_stds = np.std(np.concatenate(self.data, axis = 0), axis = 0, keepdims = True) / 8
-        self.num_channels = np.shape(self.data_stds)[1]
         self.train = train
         self.context_window_samples = context_window_samples
+        self.dim_individual_embedding = dim_individual_embedding
         
     def __len__(self):        
         return self.data_points - len(self.data) * self.temporal_window
@@ -38,6 +38,7 @@ class BEHAVIOR_DATASET(Dataset):
         
         data_item = self.data[clip_number]
         labels_item = self.labels[clip_number]
+        ids_item = self.ids[clip_number]
         
         start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window
@@ -45,6 +46,7 @@ class BEHAVIOR_DATASET(Dataset):
         
         data_item = data_item[start:end, :]
         labels_item = labels_item[start:end] #[:, start:end]
+        individual_id = int(ids_item[start]) # integer
         
         pad_left = (self.context_window_samples - 1) // 2
         pad_right = self.context_window_samples - 1 - pad_left
@@ -57,6 +59,11 @@ class BEHAVIOR_DATASET(Dataset):
           
         context_labels = np.stack(context_labels, axis = -1) #[temporal_window, context_window_samples]
         
-        return torch.from_numpy(data_item), torch.from_numpy(context_labels)
+        # convert individual_id to one_hot [dim_individual_embedding]
+        individual_id_one_hot = np.zeros((self.dim_individual_embedding,))
+        individual_id_one_hot[individual_id] = 1.
+        
+        
+        return torch.from_numpy(data_item), torch.from_numpy(context_labels), torch.from_numpy(individual_id_one_hot)
 
   

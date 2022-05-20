@@ -20,5 +20,6 @@ default_model_config:
   context_window_samples : 5
   max_iter_gmm : 100
   tau_init : 2.
-  tau_decay_rate : .99
+  tau_decay_rate : .987
+  feature_expansion_factor : 1
 

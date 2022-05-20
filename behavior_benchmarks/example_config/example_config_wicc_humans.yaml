@@ -1,4 +1,4 @@
-experiment_name: wicc
+experiment_name: wicc_decoder_edit
 input_vars:
 - AccX
 - AccY
@@ -23,15 +23,16 @@ wicc_config:
   downsizing_factor: 512
   dropout: 0.
   hidden_size: 8
-  lr: 0.001
+  lr: 0.01
   n_epochs: 150
   num_layers: 2
   temporal_window_samples: 2048
-  weight_decay: 0.001
+  weight_decay: 0
   blur_scale: 0
   jitter_scale: 0
   sparse_annotations: False
-  context_window_samples : 1
-  downsample_rate : 1
+  context_window_samples : 51
+  downsample_rate : 2
   max_iter_gmm : 100
+  feature_expansion_factor : 2
 

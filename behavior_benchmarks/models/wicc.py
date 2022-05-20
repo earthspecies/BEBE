@@ -45,10 +45,11 @@ class wicc(BehaviorModel):
     self.downsample_rate = self.model_config['downsample_rate']
     self.n_clusters = self.config['num_clusters']
     self.context_window_samples = self.model_config['context_window_samples']
-    self.n_pseudolabels = self.n_clusters // 2
+    self.n_pseudolabels = self.model_config['n_pseudolabels'] if 'n_pseudolabels' in self.model_config else self.n_clusters // 2
     self.max_iter_gmm = self.model_config['max_iter_gmm']
     self.tau_init = self.model_config['tau_init']
     self.tau_decay_rate = self.model_config['tau_decay_rate']
+    self.feature_expansion_factor = self.model_config['feature_expansion_factor']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -59,19 +60,24 @@ class wicc(BehaviorModel):
     
     self.n_features = len(self.cols_included)
     
+    self.dim_individual_embedding = max(self.config['metadata']['individual_ids']) + 1 # individuals are numbered 0, 1,..., highest, but may omit some integers
+    
+    
     self.encoder =  Encoder(self.n_features,
                             self.n_clusters,
                             hidden_size = self.hidden_size,
                             state_size = self.state_size,
                             n_s4_blocks = self.n_s4_blocks,
                             downsample_rate = self.downsample_rate,
+                            feature_expansion_factor = self.feature_expansion_factor,
                             dropout = self.dropout,
                             blur_scale = self.blur_scale,
                             jitter_scale = self.jitter_scale).to(device)
     
     self.decoder = Decoder(self.n_clusters,
                            self.n_pseudolabels,
-                           self.context_window_samples).to(device)
+                           self.context_window_samples, 
+                           self.dim_individual_embedding).to(device)
     
     print('Encoder parameters:')
     print(_count_parameters(self.encoder))
@@ -83,46 +89,61 @@ class wicc(BehaviorModel):
   
   def generate_pseudolabels(self):
     ## Generate pseudo-labels
-    print("Training GMM to produce pseudo-labels")
+    print("Training GMMs to produce pseudo-labels")
     
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
+      raise NotImplementedError
     else:
       dev_fps = self.config['dev_data_fp']
     
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
-    dev_data = np.concatenate(dev_data, axis = 0)
-    
-    gmm = GaussianMixture(n_components = self.n_pseudolabels, verbose = 2, max_iter = self.max_iter_gmm, n_init = 1)
-    gmm.fit(dev_data)
-    
-    self.pseudolabel_dir = os.path.join(self.config['temp_dir'], 'pseudolabels')
-    if not os.path.exists(self.pseudolabel_dir):
-      os.makedirs(self.pseudolabel_dir)
-    
-    print("Generating pseudo-labels for dev data")
-    for fp in tqdm.tqdm(dev_fps):
-      data = self.load_model_inputs(fp, read_latents = self.read_latents)
-      pseudolabels = gmm.predict(data)
-      target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
-      np.save(target, pseudolabels)
-    
+    for target_individual_id in tqdm.tqdm(self.config['metadata']['individual_ids']):
+      dev_data = []
+      individual_fps = []
+      for fp in dev_fps: # search for files associated with that target_individual
+        clip_id = fp.split('/')[-1].split('.')[0]
+        individual_id = self.config['metadata']['clip_id_to_individual_id'][clip_id]
+        if individual_id == target_individual_id:
+          individual_fps.append(fp)
+          dev_data.append(self.load_model_inputs(fp, read_latents = self.read_latents))
+          
+      if len(dev_data) == 0:
+        continue
+
+      dev_data = np.concatenate(dev_data, axis = 0)
+
+      gmm = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
+      gmm.fit(dev_data)
+
+      self.pseudolabel_dir = os.path.join(self.config['temp_dir'], 'pseudolabels')
+      if not os.path.exists(self.pseudolabel_dir):
+        os.makedirs(self.pseudolabel_dir)
+
+      #print("Generating pseudo-labels for dev data")
+      for fp in individual_fps:
+        data = self.load_model_inputs(fp, read_latents = self.read_latents)
+        pseudolabels = gmm.predict(data)
+        target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
+        np.save(target, pseudolabels)
+  
   def fit(self):
     self.generate_pseudolabels()
     
     ## get data. assume stored in memory for now
     if self.read_latents:
+      raise NotImplementedError
       dev_fps = self.config['dev_data_latents_fp']
     else:
       dev_fps = self.config['dev_data_fp']
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_ids = [np.load(fp)[:, -2] for fp in dev_fps] # assumes individual id is in column -2
     
     ## Load up pseudo-labels
     
     dev_pseudolabels = [self.load_pseudolabels(fp) for fp in self.config['dev_file_ids']]
     
-    dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, True, self.temporal_window_samples, self.context_window_samples)
+    dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.dim_individual_embedding)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
 
     # test_dataset = BEHAVIOR_DATASET(test_data, test_pseudolabels, False, self.temporal_window_samples, self.context_window_samples)
@@ -219,16 +240,17 @@ class wicc(BehaviorModel):
     
     num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
     with tqdm.tqdm(dataloader, unit = "batch", total = num_batches_todo) as tepoch:
-      for i, (X, y) in enumerate(tepoch):
+      for i, (X, y, individual_id) in enumerate(tepoch):
         if i == num_batches_todo :
           break
         num_batches_seen += 1
         X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
+        individual_id = individual_id.type('torch.FloatTensor').to(device)
         
         # Compute prediction error
         latent_logits = self.encoder(X)
-        q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1)
-        logits = self.decoder(q)
+        q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1) # [batch, seq_len, n_clusters]
+        logits = self.decoder(q, individual_id)
         loss = loss_fn(logits, y)
         train_loss += loss.item()
         
@@ -301,7 +323,7 @@ class S4Block(nn.Module):
       return x
 
 class Encoder(nn.Module):
-    def __init__(self, n_features, n_clusters, hidden_size, state_size, n_s4_blocks, downsample_rate, dropout, blur_scale = 0, jitter_scale = 0):
+    def __init__(self, n_features, n_clusters, hidden_size, state_size, n_s4_blocks, downsample_rate, feature_expansion_factor, dropout, blur_scale = 0, jitter_scale = 0):
         super(Encoder, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
@@ -310,7 +332,6 @@ class Encoder(nn.Module):
         
         self.bn = nn.BatchNorm1d(n_features)
         self.downsample_rate = downsample_rate
-        feature_expansion_factor = 1 #2
         self.down1 = nn.Conv1d(hidden_size, feature_expansion_factor * hidden_size, self.downsample_rate, stride = self.downsample_rate)
         self.down2 = nn.Conv1d(feature_expansion_factor * hidden_size, (feature_expansion_factor ** 2) * hidden_size, self.downsample_rate, stride = self.downsample_rate)
         
@@ -367,19 +388,37 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-  # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, context_window, n_pseudolabels]
-  def __init__(self, n_clusters, n_pseudolabels, context_window_samples):
+  # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
+  def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
       super(Decoder, self).__init__()
+      self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * context_window_samples * dim_individual_embedding, bias = False)
+      self.n_pseudolabels = n_pseudolabels
+      self.context_window_samples = context_window_samples
+      self.dim_individual_embedding = dim_individual_embedding
       
-      self.prediction_heads = nn.ModuleList([nn.Linear(n_clusters, n_pseudolabels) for n in range(context_window_samples)])
+  def forward(self, q, individual_id):
+      # q: one hot [batch, seq_len, n_clusters]
+      # individual_id: one_hot [batch, dim_individual_embedding]
+    
       
-  def forward(self, q):
-      logits = []
-      for head in self.prediction_heads:
-        logits.append(head(q))
-      logits = torch.stack(logits, axis = -2)
+      logits = self.prediction_head(q) #[batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, context_window * n_pseudolabels * dim_individual_embedding]
+      size = logits.size()
       
-      logits = torch.transpose(logits, -1, -2)
-      logits = torch.transpose(logits, -2, -3)
+      ##-> [batch, seq_len, n_pseudolabels, context_window, dim_individual_embedding]
+      logits = logits.view(size[0], size[1], self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)
+      
+      # zero out dimensions not associated with individual
+      # unsqueeze so individual id is shape [batch, 1,1,1,dim_individual_embedding]
+      individual_id = torch.unsqueeze(individual_id, 1)
+      individual_id = torch.unsqueeze(individual_id, 1)
+      individual_id = torch.unsqueeze(individual_id, 1)
+      logits = logits * individual_id 
+      
+      # -> [batch, seq_len, n_pseudolabels, context_window]
+      logits = torch.sum(logits, -1, keepdim = False)
+      
+      # -> [batch, n_pseudolabels, seq_len, context_window]
+      logits = torch.transpose(logits, 1, 2)
+      
       return logits
     
