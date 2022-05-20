@@ -1,4 +1,4 @@
-experiment_name: wicc_decoder_edit
+experiment_name: wicc_with_diversity_loss
 input_vars:
 - AccX
 - AccY
@@ -24,15 +24,17 @@ wicc_config:
   dropout: 0.
   hidden_size: 8
   lr: 0.01
-  n_epochs: 150
+  n_epochs: 50
   num_layers: 2
   temporal_window_samples: 2048
   weight_decay: 0
   blur_scale: 0
   jitter_scale: 0
   sparse_annotations: False
-  context_window_samples : 51
-  downsample_rate : 2
+  context_window_samples : 25
+  downsample_rate : 1
   max_iter_gmm : 100
-  feature_expansion_factor : 2
+  feature_expansion_factor : 1
+  diversity_alpha : 2.0
+  tau_decay_rate : .98
 

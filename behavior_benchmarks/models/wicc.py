@@ -14,10 +14,6 @@ from behavior_benchmarks.models.model_superclass import BehaviorModel
 from behavior_benchmarks.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
 
-import torchaudio
-import torchaudio.functional as F
-import torchaudio.transforms as T
-
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -50,6 +46,7 @@ class wicc(BehaviorModel):
     self.tau_init = self.model_config['tau_init']
     self.tau_decay_rate = self.model_config['tau_decay_rate']
     self.feature_expansion_factor = self.model_config['feature_expansion_factor']
+    self.diversity_alpha = self.model_config['diversity_alpha']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -153,12 +150,15 @@ class wicc(BehaviorModel):
     # test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = -1)
-    loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = -1, reduction = 'sum')
+    diversity_loss_fn = DiversityLoss(alpha = self.diversity_alpha, n_clusters = self.n_clusters)
+    
     optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}], lr=self.lr, amsgrad = True)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
     
     dev_loss = []
+    dev_predictions_loss = []
+    dev_diversity_loss = []
     # test_loss = []
     dev_acc = []
     # test_acc = []
@@ -167,8 +167,10 @@ class wicc(BehaviorModel):
     epochs = self.n_epochs
     for t in range(epochs):
         print(f"Epoch {t}\n-------------------------------")
-        l, a = self.train_epoch(t, dev_dataloader, loss_fn, optimizer)
+        l, pl, dl, a = self.train_epoch(t, dev_dataloader, loss_fn, diversity_loss_fn, optimizer)
         dev_loss.append(l)
+        dev_predictions_loss.append(pl)
+        dev_diversity_loss.append(dl)
         dev_acc.append(a)
         # # l, a = self.test_epoch(t, test_dataloader, 
         # #                        loss_fn_no_reduce, 
@@ -187,8 +189,9 @@ class wicc(BehaviorModel):
     # Loss
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     
-    ax.plot(dev_loss, label= 'dev', marker = '.')
-    # ax.plot(test_loss, label = 'test', marker = '.')
+    ax.plot(dev_loss, label= 'total_loss_train', marker = '.')
+    ax.plot(dev_predictions_loss, label = 'predictions_loss_train', marker = '.')
+    ax.plot(dev_diversity_loss, label = 'diversity_loss_train', marker = '.')
     ax.legend()
     ax.set_title("Cross Entropy Loss")
     ax.set_xlabel('Epoch')
@@ -230,12 +233,14 @@ class wicc(BehaviorModel):
     fig.savefig(lr_fp)
     plt.close()
     
-  def train_epoch(self, t, dataloader, loss_fn, optimizer):
+  def train_epoch(self, t, dataloader, loss_fn, diversity_loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.encoder.train()
     gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
     acc_score = torchmetrics.Accuracy(mdmc_average = 'global')
     train_loss = 0
+    train_predictions_loss = 0
+    train_diversity_loss = 0
     num_batches_seen = 0
     
     num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
@@ -249,10 +254,14 @@ class wicc(BehaviorModel):
         
         # Compute prediction error
         latent_logits = self.encoder(X)
+        diversity_loss = diversity_loss_fn(latent_logits)
         q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1) # [batch, seq_len, n_clusters]
         logits = self.decoder(q, individual_id)
-        loss = loss_fn(logits, y)
+        predictions_loss = loss_fn(logits, y) 
+        loss = predictions_loss + diversity_loss
         train_loss += loss.item()
+        train_predictions_loss += predictions_loss.item()
+        train_diversity_loss += diversity_loss.item()
         
         labels_adjusted = y.cpu()
         labels_adjusted = torch.maximum(labels_adjusted, torch.zeros_like(labels_adjusted)) # torchmetrics doesn't handle -1 labels so we treat them as gmm cluster number 0. introduces small error
@@ -268,9 +277,11 @@ class wicc(BehaviorModel):
         
     acc = acc_score.compute()
     # acc = 0.
+    train_predictions_loss = train_predictions_loss / num_batches_seen
+    train_diversity_loss = train_diversity_loss / num_batches_seen
     train_loss = train_loss / num_batches_seen
-    print("Train loss: %f, Train accuracy: %f, Temperature: %f" % (train_loss, acc, gumbel_tau))
-    return train_loss, acc
+    print("Train loss: %f, Prediction loss %f, Diversity loss %f, Train accuracy: %f, Temperature: %f" % (train_loss, train_predictions_loss, train_diversity_loss, acc, gumbel_tau))
+    return train_loss, train_predictions_loss, train_diversity_loss, acc
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
@@ -421,4 +432,20 @@ class Decoder(nn.Module):
       logits = torch.transpose(logits, 1, 2)
       
       return logits
+    
+    
+
+class DiversityLoss(nn.Module):
+    # Maximize label entropy across batches.
+    # Following wav2vec 2.0
+    def __init__(self, alpha, n_clusters):
+        super(DiversityLoss, self).__init__()
+        self.alpha = alpha
+        self.normalizing_factor = 1. / n_clusters
+
+    def forward(self, x):
+        probs = nn.functional.softmax(x, dim = -1)
+        avg_probs = torch.mean(probs, dim = [0, 1]) # -> [n_clusters]
+        d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7)))) #following fairseq implementation, maximise perplexity        
+        return d
     

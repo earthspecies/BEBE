@@ -1,4 +1,4 @@
-experiment_name: gmm_single_individual
+experiment_name: gmm
 input_vars:
 - AccX
 - AccY
@@ -12,10 +12,10 @@ input_vars:
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
-num_clusters: 12
+num_clusters: 24
 
 gmm_config:
-  max_iter: 100
+  max_iter: 150
   n_init: 1
   
 evaluation:

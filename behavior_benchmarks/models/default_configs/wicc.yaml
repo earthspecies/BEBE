@@ -22,4 +22,5 @@ default_model_config:
   tau_init : 2.
   tau_decay_rate : .987
   feature_expansion_factor : 1
+  diversity_alpha : 0.
 
