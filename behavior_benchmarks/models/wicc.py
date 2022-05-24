@@ -13,6 +13,7 @@ from matplotlib.ticker import MultipleLocator
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 from behavior_benchmarks.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
+import scipy.special as special
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,6 +49,7 @@ class wicc(BehaviorModel):
     self.tau_decay_rate = self.model_config['tau_decay_rate']
     self.feature_expansion_factor = self.model_config['feature_expansion_factor']
     self.diversity_alpha = self.model_config['diversity_alpha']
+    self.pseudolabel_dir = self.model_config['pseudolabel_dir']
     ##
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
@@ -95,6 +97,7 @@ class wicc(BehaviorModel):
     else:
       dev_fps = self.config['dev_data_fp']
     
+    bics = []
     for target_individual_id in tqdm.tqdm(self.config['metadata']['individual_ids']):
       dev_data = []
       individual_fps = []
@@ -111,9 +114,11 @@ class wicc(BehaviorModel):
       dev_data = np.concatenate(dev_data, axis = 0)
 
       gmm = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
+      
       gmm.fit(dev_data)
-
-      self.pseudolabel_dir = os.path.join(self.config['temp_dir'], 'pseudolabels')
+      bics.append(gmm.bic(dev_data))      
+      
+      self.pseudolabel_dir = os.path.join(self.config['output_dir'], 'pseudolabels')
       if not os.path.exists(self.pseudolabel_dir):
         os.makedirs(self.pseudolabel_dir)
 
@@ -123,9 +128,18 @@ class wicc(BehaviorModel):
         pseudolabels = gmm.predict(data)
         target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
         np.save(target, pseudolabels)
+        
+    gmm_ms = {}    
+    gmm_ms['bic'] = float(np.mean(bics))
+    gmm_ms['n_pseudolabels'] = self.n_pseudolabels
+    gmm_model_selection_fp = os.path.join(self.config['output_dir'], 'gmm_model_selection.yaml')
+    with open(gmm_model_selection_fp, 'w') as file:
+      yaml.dump(gmm_ms, file)
   
   def fit(self):
-    self.generate_pseudolabels()
+    
+    if self.pseudolabel_dir is None:
+      self.generate_pseudolabels()
     
     ## get data. assume stored in memory for now
     if self.read_latents:
@@ -227,6 +241,62 @@ class wicc(BehaviorModel):
     lr_fp = os.path.join(self.config['output_dir'], 'learning_rate.png')
     fig.savefig(lr_fp)
     plt.close()
+    
+    # Cluster visualizations
+    w = self.decoder.prediction_head.weight.data.cpu().view((self.n_pseudolabels, self.context_window_samples, -1, self.n_clusters)).numpy()
+    dev_individual_ids = []
+    for fp in self.config['metadata']['dev_clip_ids']: # search for files associated with that target_individual
+        clip_id = fp.split('/')[-1].split('.')[0]
+        individual_id = self.config['metadata']['clip_id_to_individual_id'][clip_id]
+        dev_individual_ids.append(individual_id)
+
+    dev_individual_ids = sorted(set(dev_individual_ids))
+    fig = plt.figure(figsize=(15, 15))
+    ax = plt.subplot(111)
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    ax.set_title("Visualization of cluster meaning for different individuals")
+
+    n_rows = min(5, self.n_clusters)
+    n_cols = min(5, len(dev_individual_ids))
+
+    for i in range(n_rows):
+        for k in range(n_cols):
+            axs = fig.add_subplot(n_rows, n_cols, 1 + n_cols * i + k)
+            ind = dev_individual_ids[k]
+            x = w[:, :, ind, i]
+            # softmax over pseudolabels
+            x = special.softmax(x, axis = 0) 
+            for j in range(self.n_pseudolabels):
+                axs.plot(x[j, :])
+            axs.tick_params(
+                axis='x',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off
+
+    ax.set_xlabel('Each column is a different individual; subplot x axis represents time')
+    ax.set_ylabel('Each row is a different cluster; subplot y axis represents pseudolabel probability')
+    clustervis_fp = os.path.join(self.config['output_dir'], 'wicc_clusters.png')
+    fig.savefig(clustervis_fp)
+    plt.close()
+    
+    # Model selection criteria
+    model_selection = {}
+    model_selection['final_acc'] = float(dev_acc[-1].item())
+    model_selection['final_prediction_loss'] = dev_predictions_loss[-1]
+    model_selection['final_diversity_loss'] = dev_diversity_loss[-1]
+    model_selection['final_loss'] = dev_loss[-1]
+    
+    model_selection_fp = os.path.join(self.config['output_dir'], 'model_selection.yaml')
+    with open(model_selection_fp, 'w') as file:
+      yaml.dump(model_selection, file)
+    
+    
     
   def train_epoch(self, t, dataloader, loss_fn, diversity_loss_fn, optimizer):
     size = len(dataloader.dataset)
@@ -439,8 +509,9 @@ class DiversityLoss(nn.Module):
         self.normalizing_factor = 1. / n_clusters
 
     def forward(self, x):
+        #following fairseq implementation, maximise perplexity 
         probs = nn.functional.softmax(x, dim = -1)
         avg_probs = torch.mean(probs, dim = [0, 1]) # -> [n_clusters]
-        d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7)))) #following fairseq implementation, maximise perplexity        
+        d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7))))        
         return d
     

@@ -43,8 +43,3 @@ class gmm(BehaviorModel):
   def predict(self, data):
     predictions = self.model.predict(data)
     return predictions, None
-  
-  # def predict_from_file(self, fp):
-  #   inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
-  #   predictions, latents = self.predict(inputs)
-  #   return predictions, latents
