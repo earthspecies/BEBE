@@ -32,7 +32,8 @@ class wicc(BehaviorModel):
     self.n_epochs = self.model_config['n_epochs']
     self.hidden_size = self.model_config['hidden_size']
     self.n_s4_blocks = self.model_config['num_layers'] ## Total layers is num_layers * 3 tiers
-    self.temporal_window_samples = self.model_config['temporal_window_samples']
+    self.context_window_samples = self.model_config['context_window_samples']
+    self.context_window_stride = self.model_config['context_window_stride']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
     self.blur_scale = self.model_config['blur_scale']
@@ -40,7 +41,7 @@ class wicc(BehaviorModel):
     self.state_size = self.model_config['state_size']
     self.downsample_rate = self.model_config['downsample_rate']
     self.n_clusters = self.config['num_clusters']
-    self.context_window_samples = self.model_config['context_window_samples']
+    self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.n_pseudolabels = self.model_config['n_pseudolabels'] if 'n_pseudolabels' in self.model_config else self.n_clusters // 2
     self.max_iter_gmm = self.model_config['max_iter_gmm']
     self.tau_init = self.model_config['tau_init']
@@ -73,7 +74,7 @@ class wicc(BehaviorModel):
     
     self.decoder = Decoder(self.n_clusters,
                            self.n_pseudolabels,
-                           self.context_window_samples, 
+                           self.context_window_samples,
                            self.dim_individual_embedding).to(device)
     
     print('Encoder parameters:')
@@ -140,14 +141,8 @@ class wicc(BehaviorModel):
     
     dev_pseudolabels = [self.load_pseudolabels(fp) for fp in self.config['dev_file_ids']]
     
-    dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.dim_individual_embedding)
+    dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.context_window_stride, self.dim_individual_embedding)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
-
-    # test_dataset = BEHAVIOR_DATASET(test_data, test_pseudolabels, False, self.temporal_window_samples, self.context_window_samples)
-    # num_examples_test = len(list(range(0, len(test_dataset), self.downsizing_factor)))
-    # test_dataset = Subset(test_dataset, list(range(0, len(test_dataset), self.downsizing_factor)))
-    # print("Number windowed test examples after subselecting: %d" % len(test_dataset))
-    # test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
     loss_fn = nn.CrossEntropyLoss(ignore_index = -1)
     diversity_loss_fn = DiversityLoss(alpha = self.diversity_alpha, n_clusters = self.n_clusters)

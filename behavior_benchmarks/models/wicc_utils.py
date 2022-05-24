@@ -5,7 +5,7 @@ import os
 import tqdm
 
 class BEHAVIOR_DATASET(Dataset):
-    def __init__(self, data, labels, ids, train, temporal_window_samples, context_window_samples, dim_individual_embedding):
+    def __init__(self, data, labels, ids, train, temporal_window_samples, context_window_samples, context_window_stride, dim_individual_embedding):
         self.temporal_window = temporal_window_samples
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
@@ -28,6 +28,7 @@ class BEHAVIOR_DATASET(Dataset):
         
         self.train = train
         self.context_window_samples = context_window_samples
+        self.context_window_stride = context_window_stride
         self.dim_individual_embedding = dim_individual_embedding
         
     def __len__(self):        
@@ -43,7 +44,6 @@ class BEHAVIOR_DATASET(Dataset):
         start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window
         
-        
         data_item = data_item[start:end, :]
         labels_item = labels_item[start:end] #[:, start:end]
         individual_id = int(ids_item[start]) # integer
@@ -51,10 +51,13 @@ class BEHAVIOR_DATASET(Dataset):
         pad_left = (self.context_window_samples - 1) // 2
         pad_right = self.context_window_samples - 1 - pad_left
         
+        pad_left = pad_left * self.context_window_stride
+        pad_right = pad_right * self.context_window_stride
+        
         padded_labels = np.pad(labels_item, (pad_left, pad_right), mode = 'constant', constant_values = -1)
         context_labels = []
         
-        for i in range(self.context_window_samples):
+        for i in range(0, self.context_window_stride * self.context_window_samples, self.context_window_stride):
           context_labels.append(padded_labels[i: i + self.temporal_window])
           
         context_labels = np.stack(context_labels, axis = -1) #[temporal_window, context_window_samples]
