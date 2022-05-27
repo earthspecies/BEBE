@@ -1,4 +1,4 @@
-experiment_name: wicc_bic2
+experiment_name: wicc_timing
 input_vars:
 - AccX
 - AccY
@@ -19,7 +19,7 @@ evaluation:
   
 read_latents: false
 wicc_config:
-  batch_size: 32
+  batch_size: 64
   blur_scale: 0
   context_window_samples: 25
   diversity_alpha: 2.0
@@ -31,7 +31,7 @@ wicc_config:
   jitter_scale: 0
   lr: 0.01
   max_iter_gmm: 100
-  n_epochs: 1
+  n_epochs: 15
   num_layers: 2
   rescale_param: 0
   state_size: 64
@@ -39,4 +39,4 @@ wicc_config:
   tau_init: 2.0
   temporal_window_samples: 2048
   weight_decay: 0
-  n_pseudolabels : 12
+  n_pseudolabels : 24

@@ -14,6 +14,7 @@ from behavior_benchmarks.models.model_superclass import BehaviorModel
 from behavior_benchmarks.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
 import scipy.special as special
+import math
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -98,6 +99,7 @@ class wicc(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     bics = []
+    aics = []
     for target_individual_id in tqdm.tqdm(self.config['metadata']['individual_ids']):
       dev_data = []
       individual_fps = []
@@ -116,7 +118,8 @@ class wicc(BehaviorModel):
       gmm = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
       
       gmm.fit(dev_data)
-      bics.append(gmm.bic(dev_data))      
+      bics.append(gmm.bic(dev_data))
+      aics.append(gmm.aic(dev_data))
       
       self.pseudolabel_dir = os.path.join(self.config['output_dir'], 'pseudolabels')
       if not os.path.exists(self.pseudolabel_dir):
@@ -131,6 +134,7 @@ class wicc(BehaviorModel):
         
     gmm_ms = {}    
     gmm_ms['bic'] = float(np.mean(bics))
+    gmm_ms['aic'] = float(np.mean(aics))
     gmm_ms['n_pseudolabels'] = self.n_pseudolabels
     gmm_model_selection_fp = os.path.join(self.config['output_dir'], 'gmm_model_selection.yaml')
     with open(gmm_model_selection_fp, 'w') as file:
@@ -243,7 +247,11 @@ class wicc(BehaviorModel):
     plt.close()
     
     # Cluster visualizations
-    w = self.decoder.prediction_head.weight.data.cpu().view((self.n_pseudolabels, self.context_window_samples, -1, self.n_clusters)).numpy()
+    #w = self.decoder.weight.data.cpu().view((self.n_pseudolabels, self.context_window_samples, -1, self.n_clusters)).numpy() 
+    w = self.decoder.weight.data.cpu().view((self.n_clusters, self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)).numpy() 
+    w = np.transpose(w, (1, 2, 3, 0))
+    
+    
     dev_individual_ids = []
     for fp in self.config['metadata']['dev_clip_ids']: # search for files associated with that target_individual
         clip_id = fp.split('/')[-1].split('.')[0]
@@ -462,7 +470,6 @@ class Encoder(nn.Module):
         logits = torch.transpose(logits, 1,2) # -> [batch, seq_len, n_clusters]
         return logits  
 
-
 class Decoder(nn.Module):
   # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
   def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
@@ -471,34 +478,79 @@ class Decoder(nn.Module):
       self.n_pseudolabels = n_pseudolabels
       self.context_window_samples = context_window_samples
       self.dim_individual_embedding = dim_individual_embedding
+      self.n_clusters = n_clusters
+      self.weight = nn.parameter.Parameter(torch.empty((1, n_clusters, n_pseudolabels *context_window_samples, dim_individual_embedding))) # weight is [1, n_clusters, n_pseudolabels * context_window_samples, dim_individual_embedding]
+      self.reset_parameters()
+      
+  def reset_parameters(self):
+      # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+      # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
+      # https://github.com/pytorch/pytorch/issues/57109
+      nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
       
   def forward(self, q, individual_id):
       # q: one hot [batch, seq_len, n_clusters]
       # individual_id: one_hot [batch, dim_individual_embedding]
-    
       
-      logits = self.prediction_head(q) #[batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, context_window * n_pseudolabels * dim_individual_embedding]
-      size = logits.size()
+      # stack weights to match batch
+      size = q.size()
+      batch_size = size[0]
+      seq_len = size[1]
       
-      ##-> [batch, seq_len, n_pseudolabels, context_window, dim_individual_embedding]
-      logits = logits.view(size[0], size[1], self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)
+      weight = self.weight.expand(batch_size, self.n_clusters, self.n_pseudolabels * self.context_window_samples, self.dim_individual_embedding)
       
-      # zero out dimensions not associated with individual
-      # unsqueeze so individual id is shape [batch, 1,1,1,dim_individual_embedding]
+      # unsqueeze so individual id is shape [batch, 1,1,dim_individual_embedding]
       individual_id = torch.unsqueeze(individual_id, 1)
-      individual_id = torch.unsqueeze(individual_id, 1)
-      individual_id = torch.unsqueeze(individual_id, 1)
-      logits = logits * individual_id 
+      individual_id = torch.unsqueeze(individual_id, 1) 
+      
+      # grab weight only for relevant individual
+      weight = weight * individual_id # ind_weights
+      weight = torch.sum(weight, -1)# weight is shape [batch, n_clusters, n_pseudolabels * context_window_samples]
+      logits = torch.bmm(q, weight) # logits is shape [batch, seq_len, n_pseudolabels *context_window_samples]
       
       # -> [batch, seq_len, n_pseudolabels, context_window]
-      logits = torch.sum(logits, -1, keepdim = False)
+      logits = logits.view(batch_size, seq_len, self.n_pseudolabels, self.context_window_samples)
       
       # -> [batch, n_pseudolabels, seq_len, context_window]
       logits = torch.transpose(logits, 1, 2)
       
       return logits
     
+# # Legacy version, memory inefficient 
+# class Decoder(nn.Module): 
+#   # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
+#   def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
+#       super(Decoder, self).__init__()
+#       self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * context_window_samples * dim_individual_embedding, bias = False)
+#       self.n_pseudolabels = n_pseudolabels
+#       self.context_window_samples = context_window_samples
+#       self.dim_individual_embedding = dim_individual_embedding
+      
+#   def forward(self, q, individual_id):
+#       # q: one hot [batch, seq_len, n_clusters]
+#       # individual_id: one_hot [batch, dim_individual_embedding]
     
+      
+#       logits = self.prediction_head(q) #[batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, context_window * n_pseudolabels * dim_individual_embedding]
+#       size = logits.size()
+      
+#       ##-> [batch, seq_len, n_pseudolabels, context_window, dim_individual_embedding]
+#       logits = logits.view(size[0], size[1], self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)
+      
+#       # zero out dimensions not associated with individual
+#       # unsqueeze so individual id is shape [batch, 1,1,1,dim_individual_embedding]
+#       individual_id = torch.unsqueeze(individual_id, 1)
+#       individual_id = torch.unsqueeze(individual_id, 1)
+#       individual_id = torch.unsqueeze(individual_id, 1)
+#       logits = logits * individual_id 
+      
+#       # -> [batch, seq_len, n_pseudolabels, context_window]
+#       logits = torch.sum(logits, -1, keepdim = False)
+      
+#       # -> [batch, n_pseudolabels, seq_len, context_window]
+#       logits = torch.transpose(logits, 1, 2)
+      
+#       return logits    
 
 class DiversityLoss(nn.Module):
     # Maximize label entropy across batches.
@@ -514,4 +566,3 @@ class DiversityLoss(nn.Module):
         avg_probs = torch.mean(probs, dim = [0, 1]) # -> [n_clusters]
         d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7))))        
         return d
-    
