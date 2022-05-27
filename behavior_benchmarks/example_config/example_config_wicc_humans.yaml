@@ -19,9 +19,10 @@ evaluation:
   
 read_latents: false
 wicc_config:
-  batch_size: 64
+  batch_size: 32
   blur_scale: 0
-  context_window_samples: 25
+  context_window_samples: 15
+  context_window_stride: 3
   diversity_alpha: 2.0
   downsample_rate: 2
   downsizing_factor: 256
@@ -30,13 +31,15 @@ wicc_config:
   hidden_size: 8
   jitter_scale: 0
   lr: 0.01
-  max_iter_gmm: 100
+  max_iter_gmm: 1
   n_epochs: 15
+  n_pseudolabels: 50
   num_layers: 2
+  pseudolabel_dir: null
   rescale_param: 0
   state_size: 64
   tau_decay_rate: 0.975
   tau_init: 2.0
   temporal_window_samples: 2048
   weight_decay: 0
-  n_pseudolabels : 24
+  pseudolabel_dir : /home/jupyter/sweep_humans_bic_wicc/sweep_humans_bic_wicc_22/pseudolabels

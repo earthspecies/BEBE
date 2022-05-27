@@ -25,4 +25,5 @@ default_model_config:
   diversity_alpha : 0.
   context_window_stride : 1
   pseudolabel_dir : null 
+  individualized_head : true
   

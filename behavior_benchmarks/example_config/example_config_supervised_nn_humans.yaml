@@ -1,4 +1,4 @@
-experiment_name: supervised_nn_s4
+experiment_name: supervised_nn_s4_timing
 input_vars:
 - AccX
 - AccY
@@ -20,7 +20,7 @@ evaluation:
 read_latents: false
 supervised_nn_config:
   batch_size: 32
-  downsizing_factor: 512
+  downsizing_factor: 256
   dropout: 0.
   hidden_size: 8
   lr: 0.001

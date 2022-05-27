@@ -51,7 +51,10 @@ class wicc(BehaviorModel):
     self.feature_expansion_factor = self.model_config['feature_expansion_factor']
     self.diversity_alpha = self.model_config['diversity_alpha']
     self.pseudolabel_dir = self.model_config['pseudolabel_dir']
+    self.individualized_head = self.model_config['individualized_head']
     ##
+    
+    assert self.context_window_samples % 2 != 0, 'context window should be an odd number'
     
     # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
     # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
@@ -79,6 +82,8 @@ class wicc(BehaviorModel):
                            self.n_pseudolabels,
                            self.context_window_samples,
                            self.dim_individual_embedding).to(device)
+    
+    self.context_generator = ContextGenerator(self.context_window_samples, self.context_window_stride).to(device)
     
     print('Encoder parameters:')
     print(_count_parameters(self.encoder))
@@ -310,7 +315,7 @@ class wicc(BehaviorModel):
     size = len(dataloader.dataset)
     self.encoder.train()
     gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
-    acc_score = torchmetrics.Accuracy(mdmc_average = 'global')
+    acc_score = torchmetrics.Accuracy(mdmc_average = 'global').to(device)
     train_loss = 0
     train_predictions_loss = 0
     train_diversity_loss = 0
@@ -322,8 +327,16 @@ class wicc(BehaviorModel):
         if i == num_batches_todo :
           break
         num_batches_seen += 1
-        X, y = X.type('torch.FloatTensor').to(device), y.type('torch.LongTensor').to(device)
-        individual_id = individual_id.type('torch.FloatTensor').to(device)
+        X, y = X.to(device = device, dtype = torch.float), y.to(device = device, dtype = torch.float)
+        
+        # use a 1d convolution to generate context labels
+        #y : [batch, temporal_window + padding]
+        y = torch.unsqueeze(y, 1) # -> [batch, 1, temporal_window + padding]
+        y = self.context_generator(y) # -> [batch, context_window, temporal_window]
+        y = torch.transpose(y, 1,2) # -> [batch, temporal_window, context_window]
+        y = y.to(torch.long)
+        #
+        individual_id = individual_id.to(device = device, dtype = torch.float)
         
         # Compute prediction error
         latent_logits = self.encoder(X)
@@ -336,9 +349,9 @@ class wicc(BehaviorModel):
         train_predictions_loss += predictions_loss.item()
         train_diversity_loss += diversity_loss.item()
         
-        labels_adjusted = y.cpu()
+        labels_adjusted = y
         labels_adjusted = torch.maximum(labels_adjusted, torch.zeros_like(labels_adjusted)) # torchmetrics doesn't handle -1 labels so we treat them as gmm cluster number 0. introduces small error
-        acc_score.update(logits.cpu(), labels_adjusted)
+        acc_score.update(logits, labels_adjusted)
 
         # Backpropagation
         optimizer.zero_grad()
@@ -550,7 +563,18 @@ class Decoder(nn.Module):
 #       # -> [batch, n_pseudolabels, seq_len, context_window]
 #       logits = torch.transpose(logits, 1, 2)
       
-#       return logits    
+#       return logits  
+
+class ContextGenerator(nn.Module):
+    # [batch, 1, padded_temporal_window] -> [batch, context_window, temporal_window]
+    def __init__(self, context_window_samples, context_window_stride):
+      super(ContextGenerator, self).__init__()
+      self.generator_kernel = torch.eye(context_window_samples, dtype = torch.float, device = device) #
+      self.generator_kernel = torch.unsqueeze(self.generator_kernel, 1) #[context_window, 1, context_window]
+      self.context_window_stride = context_window_stride
+      
+    def forward(self, labels):
+      return nn.functional.conv1d(labels, self.generator_kernel, dilation = self.context_window_stride)
 
 class DiversityLoss(nn.Module):
     # Maximize label entropy across batches.
