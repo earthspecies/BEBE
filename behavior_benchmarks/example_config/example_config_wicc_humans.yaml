@@ -1,4 +1,4 @@
-experiment_name: wicc_timing
+experiment_name: wicc_single_decoder
 input_vars:
 - AccX
 - AccY
@@ -19,7 +19,7 @@ evaluation:
   
 read_latents: false
 wicc_config:
-  batch_size: 32
+  batch_size: 64
   blur_scale: 0
   context_window_samples: 15
   context_window_stride: 3
@@ -32,7 +32,7 @@ wicc_config:
   jitter_scale: 0
   lr: 0.01
   max_iter_gmm: 1
-  n_epochs: 15
+  n_epochs: 150
   n_pseudolabels: 50
   num_layers: 2
   pseudolabel_dir: null
@@ -43,3 +43,4 @@ wicc_config:
   temporal_window_samples: 2048
   weight_decay: 0
   pseudolabel_dir : /home/jupyter/sweep_humans_bic_wicc/sweep_humans_bic_wicc_22/pseudolabels
+  individualized_head : false

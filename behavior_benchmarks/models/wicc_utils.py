@@ -46,7 +46,11 @@ class BEHAVIOR_DATASET(Dataset):
         
         data_item = data_item[start:end, :]
         labels_item = labels_item[start:end] #[:, start:end]
-        individual_id = int(ids_item[start]) # integer
+        
+        if self.dim_individual_embedding > 1:
+          individual_id = int(ids_item[start]) # integer
+        else:
+          individual_id = 0
         
         pad_left = (self.context_window_samples - 1) // 2
         pad_right = self.context_window_samples - 1 - pad_left

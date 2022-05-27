@@ -64,8 +64,10 @@ class wicc(BehaviorModel):
     
     self.n_features = len(self.cols_included)
     
-    self.dim_individual_embedding = max(self.config['metadata']['individual_ids']) + 1 # individuals are numbered 0, 1,..., highest, but may omit some integers
-    
+    if self.individualized_head:
+      self.dim_individual_embedding = max(self.config['metadata']['individual_ids']) + 1 # individuals are numbered 0, 1,..., highest, but may omit some integers
+    else:
+      self.dim_individual_embedding = 1
     
     self.encoder =  Encoder(self.n_features,
                             self.n_clusters,
@@ -279,7 +281,10 @@ class wicc(BehaviorModel):
     for i in range(n_rows):
         for k in range(n_cols):
             axs = fig.add_subplot(n_rows, n_cols, 1 + n_cols * i + k)
-            ind = dev_individual_ids[k]
+            if self.individualized_head:
+              ind = dev_individual_ids[k]
+            else:
+              ind = 0
             x = w[:, :, ind, i]
             # softmax over pseudolabels
             x = special.softmax(x, axis = 0) 
