@@ -18,7 +18,7 @@ default_model_config:
   state_size : 64
   downsample_rate : 1
   context_window_samples : 5
-  max_iter_gmm : 100
+  max_iter_gmm : 500
   tau_init : 2.
   tau_decay_rate : .975
   feature_expansion_factor : 1
@@ -26,4 +26,5 @@ default_model_config:
   context_window_stride : 1
   pseudolabel_dir : null 
   individualized_head : true
+  per_frame_model : 'gmm'
   

@@ -13,6 +13,7 @@ from matplotlib.ticker import MultipleLocator
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 from behavior_benchmarks.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
 import scipy.special as special
 import math
 
@@ -52,6 +53,7 @@ class wicc(BehaviorModel):
     self.diversity_alpha = self.model_config['diversity_alpha']
     self.pseudolabel_dir = self.model_config['pseudolabel_dir']
     self.individualized_head = self.model_config['individualized_head']
+    self.per_frame_model = self.model_config['per_frame_model']
     ##
     
     assert self.context_window_samples % 2 != 0, 'context window should be an odd number'
@@ -97,7 +99,7 @@ class wicc(BehaviorModel):
   
   def generate_pseudolabels(self):
     ## Generate pseudo-labels
-    print("Training GMMs to produce pseudo-labels")
+    print("Training per-frame models to produce pseudo-labels")
     
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
@@ -121,12 +123,17 @@ class wicc(BehaviorModel):
         continue
 
       dev_data = np.concatenate(dev_data, axis = 0)
-
-      gmm = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
       
-      gmm.fit(dev_data)
-      bics.append(gmm.bic(dev_data))
-      aics.append(gmm.aic(dev_data))
+      if self.per_frame_model == 'gmm':
+        per_frame_model = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
+      elif self.per_frame_model == 'kmeans':
+        per_frame_model = KMeans(n_clusters=self.n_pseudolabels, n_init=10, max_iter=self.max_iter_gmm, verbose=0)
+      
+      per_frame_model.fit(dev_data)
+      
+      if self.per_frame_model == 'gmm':
+        bics.append(per_frame_model.bic(dev_data))
+        aics.append(per_frame_model.aic(dev_data))
       
       self.pseudolabel_dir = os.path.join(self.config['output_dir'], 'pseudolabels')
       if not os.path.exists(self.pseudolabel_dir):
@@ -135,17 +142,18 @@ class wicc(BehaviorModel):
       #print("Generating pseudo-labels for dev data")
       for fp in individual_fps:
         data = self.load_model_inputs(fp, read_latents = self.read_latents)
-        pseudolabels = gmm.predict(data)
+        pseudolabels = per_frame_model.predict(data)
         target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
         np.save(target, pseudolabels)
         
-    gmm_ms = {}    
-    gmm_ms['bic'] = float(np.mean(bics))
-    gmm_ms['aic'] = float(np.mean(aics))
-    gmm_ms['n_pseudolabels'] = self.n_pseudolabels
-    gmm_model_selection_fp = os.path.join(self.config['output_dir'], 'gmm_model_selection.yaml')
-    with open(gmm_model_selection_fp, 'w') as file:
-      yaml.dump(gmm_ms, file)
+    if self.per_frame_model == 'gmm':
+      gmm_ms = {}    
+      gmm_ms['bic'] = float(np.mean(bics))
+      gmm_ms['aic'] = float(np.mean(aics))
+      gmm_ms['n_pseudolabels'] = self.n_pseudolabels
+      gmm_model_selection_fp = os.path.join(self.config['output_dir'], 'gmm_model_selection.yaml')
+      with open(gmm_model_selection_fp, 'w') as file:
+        yaml.dump(gmm_ms, file)
   
   def fit(self):
     
