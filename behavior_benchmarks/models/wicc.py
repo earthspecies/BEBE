@@ -127,6 +127,11 @@ class wicc(BehaviorModel):
       if self.per_frame_model == 'gmm':
         per_frame_model = GaussianMixture(n_components = self.n_pseudolabels, verbose = 0, max_iter = self.max_iter_gmm, n_init = 1)
       elif self.per_frame_model == 'kmeans':
+        # per-channel normalization
+        mu = np.mean(dev_data, axis = 0, keepdims = True)
+        sigma = np.std(dev_data, axis = 0, keepdims = True)
+        dev_data = (dev_data - mu) / (sigma + 1e-6)
+        
         per_frame_model = KMeans(n_clusters=self.n_pseudolabels, n_init=10, max_iter=self.max_iter_gmm, verbose=0)
       
       per_frame_model.fit(dev_data)
@@ -387,16 +392,31 @@ class wicc(BehaviorModel):
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
   
+  
   def predict(self, data):
-    ###
-    self.encoder.eval()
-    alldata= data
-    
-    predslist = []
-    pred_len = self.temporal_window_samples
-    for i in range(0, np.shape(alldata)[0], pred_len):
-      data = alldata[i:i+pred_len, :] # window to acommodate more hidden states without making edits to CUDA kernel
-    
+      self.encoder.eval()
+      alldata= data
+
+      predslist = []
+      pred_len = self.temporal_window_samples
+
+      current_start_step = 0
+      for i in range(0, np.shape(alldata)[0] - 2* pred_len, pred_len):
+        current_start_step = i
+        data = alldata[current_start_step:current_start_step+pred_len, :] # window
+
+        with torch.no_grad():
+          data = np.expand_dims(data, axis =0)
+          data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+          preds = self.encoder(data)
+          preds = preds.cpu().detach().numpy()
+          preds = np.squeeze(preds, axis = 0)
+          preds = np.argmax(preds, axis = -1).astype(np.uint8)
+
+          predslist.append(preds)
+
+      current_start_step += pred_len
+      data = alldata[current_start_step:, :] # lump the last couple windows together; avoids tiny remainder windows
       with torch.no_grad():
         data = np.expand_dims(data, axis =0)
         data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
@@ -404,10 +424,11 @@ class wicc(BehaviorModel):
         preds = preds.cpu().detach().numpy()
         preds = np.squeeze(preds, axis = 0)
         preds = np.argmax(preds, axis = -1).astype(np.uint8)
-        
+
         predslist.append(preds)
-    preds = np.concatenate(predslist)
-    return preds, None  
+
+      preds = np.concatenate(predslist)
+      return preds, None  
       
 class S4Block(nn.Module):
     def __init__(self, H, N, dropout= 0.):
