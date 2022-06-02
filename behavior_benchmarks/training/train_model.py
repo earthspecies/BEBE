@@ -29,6 +29,9 @@ def train_model(config):
     
   elif config['model'] == 'wicc':
     model = models.wicc(config)
+    
+  elif config['model'] == 'umapper':
+    model = models.umapper(config)
 
   else:
     raise ValueError('model type not recognized')
