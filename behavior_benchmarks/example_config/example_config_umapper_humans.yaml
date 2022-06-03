@@ -1,4 +1,4 @@
-experiment_name: umapper
+experiment_name: umapper2
 input_vars:
 - AccX
 - AccY
@@ -15,7 +15,10 @@ output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 num_clusters: 24
 
 umapper_config:
-  n_watershed_trials : 10
+  morlet_w : 1.
+  n_neighbors : 16
+  min_dist : 0.1
+  train_downsample : 4
   
 evaluation:
   boundary_tolerance_sec: 1.0

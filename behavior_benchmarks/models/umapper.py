@@ -21,22 +21,23 @@ from scipy.sparse import csc_matrix
 class umapper(BehaviorModel):
   def __init__(self, config):
     super(umapper, self).__init__(config)
-    self.model = None
     sr = config['metadata']['sr']
-    self.morlet_w = 5.
-    self.n_wavelets = 25
-    self.image_border = 48
-    self.image_size = 2048
-    self.n_watershed_trials = 10
-    n_neighbors = 15
-    min_dist = 0.1
+    self.morlet_w = self.model_config['morlet_w']
+    self.n_wavelets = self.model_config['n_wavelets']
+    self.image_border = self.model_config['image_border']
+    self.image_size = self.model_config['image_size']
+    self.n_watershed_trials = self.model_config['n_watershed_trials']
+    self.train_downsample = self.model_config['train_downsample'] # train with fewer examples
+    n_neighbors = self.model_config['n_neighbors']
+    min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
     # initialize umap
     self.reducer = umap.UMAP(
         n_neighbors = n_neighbors,
         min_dist = min_dist,
-        metric = 'symmetric_kl'
+        metric = 'symmetric_kl',
+        verbose = True
     )
     
   def load_model_inputs(self, filepath, read_latents = False):
@@ -56,6 +57,7 @@ class umapper(BehaviorModel):
     transformed = []
     for axis in axes:
         sig = data[:, axis]
+        sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
         transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
 
     transformed = np.stack(transformed, axis = -1)
@@ -73,7 +75,7 @@ class umapper(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     # load as wavelets
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents)[::self.train_downsample, :] for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
     
     # normalize and record normalizing constant
@@ -81,7 +83,6 @@ class umapper(BehaviorModel):
     dev_data = dev_data / (normalize_denom + 1e-6)
     
     # fit umap
-    self.reducer.verbose = True
     y = self.reducer.fit_transform(dev_data)
     
     # learn how to rescale into useful image
@@ -105,9 +106,10 @@ class umapper(BehaviorModel):
     sigma_max = None #lowest upper bound on sigma that WILL work (<= desired number of clusters)
     sigma_min = 1. #greatest lower bound on sigma that WON'T work (leads to too many clusters)...at first we aren't sure if this is a good lower bound
     good_sigma_min = False
+    best_label_image = None
 
     # first search for an upper and lower bound on sigma
-    print("first sweep")
+    print("Trying different gaussian kernels")
     while True:
         sigma = 2 * sigma_min
         print("trying with sigma %3.3f" % sigma)
@@ -126,12 +128,13 @@ class umapper(BehaviorModel):
         if n_discovered_labels <= self.num_clusters:
             if good_sigma_min:
               sigma_max = sigma
+              best_label_image = labels
               break
             else:
               sigma_min = sigma_min/2. # if starting sigma is too high, we reduce and try again
 
     # Search between sigma_min and sigma_max
-    print("doing binary search for sigma")
+    print("doing final binary search for gaussian kernel")
     for i in tqdm(range(self.n_watershed_trials)):
         sigma = (sigma_max + sigma_min)/2
         image = ndi.gaussian_filter(y_as_array, sigma)
@@ -147,29 +150,25 @@ class umapper(BehaviorModel):
             sigma_min = sigma
         if n_discovered_labels <= self.num_clusters:
             sigma_max = sigma
+            best_label_image = labels
 
     # Finally, use best found sigma
-    sigma = sigma_max
-    image = ndi.gaussian_filter(y_as_array, sigma)
+    self.label_image = best_label_image
 
-    coords = peak_local_max(image, footprint=np.ones((3, 3)))
-    mask = np.zeros(image.shape, dtype=bool)
-    mask[tuple(coords.T)] = True
-    markers, _ = ndi.label(mask)
-    self.label_image = watershed(-image, markers) - 1
-
-    fig, axes = plt.subplots(ncols=2, figsize=(8, 4), sharex=True, sharey=True)
+    fig, axes = plt.subplots(ncols=3, figsize=(12, 4), sharex=True, sharey=True)
     ax = axes.ravel()
 
-    ax[0].imshow(image)
-    ax[0].set_title('Blurred UMAP')
-    ax[1].imshow(self.label_image)
-    ax[1].set_title('Watershed Transform')
+    ax[0].scatter(yq[:,1], yq[:, 0].T, s = 1)
+    ax[0].set_title('UMAP')
+    ax[1].imshow(image)
+    ax[1].set_title('UMAP + Gaussian kernel')
+    ax[2].imshow(labels)
+    ax[2].scatter(yq[:,1], yq[:, 0].T, s = 1, c = 'white')
+    ax[2].set_title('Watershed Transform')
 
     for a in ax:
         a.set_axis_off()
 
-    fig.tight_layout()
     fp = os.path.join(self.config['output_dir'], 'UMAP_vis.png')
     plt.savefig(fp)
     
@@ -184,7 +183,6 @@ class umapper(BehaviorModel):
     data = data / (normalize_denom + 1e-6)
     
     # fit umap
-    self.reducer.verbose = False
     y = self.reducer.transform(data)
     
     # rescale into useful image
