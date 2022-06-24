@@ -165,7 +165,10 @@ def expand_config(config):
 
 def accept_default_model_configs(config):
   # Makes sure that all the entries of the config file are properly filled in.  
-  assert 'evaluation' in config
+  # assert 'evaluation' in config
+  
+  # to be deprecated
+  config['evaluation'] = {'boundary_tolerance_sec' : 1.0}
   
   if 'n_samples' not in config['evaluation']:
     if config['model'] == 'supervised_nn':

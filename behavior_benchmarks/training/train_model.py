@@ -32,6 +32,9 @@ def train_model(config):
     
   elif config['model'] == 'umapper':
     model = models.umapper(config)
+    
+  elif config['model'] == 'random':
+    model = models.random(config)
 
   else:
     raise ValueError('model type not recognized')

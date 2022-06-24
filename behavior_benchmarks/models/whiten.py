@@ -9,7 +9,7 @@ from behavior_benchmarks.models.model_superclass import BehaviorModel
 
 class whiten(BehaviorModel):
   def __init__(self, config):
-    super(BehaviorModel, self).__init__(config)
+    super(whiten, self).__init__(config)
     # self.config = config
     # self.model_config = config['whiten_config']
     # self.read_latents = config['read_latents']

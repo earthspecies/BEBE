@@ -17,23 +17,3 @@ num_clusters: 24
 gmm_config:
   max_iter: 150
   n_init: 1
-  
-evaluation:
-  boundary_tolerance_sec: 1.0
-
-
-
-# config = {'experiment_name' : 'gmm_test',
-#          'model' : 'gmm',
-#          'num_components' : 8,
-#          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
-#          'input_vars' : ['AccX',
-#                          'AccY',
-#                          'AccZ',
-#                          'GyrX',
-#                          'GyrY',
-#                          'GyrZ',
-#                          'Depth'], 
-#          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
-#          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
-#          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
