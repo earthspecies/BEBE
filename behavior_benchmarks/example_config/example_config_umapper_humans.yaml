@@ -1,4 +1,4 @@
-experiment_name: umapper2
+experiment_name: umapper1
 input_vars:
 - AccX
 - AccY
@@ -19,6 +19,7 @@ umapper_config:
   n_neighbors : 16
   min_dist : 0.1
   train_downsample : 4
+  low_freq_cols : []
   
 evaluation:
   boundary_tolerance_sec: 1.0

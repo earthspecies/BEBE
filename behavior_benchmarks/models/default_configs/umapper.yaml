@@ -11,4 +11,5 @@ default_model_config:
   image_border : 48
   image_size : 2048
   n_watershed_trials : 10
+  low_freq_cols : []
   
