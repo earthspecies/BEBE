@@ -6,7 +6,7 @@ import pandas as pd
 import tqdm
 import yaml
 
-def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None, choices = None, probs = None):
+def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None, probs = None):
   
   evaluation_dict = {}
 
@@ -26,7 +26,7 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
   # mapping-based
   num_clusters = config['num_clusters']
   label_names = config['metadata']['label_names']
-  boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
+  # boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
   # scores for supervised model
   if config['model'] == 'supervised_nn':
@@ -38,11 +38,11 @@ def perform_evaluation(y_true, y_pred, config, n_samples = 100, output_fp = None
                                                                y_pred, 
                                                                num_clusters, 
                                                                label_names, 
-                                                               boundary_tolerance_frames = boundary_tolerance_frames, 
+                                                               # boundary_tolerance_frames = boundary_tolerance_frames, 
                                                                unknown_value = unknown_label,
                                                                choices = choices,
                                                                probs = probs,
-                                                               n_samples = n_samples, 
+                                                               # n_samples = n_samples, 
                                                                supervised = supervised
                                                               )
   for key in mapping_based:
@@ -76,11 +76,13 @@ def generate_predictions(model, config):
       
       if config['predict_and_evaluate']:
         predictions_fp = os.path.join(config['predictions_dir'], filename)
-        np.save(predictions_fp, predictions)
+        np.savetxt(predictions_fp, predictions, delimiter=",")
+        # np.save(predictions_fp, predictions)
 
       if config['save_latents']:
         latents_fp = os.path.join(config['latents_output_dir'], filename)
-        np.save(latents_fp, latents)
+        np.savetxt(latents_fp, latents, delimiter=",")
+        # np.save(latents_fp, latents)
 
 def generate_evaluations(config):
   print("saving model outputs to %s " % config['output_dir'])
@@ -106,12 +108,12 @@ def generate_evaluations(config):
       if not os.path.exists(predictions_fp):
         raise ValueError("you need to save off all the model predictions before performing evaluation")
       
-      predictions = np.load(predictions_fp)
+      predictions = np.genfromtxt(predictions_fp, delimiter = ',') #np.load(predictions_fp)
       predictions = list(predictions)
 
       labels_idx = config['metadata']['clip_column_names'].index('label')
       data_fp = config['file_id_to_data_fp'][filename]
-      labels = list(np.load(data_fp)[:, labels_idx])
+      labels = list(np.genfromtxt(data_fp, delimiter = ',')[:, labels_idx]) #list(np.load(data_fp)[:, labels_idx])
       
       clip_id = filename.split('.')[0]
       individual_id = config['metadata']['clip_id_to_individual_id'][clip_id]
@@ -138,7 +140,7 @@ def generate_evaluations(config):
       predictions = np.array(all_predictions_dict[individual_id])
       labels = np.array(all_labels_dict[individual_id])
       
-      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None, n_samples = config['evaluation']['n_samples'])
+      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None)
       
       for label_name in label_names:
         individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
@@ -168,9 +170,9 @@ def generate_evaluations(config):
       
 
     if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
-      eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+      eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs)
     else: 
-      eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs, n_samples = config['evaluation']['n_samples'])
+      eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs)
 
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
@@ -184,7 +186,7 @@ def generate_evaluations(config):
   for file_ids in to_consider:
     for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
       predictions_fp = os.path.join(config['predictions_dir'], filename)
-      track_length = len(np.load(predictions_fp))
+      track_length = len(np.genfromtxt(predictions_fp, delimiter = ','))#len(np.load(predictions_fp))
       if file_ids == config['train_file_ids']:
         target_filename = filename.split('.')[0] + '-train-track_visualization.png'
       elif file_ids == config['val_file_ids']:

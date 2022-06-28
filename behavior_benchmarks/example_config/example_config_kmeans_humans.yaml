@@ -13,9 +13,6 @@ model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 num_clusters: 24
-read_latents: True
-data_latents_fp_glob: 
-- /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy
-  
-evaluation:
-  boundary_tolerance_sec: 0.5
+read_latents: False
+# data_latents_fp_glob: 
+# - /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy

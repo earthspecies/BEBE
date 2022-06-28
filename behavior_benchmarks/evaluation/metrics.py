@@ -68,49 +68,49 @@ def produce_random_cluster_to_label(choices, probs):
         mapping_dict[i] = np.random.choice(choices[i], p = probs[i])
     return lambda i: mapping_dict[i], mapping_dict
   
-def find_boundaries(array):
-    # in: 1-dim array
-    # out: 1-dim boolean array arr_bound
-    # with arr_bound[i] = True iff array[i] != array [i+1]
-    # and arr_bound[len(array)-1] = True
-    arr_bound = (array[:-1] - array[1:]) != 0
-    arr_bound = np.append(arr_bound, [True])
-    return arr_bound
+# def find_boundaries(array):
+#     # in: 1-dim array
+#     # out: 1-dim boolean array arr_bound
+#     # with arr_bound[i] = True iff array[i] != array [i+1]
+#     # and arr_bound[len(array)-1] = True
+#     arr_bound = (array[:-1] - array[1:]) != 0
+#     arr_bound = np.append(arr_bound, [True])
+#     return arr_bound
   
 ### Boundary precision and recall:
 ### nb counting hits is assymmetric
 
-def boundary_precision_with_unknown_and_tolerance(gt_bound, pred_bound, gt_mask, tolerance_frames = 0):
-    eps = 1e-6
-    boundary_alignments = []
-    boundary_alignments.append(pred_bound * gt_bound)
-    for shift in range(1, tolerance_frames + 1):
-        right_shifted_gt_bound = gt_bound[shift:]
-        right_shifted_gt_bound = np.append(right_shifted_gt_bound, np.full(shift, False))
-        left_shifted_gt_bound = gt_bound[:-shift]
-        left_shifted_gt_bound = np.append(np.full(shift, False), left_shifted_gt_bound)
-        boundary_alignments.append(pred_bound * right_shifted_gt_bound)
-        boundary_alignments.append(pred_bound * left_shifted_gt_bound)
+# def boundary_precision_with_unknown_and_tolerance(gt_bound, pred_bound, gt_mask, tolerance_frames = 0):
+#     eps = 1e-6
+#     boundary_alignments = []
+#     boundary_alignments.append(pred_bound * gt_bound)
+#     for shift in range(1, tolerance_frames + 1):
+#         right_shifted_gt_bound = gt_bound[shift:]
+#         right_shifted_gt_bound = np.append(right_shifted_gt_bound, np.full(shift, False))
+#         left_shifted_gt_bound = gt_bound[:-shift]
+#         left_shifted_gt_bound = np.append(np.full(shift, False), left_shifted_gt_bound)
+#         boundary_alignments.append(pred_bound * right_shifted_gt_bound)
+#         boundary_alignments.append(pred_bound * left_shifted_gt_bound)
 
-    hit_array = sum(boundary_alignments).astype(bool)
-    hit_array = hit_array[gt_mask]
-    return np.sum(hit_array) / (np.sum(pred_bound[gt_mask]) + eps)
+#     hit_array = sum(boundary_alignments).astype(bool)
+#     hit_array = hit_array[gt_mask]
+#     return np.sum(hit_array) / (np.sum(pred_bound[gt_mask]) + eps)
 
-def boundary_recall_with_unknown_and_tolerance(gt_bound, pred_bound, gt_mask, tolerance_frames = 0):
-    eps = 1e-6
-    boundary_alignments = []
-    boundary_alignments.append(pred_bound * gt_bound)
-    for shift in range(1, tolerance_frames + 1):
-        right_shifted_pred_bound = pred_bound[shift:]
-        right_shifted_pred_bound = np.append(right_shifted_pred_bound, np.full(shift, False))
-        left_shifted_pred_bound = pred_bound[:-shift]
-        left_shifted_pred_bound = np.append(np.full(shift, False), left_shifted_pred_bound)
-        boundary_alignments.append(gt_bound * right_shifted_pred_bound)
-        boundary_alignments.append(gt_bound * left_shifted_pred_bound)
+# def boundary_recall_with_unknown_and_tolerance(gt_bound, pred_bound, gt_mask, tolerance_frames = 0):
+#     eps = 1e-6
+#     boundary_alignments = []
+#     boundary_alignments.append(pred_bound * gt_bound)
+#     for shift in range(1, tolerance_frames + 1):
+#         right_shifted_pred_bound = pred_bound[shift:]
+#         right_shifted_pred_bound = np.append(right_shifted_pred_bound, np.full(shift, False))
+#         left_shifted_pred_bound = pred_bound[:-shift]
+#         left_shifted_pred_bound = np.append(np.full(shift, False), left_shifted_pred_bound)
+#         boundary_alignments.append(gt_bound * right_shifted_pred_bound)
+#         boundary_alignments.append(gt_bound * left_shifted_pred_bound)
 
-    hit_array = sum(boundary_alignments).astype(bool)
-    hit_array = hit_array[gt_mask]
-    return np.sum(hit_array) / (np.sum(gt_bound[gt_mask]) + eps)
+#     hit_array = sum(boundary_alignments).astype(bool)
+#     hit_array = hit_array[gt_mask]
+#     return np.sum(hit_array) / (np.sum(gt_bound[gt_mask]) + eps)
   
 def compute_f1(prec, rec):
     eps = 1e-6
@@ -128,51 +128,51 @@ def compute_R(prec, rec):
     r2 = (rec - over_segmentation - 1)/np.sqrt(2.)
     return (2 - np.abs(r1) - np.abs(r2))/2.
   
-def compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames):
-  # sample mapping
-  #print('producing mapping')
-  _, mapping_dict = produce_random_cluster_to_label(choices, probs)
-  #print('produced')
-  # pred_list = list(pred)
-  # #pred_mapped = np.array(list(map(mapping, pred_list)))
-  # pred_mapped = map(mapping, pred_list)
-  # pred_mapped = np.fromiter(pred_mapped, int, count = len(pred_list))
+# def compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound, gt_mask_boundaries, boundary_tolerance_frames):
+#   # sample mapping
+#   #print('producing mapping')
+#   _, mapping_dict = produce_random_cluster_to_label(choices, probs)
+#   #print('produced')
+#   # pred_list = list(pred)
+#   # #pred_mapped = np.array(list(map(mapping, pred_list)))
+#   # pred_mapped = map(mapping, pred_list)
+#   # pred_mapped = np.fromiter(pred_mapped, int, count = len(pred_list))
   
-  ###
+#   ###
   
-  outs = []
-  for i in mapping_dict:
-    # mostly vectorized way to assign i \mapsto mapping_dict[i]
-    m = pred == i
-    outs.append(m * mapping_dict[i])
-  pred_mapped = sum(outs)
+#   outs = []
+#   for i in mapping_dict:
+#     # mostly vectorized way to assign i \mapsto mapping_dict[i]
+#     m = pred == i
+#     outs.append(m * mapping_dict[i])
+#   pred_mapped = sum(outs)
   
-  ###
+#   ###
   
   
-  #print('cast')
-  pred_sub = pred_mapped[mask]
-  #print('masked')
-  prec = precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
-  rec = recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
-  f1 = f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
-  #print('scored class')
+#   #print('cast')
+#   pred_sub = pred_mapped[mask]
+#   #print('masked')
+#   prec = precision_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
+#   rec = recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
+#   f1 = f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0 )
+#   #print('scored class')
 
-  pred_bound = find_boundaries(pred_mapped)
-  bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
-                                                        pred_bound,
-                                                        gt_mask_boundaries,
-                                                        tolerance_frames = boundary_tolerance_frames
-                                                       )
-  brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
-                                                    pred_bound,
-                                                    gt_mask_boundaries,
-                                                    tolerance_frames = boundary_tolerance_frames
-                                                   )
-  bf1 = compute_f1(bprec, brec)
-  bR = compute_R(bprec, brec)
-  #print('scored boundary')
-  return prec, rec, f1, bprec, brec, bf1, bR
+#   pred_bound = find_boundaries(pred_mapped)
+#   bprec = boundary_precision_with_unknown_and_tolerance(gt_bound,
+#                                                         pred_bound,
+#                                                         gt_mask_boundaries,
+#                                                         tolerance_frames = boundary_tolerance_frames
+#                                                        )
+#   brec = boundary_recall_with_unknown_and_tolerance(gt_bound,
+#                                                     pred_bound,
+#                                                     gt_mask_boundaries,
+#                                                     tolerance_frames = boundary_tolerance_frames
+#                                                    )
+#   bf1 = compute_f1(bprec, brec)
+#   bR = compute_R(bprec, brec)
+#   #print('scored boundary')
+#   return prec, rec, f1, bprec, brec, bf1, bR
   
 # def estimate_averaged_scores(gt, pred, choices, probs, unknown_value=0, boundary_tolerance_frames = 0, n_iter = 1):
 #     # For each cluster, samples a label according to proportion of overlap
@@ -227,7 +227,7 @@ def compute_single_score_randomized(choices, probs, pred, mask, gt_sub, gt_bound
 #       results[key] = float(results[key])    
 #     return results
   
-def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, boundary_tolerance_frames = 0):
+def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
     # For each cluster, looks for the label with highest overlap with that cluster
     # (i.e. the Maximimum a posteriori estimate)
     # Maps that cluster to that label, and computes precision, recall, etc
@@ -258,29 +258,29 @@ def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, bound
     results['MAP_classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['MAP_classification_f1_macro'] = float(np.mean(f1s))
     
-    ### Get optimized segmentation boundary scores    
-    gt_bound = find_boundaries(gt)
-    # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
-    gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
-    gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
-    gt_mask_boundaries = gt_mask_boundaries.astype(bool)
+#     ### Get optimized segmentation boundary scores    
+#     gt_bound = find_boundaries(gt)
+#     # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
+#     gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
+#     gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
+#     gt_mask_boundaries = gt_mask_boundaries.astype(bool)
     
-    pred_bound = find_boundaries(pred_mapped)
-    results['MAP_boundary_precision'] = float(boundary_precision_with_unknown_and_tolerance(gt_bound, 
-                                                                                            pred_bound, 
-                                                                                            gt_mask_boundaries, 
-                                                                                            tolerance_frames = boundary_tolerance_frames
-                                                                                           ))
-    results['MAP_boundary_recall'] = float(boundary_recall_with_unknown_and_tolerance(gt_bound,
-                                                                                      pred_bound,
-                                                                                      gt_mask_boundaries,
-                                                                                      tolerance_frames = boundary_tolerance_frames
-                                                                                     ))
-    results['MAP_boundary_f1'] = float(compute_f1(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
-    results['MAP_boundary_R'] = float(compute_R(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
+#     pred_bound = find_boundaries(pred_mapped)
+#     results['MAP_boundary_precision'] = float(boundary_precision_with_unknown_and_tolerance(gt_bound, 
+#                                                                                             pred_bound, 
+#                                                                                             gt_mask_boundaries, 
+#                                                                                             tolerance_frames = boundary_tolerance_frames
+#                                                                                            ))
+#     results['MAP_boundary_recall'] = float(boundary_recall_with_unknown_and_tolerance(gt_bound,
+#                                                                                       pred_bound,
+#                                                                                       gt_mask_boundaries,
+#                                                                                       tolerance_frames = boundary_tolerance_frames
+#                                                                                      ))
+#     results['MAP_boundary_f1'] = float(compute_f1(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
+#     results['MAP_boundary_R'] = float(compute_R(results['MAP_boundary_precision'], results['MAP_boundary_recall']))
     return results
   
-def get_supervised_scores(gt, pred, label_names, unknown_value=0, boundary_tolerance_frames = 0):
+def get_supervised_scores(gt, pred, label_names, unknown_value=0):
     # Gets evaluation scores, assuming we have used a supervised model
     results = {}
     
@@ -313,29 +313,29 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, boundary_toler
     # results['classification_recall'] = float(recall_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
     # results['classification_f1'] = float(f1_score(gt_sub, pred_sub, average = 'macro', zero_division =0))
     
-    ### Get optimized segmentation boundary scores    
-    gt_bound = find_boundaries(gt)
-    # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
-    gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
-    gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
-    gt_mask_boundaries = gt_mask_boundaries.astype(bool)
+#     ### Get optimized segmentation boundary scores    
+#     gt_bound = find_boundaries(gt)
+#     # need to shift the mask to the right, since we are looking at boundaries between 2 frames:
+#     gt_mask = find_unknown_mask(gt, tolerance_frames = boundary_tolerance_frames)
+#     gt_mask_boundaries = gt_mask * np.append(gt_mask[1:], [False]) 
+#     gt_mask_boundaries = gt_mask_boundaries.astype(bool)
     
-    pred_bound = find_boundaries(pred)
-    results['boundary_precision'] = float(boundary_precision_with_unknown_and_tolerance(gt_bound, 
-                                                                                            pred_bound, 
-                                                                                            gt_mask_boundaries, 
-                                                                                            tolerance_frames = boundary_tolerance_frames
-                                                                                           ))
-    results['boundary_recall'] = float(boundary_recall_with_unknown_and_tolerance(gt_bound,
-                                                                                      pred_bound,
-                                                                                      gt_mask_boundaries,
-                                                                                      tolerance_frames = boundary_tolerance_frames
-                                                                                     ))
-    results['boundary_f1'] = float(compute_f1(results['boundary_precision'], results['boundary_recall']))
-    results['boundary_R'] = float(compute_R(results['boundary_precision'], results['boundary_recall']))
+#     pred_bound = find_boundaries(pred)
+#     results['boundary_precision'] = float(boundary_precision_with_unknown_and_tolerance(gt_bound, 
+#                                                                                             pred_bound, 
+#                                                                                             gt_mask_boundaries, 
+#                                                                                             tolerance_frames = boundary_tolerance_frames
+#                                                                                            ))
+#     results['boundary_recall'] = float(boundary_recall_with_unknown_and_tolerance(gt_bound,
+#                                                                                       pred_bound,
+#                                                                                       gt_mask_boundaries,
+#                                                                                       tolerance_frames = boundary_tolerance_frames
+#                                                                                      ))
+#     results['boundary_f1'] = float(compute_f1(results['boundary_precision'], results['boundary_recall']))
+#     results['boundary_R'] = float(compute_R(results['boundary_precision'], results['boundary_recall']))
     return results
   
-def mapping_based_scores(gt, pred, num_clusters, label_names, boundary_tolerance_frames = 0, unknown_value = 0, choices = None, probs = None, n_samples = 100, supervised = False):
+def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, choices = None, probs = None, supervised = False):
     # Main function to produce mapping based scores
     
     num_classes = len(label_names)
@@ -367,14 +367,16 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, boundary_tolerance
                                                             probs,
                                                             label_names,
                                                             unknown_value = unknown_value, 
-                                                            boundary_tolerance_frames = boundary_tolerance_frames)
+                                                            # boundary_tolerance_frames = boundary_tolerance_frames
+                                                           )
     
     if supervised:
       mapping_based_score_dict['supervised_scores'] = get_supervised_scores(gt,
                                                                             pred,
                                                                             label_names,
                                                                             unknown_value=unknown_value,
-                                                                            boundary_tolerance_frames = boundary_tolerance_frames)
+                                                                            # boundary_tolerance_frames = boundary_tolerance_frames
+                                                                           )
     
     return mapping_based_score_dict, choices, probs
     

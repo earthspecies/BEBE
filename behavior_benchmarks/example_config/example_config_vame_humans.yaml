@@ -1,4 +1,4 @@
-experiment_name: vame
+experiment_name: vame_csv
 input_vars:
 - AccX
 - AccY
@@ -16,7 +16,7 @@ save_latents: True
 num_clusters: 24
 read_latents: True
 data_latents_fp_glob: 
-- /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy
+- /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.csv
   
 evaluation:
   boundary_tolerance_sec: 1.0

@@ -39,7 +39,7 @@ def expand_config(config):
   dev_data_fp = []
   test_data_fp = []
   
-  data_fp_glob = os.path.join(config['dataset_dir'], 'clip_data', '*.npy')
+  data_fp_glob = os.path.join(config['dataset_dir'], 'clip_data', '*.csv')
 
   fps = glob.glob(data_fp_glob)
   for fp in fps:
@@ -108,7 +108,7 @@ def expand_config(config):
   file_id_to_data_fp = {}
   file_id_to_model_input_fp = {}
   
-  train_file_ids = [] # file_ids are of the form clip_id.npy, ie they are filenames
+  train_file_ids = [] # file_ids are just filenames, ie they are of the form clip_id.csv
   test_file_ids = []
   val_file_ids = []
   dev_file_ids = []
@@ -168,13 +168,13 @@ def accept_default_model_configs(config):
   # assert 'evaluation' in config
   
   # to be deprecated
-  config['evaluation'] = {'boundary_tolerance_sec' : 1.0}
+  config['evaluation'] = {}
   
-  if 'n_samples' not in config['evaluation']:
-    if config['model'] == 'supervised_nn':
-      config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
-    else:
-      config['evaluation']['n_samples'] = 100
+  # if 'n_samples' not in config['evaluation']:
+  #   if config['model'] == 'supervised_nn':
+  #     config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
+  #   else:
+  #     config['evaluation']['n_samples'] = 100
       
   ### set up model-specific config    
     

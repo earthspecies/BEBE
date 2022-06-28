@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
 def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end_sample = 20000, vars_to_plot = None, target_fp = None):
-    input_data = np.load(data_fp)
+    input_data = np.genfromtxt(data_fp, delimiter = ',') #np.load(data_fp)
     metadata = config['metadata']
     sr = metadata['sr']
     clip_column_names = metadata['clip_column_names']
@@ -55,7 +55,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
         labelbottom=False) # labels along the bottom edge are off
 
     # Clusters
-    clusters_data = np.load(predictions_fp)
+    clusters_data = np.genfromtxt(predictions_fp, delimiter = ',') #np.load(predictions_fp)
     to_plot = clusters_data[start_sample: end_sample]
     axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
     axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv')

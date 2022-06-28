@@ -62,13 +62,6 @@ class vame(BehaviorModel):
     if not os.path.exists(self.temp_data_dir):
       os.makedirs(self.temp_data_dir)
     
-  
-  # def load_model_inputs(self, filepath, read_latents = False):
-  #   if read_latents:
-  #     return np.load(filepath)
-  #   else:
-  #     return np.load(filepath)[:, self.cols_included]
-    
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
