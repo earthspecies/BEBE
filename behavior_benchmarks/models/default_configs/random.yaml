@@ -1,0 +1,6 @@
+save_latents : false
+predict_and_evaluate : true
+unsupervised : true
+  
+default_model_config:
+  placeholder : true

@@ -96,7 +96,10 @@ class BEHAVIOR_DATASET(Dataset):
 #         if self.train:
 #           blur = self.rng.normal(scale = self.data_stds, size = (self.temporal_window, self.num_channels))/8
 #           data_item = data_item +  2 * blur[:1, :] + blur
+        
+        data_item = torch.from_numpy(data_item)
+        labels_item = torch.from_numpy(labels_item)
             
-        return torch.from_numpy(data_item), torch.from_numpy(labels_item)
+        return data_item, labels_item
 
   

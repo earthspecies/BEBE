@@ -24,6 +24,9 @@ def train_model(config):
   elif config['model'] == 'supervised_nn':
     model = models.supervised_nn(config)
     
+  elif config['model'] == 'CRNN':
+    model = models.CRNN(config)
+    
   elif config['model'] == 'vq_cpc':
     model = models.vq_cpc(config)
     

@@ -9,3 +9,4 @@ from behavior_benchmarks.models.vqcpc import vq_cpc
 from behavior_benchmarks.models.wicc import wicc
 from behavior_benchmarks.models.umapper import umapper
 from behavior_benchmarks.models.random import random
+from behavior_benchmarks.models.CRNN import CRNN
