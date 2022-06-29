@@ -29,7 +29,7 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   # boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
   # scores for supervised model
-  if config['model'] == 'supervised_nn':
+  if config['unsupervised'] == False:
     supervised = True
   else: 
     supervised = False
