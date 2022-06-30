@@ -10,9 +10,10 @@ import scipy.signal as signal
 from scipy import ndimage as ndi
 import scipy
 import sklearn
-import umap
+from umap import UMAP
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 import pickle
+from behavior_benchmarks.models.umapper_utils import reducer_nn
 
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
@@ -32,6 +33,13 @@ class umapper(BehaviorModel):
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
+    self.parametric_layers = 8
+    self.parametric_hidden_size = 32
+    self.parametric_train_epochs = 100
+    self.parametric_lr_init = 0.001
+    self.parametric_batch_size = 2048
+    
+    
     
     low_freq_cols_bool = [x in self.model_config['low_freq_cols'] for x in self.metadata['clip_column_names']] # which columns to not apply wavelet transform to
     self.low_freq_cols = [i for i, x in enumerate(low_freq_cols_bool) if x]
@@ -40,12 +48,23 @@ class umapper(BehaviorModel):
     self.high_freq_cols = [i for i, x in enumerate(high_freq_cols_bool) if x]
     
     # initialize umap
-    self.reducer = umap.UMAP(
+    self.reducer = UMAP(
         n_neighbors = n_neighbors,
         min_dist = min_dist,
         metric = 'symmetric_kl',
         verbose = True
     )
+    
+    self.n_features = len(self.low_freq_cols) + len(self.high_freq_cols) * self.n_wavelets
+    
+    # initialize parametric umap approximation (for much faster inference)
+    # This pytorch implementation follows umap.parametric_umap
+    self.reducer_nn = reducer_nn(self.config,
+                                 self.n_features,
+                                 2, 
+                                 layers = self.parametric_layers,
+                                 hidden_size = self.parametric_hidden_size
+                                )
     
   def load_model_inputs(self, filepath, read_latents = False):
     # perform wavelet transform during loading
@@ -106,10 +125,15 @@ class umapper(BehaviorModel):
     yq = np.maximum(yq, 0)
     yq = np.minimum(yq, self.image_size-1)
     
+    # Fit parametric version, and regenerate dim reduced data using this parametric version
+    self.reducer_nn.fit(dev_data, yq, train_epochs = self.parametric_train_epochs, lr_init = self.parametric_lr_init, batch_size = self.parametric_batch_size)
+    yq_par = self.reducer_nn.predict(dev_data, batch_size = self.parametric_batch_size)
+    
+    
     # Turn into dense array format
-    data = np.ones_like(yq[:, 0]) #every entry in the list yq contributes 1
-    row = yq[:, 0]
-    col = yq[:, 1]
+    data = np.ones_like(yq_par[:, 0]) #every entry in the list yq_par contributes 1
+    row = yq_par[:, 0]
+    col = yq_par[:, 1]
     y_as_array = scipy.sparse.csc_matrix((data, (row, col)), shape=(self.image_size, self.image_size)).toarray()
     y_as_array = y_as_array / np.amax(y_as_array)
     
@@ -168,16 +192,18 @@ class umapper(BehaviorModel):
     # Finally, use best found sigma
     self.label_image = best_label_image
 
-    fig, axes = plt.subplots(ncols=3, figsize=(12, 4), sharex=True, sharey=True)
+    fig, axes = plt.subplots(ncols=4, figsize=(16, 4), sharex=True, sharey=True)
     ax = axes.ravel()
 
     ax[0].scatter(yq[:,1], yq[:, 0].T, s = 1)
     ax[0].set_title('UMAP')
-    ax[1].imshow(image)
-    ax[1].set_title('UMAP + Gaussian kernel')
-    ax[2].imshow(labels)
-    ax[2].scatter(yq[:,1], yq[:, 0].T, s = 1, c = 'white')
-    ax[2].set_title('Watershed Transform')
+    ax[1].scatter(yq_par[:,1], yq_par[:, 0].T, s = 1)
+    ax[1].set_title('UMAP, parametric approximation')
+    ax[2].imshow(image)
+    ax[2].set_title('UMAP + Gaussian kernel')
+    ax[3].imshow(labels)
+    ax[3].scatter(yq_par[:,1], yq_par[:, 0].T, s = 1, c = 'white')
+    ax[3].set_title('Watershed Transform')
 
     for a in ax:
         a.set_axis_off()
@@ -195,12 +221,15 @@ class umapper(BehaviorModel):
     normalize_denom = np.sum(data, axis = 1, keepdims = True)
     data = data / (normalize_denom + 1e-6)
     
-    # fit umap
-    y = self.reducer.transform(data)
+    # use parametric version to transform data quickly
+    yq = self.reducer_nn.predict(data).astype(int)
     
-    # rescale into useful image
-    yq = y - self.translation # translate
-    yq = (yq * self.scale_factor).astype(int) + self.image_border # rescale
+    
+    # rescale into useful image (already accounted for by reducer_nn
+    # yq = y - self.translation # translate
+    # yq = (yq * self.scale_factor).astype(int) + self.image_border # rescale
+    
+    # We still need to crop outputs
     yq = np.maximum(yq, 0) #crop
     yq = np.minimum(yq, self.image_size-1)
     

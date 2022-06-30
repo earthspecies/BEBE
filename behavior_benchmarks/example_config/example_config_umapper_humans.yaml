@@ -16,11 +16,9 @@ num_clusters: 24
 
 umapper_config:
   morlet_w : 1.
+  n_wavelets : 10
   n_neighbors : 16
   min_dist : 0.1
-  train_downsample : 4
+  train_downsample : 8
   low_freq_cols : []
-  
-evaluation:
-  boundary_tolerance_sec: 1.0
   

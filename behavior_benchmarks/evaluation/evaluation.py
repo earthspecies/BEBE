@@ -76,7 +76,7 @@ def generate_predictions(model, config):
       
       if config['predict_and_evaluate']:
         predictions_fp = os.path.join(config['predictions_dir'], filename)
-        np.savetxt(predictions_fp, predictions, delimiter=",")
+        np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
         # np.save(predictions_fp, predictions)
 
       if config['save_latents']:
