@@ -13,6 +13,7 @@ import sklearn
 import umap
 from behavior_benchmarks.models.model_superclass import BehaviorModel
 import pickle
+from skimage.transform import resize
 
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
@@ -27,7 +28,7 @@ class umapper(BehaviorModel):
     self.image_border = self.model_config['image_border']
     self.image_size = self.model_config['image_size']
     self.n_watershed_trials = self.model_config['n_watershed_trials']
-    self.train_downsample = self.model_config['train_downsample'] # train with fewer examples
+    self.downsample = self.model_config['downsample']
     n_neighbors = self.model_config['n_neighbors']
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
@@ -88,7 +89,7 @@ class umapper(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     # load as wavelets
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents)[::self.train_downsample, :] for fp in dev_fps]
+    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents)[::self.downsample, :] for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
     
     # normalize and record normalizing constant
@@ -195,8 +196,10 @@ class umapper(BehaviorModel):
     normalize_denom = np.sum(data, axis = 1, keepdims = True)
     data = data / (normalize_denom + 1e-6)
     
+    data_downsampled = data[::self.downsample, :]
+    
     # fit umap
-    y = self.reducer.transform(data)
+    y = self.reducer.transform(data_downsampled)
     
     # rescale into useful image
     yq = y - self.translation # translate
@@ -205,4 +208,7 @@ class umapper(BehaviorModel):
     yq = np.minimum(yq, self.image_size-1)
     
     predictions = self.label_image[yq[:,0], yq[:, 1]]
+    
+    predictions = resize(predictions, (np.shape(data)[0],), order=0, mode='constant')
+    
     return predictions, None

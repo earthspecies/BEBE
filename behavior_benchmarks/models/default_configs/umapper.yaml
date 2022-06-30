@@ -6,7 +6,7 @@ default_model_config:
   morlet_w : 5.
   n_neighbors : 16
   min_dist : 0.1
-  train_downsample : 4
+  downsample : 4
   n_wavelets : 25
   image_border : 48
   image_size : 2048

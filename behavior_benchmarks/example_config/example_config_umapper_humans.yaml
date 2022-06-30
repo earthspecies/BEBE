@@ -19,6 +19,6 @@ umapper_config:
   n_wavelets : 10
   n_neighbors : 16
   min_dist : 0.1
-  train_downsample : 8
+  downsample : 8
   low_freq_cols : []
   
