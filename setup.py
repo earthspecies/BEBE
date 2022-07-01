@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='behavior_benchmarks',
+    name='BEBE',
     packages=find_packages(),
 )

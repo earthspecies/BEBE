@@ -4,9 +4,9 @@ import argparse
 import shutil
 import os
 
-import behavior_benchmarks.evaluation.evaluation as evaluation
-import behavior_benchmarks.utils.experiment_setup as experiment_setup
-import behavior_benchmarks.training.train_model as train_model
+import BEBE.evaluation.evaluation as evaluation
+import BEBE.utils.experiment_setup as experiment_setup
+import BEBE.training.train_model as train_model
 
 def main(config):
   expanded_config = experiment_setup.experiment_setup(config)
