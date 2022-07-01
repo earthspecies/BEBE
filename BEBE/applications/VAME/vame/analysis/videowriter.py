@@ -15,7 +15,7 @@ import numpy as np
 import cv2 as cv
 import tqdm
 
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
 
 
 def get_cluster_vid(cfg, path_to_file, file, n_cluster, videoType, flag):

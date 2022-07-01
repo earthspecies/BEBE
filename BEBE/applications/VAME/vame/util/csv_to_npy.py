@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from pathlib import Path
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
 
 def csv_to_numpy(config, datapath):
     """

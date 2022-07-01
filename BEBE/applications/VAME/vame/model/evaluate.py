@@ -16,9 +16,9 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import torch.utils.data as Data
 
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
-from behavior_benchmarks.applications.VAME.vame.model.rnn_vae import RNN_VAE
-from behavior_benchmarks.applications.VAME.vame.model.dataloader import SEQUENCE_DATASET
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.model.rnn_vae import RNN_VAE
+from BEBE.applications.VAME.vame.model.dataloader import SEQUENCE_DATASET
 
 use_gpu = torch.cuda.is_available()
 if use_gpu:

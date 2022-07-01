@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.mplot3d import Axes3D
 
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
 
 
 def umap_vis(file, embed, num_points):        

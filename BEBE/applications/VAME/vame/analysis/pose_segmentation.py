@@ -17,9 +17,9 @@ from pathlib import Path
 import torch
 from sklearn.cluster import KMeans
 
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
-from behavior_benchmarks.applications.VAME.vame.model.rnn_model import RNN_VAE, RNN_VAE_LEGACY
-from behavior_benchmarks.applications.VAME.vame.model.dataloader import SEQUENCE_DATASET
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.model.rnn_model import RNN_VAE, RNN_VAE_LEGACY
+from BEBE.applications.VAME.vame.model.dataloader import SEQUENCE_DATASET
 import torch.utils.data as Data
 
 

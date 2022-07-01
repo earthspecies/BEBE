@@ -11,4 +11,4 @@ Licensed under GNU General Public License v3.0
 import sys
 sys.dont_write_bytecode = True
 
-from behavior_benchmarks.applications.VAME.vame.initialize_project.new import init_new_project
+from BEBE.applications.VAME.vame.initialize_project.new import init_new_project

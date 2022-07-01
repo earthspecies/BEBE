@@ -17,8 +17,8 @@ from pathlib import Path
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
-from behavior_benchmarks.applications.VAME.vame.util.auxiliary import read_config
-from behavior_benchmarks.applications.VAME.vame.util.gif_pose_helper import get_animal_frames
+from BEBE.applications.VAME.vame.util.auxiliary import read_config
+from BEBE.applications.VAME.vame.util.gif_pose_helper import get_animal_frames
 
 
 def create_video(path_to_file, file, embed, clabel, frames, start, length, max_lag, num_points): 

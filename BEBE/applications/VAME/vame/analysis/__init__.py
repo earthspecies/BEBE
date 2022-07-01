@@ -11,10 +11,10 @@ Licensed under GNU General Public License v3.0
 import sys
 sys.dont_write_bytecode = True
 
-from behavior_benchmarks.applications.VAME.vame.analysis.pose_segmentation import pose_segmentation
-from behavior_benchmarks.applications.VAME.vame.analysis.videowriter import motif_videos, community_videos
-from behavior_benchmarks.applications.VAME.vame.analysis.community_analysis import community
-from behavior_benchmarks.applications.VAME.vame.analysis.umap_visualization import visualization
-from behavior_benchmarks.applications.VAME.vame.analysis.generative_functions import generative_model
-from behavior_benchmarks.applications.VAME.vame.analysis.gif_creator import gif
+from BEBE.applications.VAME.vame.analysis.pose_segmentation import pose_segmentation
+from BEBE.applications.VAME.vame.analysis.videowriter import motif_videos, community_videos
+from BEBE.applications.VAME.vame.analysis.community_analysis import community
+from BEBE.applications.VAME.vame.analysis.umap_visualization import visualization
+from BEBE.applications.VAME.vame.analysis.generative_functions import generative_model
+from BEBE.applications.VAME.vame.analysis.gif_creator import gif
 
