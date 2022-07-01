@@ -1,0 +1,9 @@
+experiment_name: whiten
+input_vars:
+- AccX
+- AccY
+- AccZ
+model: whiten
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
+num_clusters: 24
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes

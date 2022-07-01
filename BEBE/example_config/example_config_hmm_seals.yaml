@@ -11,28 +11,10 @@ model: hmm
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 num_clusters: 8
-
-evaluation:
-  boundary_tolerance_sec: 1.0
   
 hmm_config:
   time_bins : 2500
   prior_wait_sec : 5.
   sticky_prior_strength : 0.
   N_iters : 50
-  lags : 1
-
-# config = {'experiment_name' : 'gmm_test',
-#          'model' : 'gmm',
-#          'num_components' : 8,
-#          'output_parent_dir' : '/home/jupyter/behavior_benchmarks_outputs/jeantet_turtles',
-#          'input_vars' : ['AccX',
-#                          'AccY',
-#                          'AccZ',
-#                          'GyrX',
-#                          'GyrY',
-#                          'GyrZ',
-#                          'Depth'], 
-#          'metadata_fp' : '/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/dataset_metadata.yaml',
-#          'train_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy'],
-#          'test_data_fp_glob' : ['/home/jupyter/behavior_data_local/data/formatted/jeantet_turtles/clip_data/*.npy']}
+  lags : 0
