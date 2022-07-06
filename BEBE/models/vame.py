@@ -18,15 +18,7 @@ class vame(BehaviorModel):
         print('GPU active:',torch.cuda.is_available())
         print('GPU used:',torch.cuda.get_device_name(0))
     
-    
-    # self.config = config
-    # self.read_latents = config['read_latents']
-    # self.model_config = config['vame_config']
     self.model = None
-    # self.metadata = config['metadata']
-      
-    # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     # Set up temporary VAME directory to follow the VAME package's formatting conventions
     project = 'temp_vame_project'
