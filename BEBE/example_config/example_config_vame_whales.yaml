@@ -1,0 +1,31 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/friedlaender_whales
+evaluation: {}
+experiment_name: vame_test
+input_vars:
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+- Depth
+- Speed
+- Pitch
+- Roll
+model: vame
+num_clusters: 20
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/whales
+vame_config:
+  batch_size: 512
+  beta: 1
+  downsizing_factor: 4
+  kmeans_lambda: 0.1
+  learning_rate: 0.0001
+  max_epochs: 200
+  prediction_decoder: 1
+  prediction_sec: 5
+  scheduler: 1
+  scheduler_gamma: 0.2
+  scheduler_step_size: 100
+  time_window_sec: 10
+  zdims: 20

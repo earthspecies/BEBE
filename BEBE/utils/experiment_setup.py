@@ -2,7 +2,7 @@ import os
 import yaml
 import glob
 
-def expand_config(config):
+def expand_config(config, save_latents = False):
   ## accepts a human-generated config dictionary
   ## and adds in a bunch of entries for access later on
   
@@ -25,7 +25,7 @@ def expand_config(config):
   with open(default_config_fp) as file:
     default_config = yaml.load(file, Loader=yaml.FullLoader)
   
-  config['save_latents'] = default_config['save_latents']
+  config['save_latents'] = save_latents and default_config['save_latents'] #save latents if it makes sense for this model type
   config['predict_and_evaluate'] = default_config['predict_and_evaluate']
   config['unsupervised'] = default_config['unsupervised']
   
@@ -203,7 +203,7 @@ def accept_default_model_configs(config):
       
   return config
 
-def experiment_setup(config):
+def experiment_setup(config, save_latents = False):
   # put in default parameters if they are unspecified
   config = accept_default_model_configs(config)
   
@@ -212,7 +212,7 @@ def experiment_setup(config):
   config['output_dir'] = output_dir
   
   # accept various defaults
-  config = expand_config(config)
+  config = expand_config(config, save_latents = save_latents)
   
   ## save off input config
   if not os.path.exists(output_dir):
