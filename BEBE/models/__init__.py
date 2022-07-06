@@ -1,5 +1,4 @@
 from BEBE.models.gmm import gmm
-from BEBE.models.whiten import whiten
 from BEBE.models.kmeans import kmeans
 from BEBE.models.vame import vame
 from BEBE.models.hmm import hmm

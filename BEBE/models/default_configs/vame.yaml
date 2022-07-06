@@ -22,5 +22,5 @@ default_model_config:
   ## Scalar multiplied by kmeans loss
   downsizing_factor : 64 
   ## Train more efficiently, account for autocorrelation
+  whiten : true
                            
-

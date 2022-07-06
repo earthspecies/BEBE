@@ -5,3 +5,4 @@ unsupervised : true
 default_model_config:
   max_iter : 100
   n_init : 10
+  whiten : true

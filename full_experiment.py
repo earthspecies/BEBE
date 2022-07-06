@@ -9,7 +9,6 @@ import BEBE.utils.experiment_setup as experiment_setup
 import BEBE.training.train_model as train_model
 
 def main(config, save_latents):
-  print(save_latents)
   expanded_config = experiment_setup.experiment_setup(config, save_latents = save_latents)
   model = train_model.train_model(expanded_config)
   

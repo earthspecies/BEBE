@@ -12,8 +12,8 @@ def train_model(config):
   elif config['model'] == 'vame':
     model = models.vame(config)
     
-  elif config['model'] == 'whiten':
-    model = models.whiten(config)
+  # elif config['model'] == 'whiten':
+  #   model = models.whiten(config)
     
   elif config['model'] == 'hmm':
     model = models.hmm(config)

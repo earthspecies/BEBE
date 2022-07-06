@@ -5,6 +5,7 @@ import os
 import shutil
 import BEBE.applications.VAME.vame as VAME
 from BEBE.models.model_superclass import BehaviorModel
+from BEBE.models.whiten import whitener_standalone
 import torch
 from matplotlib import pyplot as plt
 
@@ -47,6 +48,9 @@ class vame(BehaviorModel):
     config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']
     config_vame['downsizing_factor'] = self.model_config['downsizing_factor']
     
+    self.whiten = self.model_config['whiten']
+    self.whitener = whitener_standalone()
+    
     with open(self.config_vame_fp, 'w') as file:
       yaml.dump(config_vame, file)
       
@@ -66,9 +70,13 @@ class vame(BehaviorModel):
     # Save off temp files
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
+    if self.whiten:
+      dev_data = self.whitener.fit_transform(dev_data)
     
     test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
     test_data = np.concatenate(test_data, axis = 0)
+    if self.whiten:
+      test_data = self.whitener.transform(test_data)
     
     temp_dev_fp = os.path.join(self.temp_data_dir, 'train_seq.npy')
     np.save(temp_dev_fp, dev_data)
@@ -115,11 +123,14 @@ class vame(BehaviorModel):
   
   def predict(self, data):
     # not implemented
-    raise ValueError
+    # use method predict_from_file instead
+    raise NotImplementedError
   
   def predict_from_file(self, fp):
     file_id = fp.split('/')[-1].split('.')[0]    
     inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
+    if self.whiten:
+      inputs = self.whitener.transform(inputs)
     
     # Save temporary version of data for VAME to see
     temp_fp = os.path.join(self.temp_data_dir, file_id + '_seq.npy')
