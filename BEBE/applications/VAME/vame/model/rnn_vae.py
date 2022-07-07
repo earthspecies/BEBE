@@ -293,7 +293,7 @@ def train_model(config):
     anneal_function = cfg['anneal_function']
     optimizer_scheduler = cfg['scheduler']
 
-    BEST_LOSS = 999999
+    BEST_LOSS = np.inf
     convergence = 0
     print('Latent Dimensions: %d, Time window: %d, Batch Size: %d, Beta: %d, lr: %.4f\n' %(ZDIMS, cfg['time_window'], TRAIN_BATCH_SIZE, BETA, LEARNING_RATE))
     
@@ -363,7 +363,7 @@ def train_model(config):
 
         current_loss, test_loss, test_list = test(test_loader, epoch, model, optimizer,
                                                   BETA, weight, TEMPORAL_WINDOW, MSE_REC_REDUCTION,
-                                                  KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE, downsizing_factor = DOWNSIZING_FACTOR)
+                                                  KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE, downsizing_factor = 8* DOWNSIZING_FACTOR)
 
         # logging losses
         train_losses.append(train_loss)

@@ -47,6 +47,7 @@ class vame(BehaviorModel):
     config_vame['kmeans_loss'] = self.model_config['zdims'] # Uses all singular values
     config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']
     config_vame['downsizing_factor'] = self.model_config['downsizing_factor']
+    config_vame['model_convergence'] = self.model_config['max_epochs'] # Do not use early stopping
     
     self.whiten = self.model_config['whiten']
     self.whitener = whitener_standalone()
