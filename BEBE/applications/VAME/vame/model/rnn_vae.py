@@ -361,9 +361,13 @@ def train_model(config):
                                                                          MSE_PRED_REDUCTION, KMEANS_LOSS, KMEANS_LAMBDA,
                                                                          TRAIN_BATCH_SIZE, noise, downsizing_factor = DOWNSIZING_FACTOR)
 
-        current_loss, test_loss, test_list = test(test_loader, epoch, model, optimizer,
-                                                  BETA, weight, TEMPORAL_WINDOW, MSE_REC_REDUCTION,
-                                                  KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE, downsizing_factor = 8* DOWNSIZING_FACTOR)
+        # current_loss, test_loss, test_list = test(test_loader, epoch, model, optimizer,
+        #                                           BETA, weight, TEMPORAL_WINDOW, MSE_REC_REDUCTION,
+        #                                           KMEANS_LOSS, KMEANS_LAMBDA, FUTURE_DECODER, TEST_BATCH_SIZE, downsizing_factor = 8* DOWNSIZING_FACTOR)
+        
+        # Do not use early stopping:
+        current_loss = mse_loss
+        test_loss = train_loss
 
         # logging losses
         train_losses.append(train_loss)

@@ -41,7 +41,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     to_plot = input_data[start_sample: end_sample, label_idx]
     norm = plt.Normalize(0, num_labels)
     axes[-3].set_xlim(left=0, right=(end_sample-start_sample) / sr)
-    axes[-3].scatter(np.arange(len(to_plot))[to_plot!= unknown_idx]/sr, to_plot[to_plot!= unknown_idx], marker = '|', c = to_plot[to_plot!= unknown_idx], cmap = 'Set2', norm = norm)
+    axes[-3].scatter(np.arange(len(to_plot))[to_plot!= unknown_idx]/sr, to_plot[to_plot!= unknown_idx], marker = '|', c = to_plot[to_plot!= unknown_idx], cmap = 'Set2', norm = norm, linewidths = 0.1)
     label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
     axes[-3].set_yticks(label_ticks)
     axes[-3].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
@@ -58,7 +58,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     clusters_data = np.genfromtxt(predictions_fp, delimiter = ',') #np.load(predictions_fp)
     to_plot = clusters_data[start_sample: end_sample]
     axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
-    axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv')
+    axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv', linewidths = 0.1)
     axes[-2].set_ylabel("Discovered motif number")
     #axes[-2].set_yticks(range(config['num_clusters']))
     
@@ -82,7 +82,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     to_plot = list(to_plot)
     to_plot = np.array(list(map(lambda x : mapping_dict[x], to_plot)))
     axes[-1].set_xlim(left=0, right=(end_sample-start_sample) /sr)
-    axes[-1].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'Set2', norm = norm)
+    axes[-1].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'Set2', norm = norm, linewidths = 0.1)
     label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
     axes[-1].set_yticks(label_ticks)
     axes[-1].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
