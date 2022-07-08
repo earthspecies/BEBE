@@ -71,14 +71,22 @@ class hmm(BehaviorModel):
     prior_alpha = prior_alpha_unscaled * prior_scaling_factor + 1. # account for shift by 1. in sticky transition
     
     ###
-      
-    self.model = ssm.HMM(self.config['num_clusters'],
-                         self.obs_dim,
-                         observations= "no_input_ar",
-                         observation_kwargs = {"lags" : self.model_config['lags']},
-                         transitions = "sticky", 
-                         transition_kwargs = {"alpha" : prior_alpha, "kappa" : prior_kappa}, 
-                        )  
+    
+    if self.model_config['lags'] > 0:
+      self.model = ssm.HMM(self.config['num_clusters'],
+                           self.obs_dim,
+                           observations= "no_input_ar",
+                           observation_kwargs = {"lags" : self.model_config['lags']},
+                           transitions = "sticky", 
+                           transition_kwargs = {"alpha" : prior_alpha, "kappa" : prior_kappa}, 
+                          )
+    else:
+      self.model = ssm.HMM(self.config['num_clusters'],
+                           self.obs_dim,
+                           observations= "gaussian",
+                           transitions = "sticky", 
+                           transition_kwargs = {"alpha" : prior_alpha, "kappa" : prior_kappa}, 
+                          )
       
     N_iters = self.model_config['N_iters']
     hmm_lls = self.model.fit(dev_data, 
