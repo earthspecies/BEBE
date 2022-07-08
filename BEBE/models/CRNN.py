@@ -98,6 +98,7 @@ class CRNN(BehaviorModel):
     test_labels = [self.load_labels(fp) for fp in test_fps]
     
     train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, self.config, rescale_param = self.rescale_param)
+    proportions = train_dataset.get_class_proportions() # Record class proportions for loss function
     if self.sparse_annotations:
       indices_to_keep = train_dataset.get_annotated_windows()
       train_dataset = Subset(train_dataset, indices_to_keep)  
@@ -124,7 +125,7 @@ class CRNN(BehaviorModel):
     print("Number windowed test examples after subselecting: %d" % len(test_dataset))
     test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
-    proportions = train_dataset.get_class_proportions()
+    # Loss function; reweight by class proportions if desired
     weight = (proportions ** self.weight_factor).to(device)
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label, weight = weight)
     
