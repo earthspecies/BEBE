@@ -108,13 +108,13 @@ def generate_evaluations(config):
       if not os.path.exists(predictions_fp):
         raise ValueError("you need to save off all the model predictions before performing evaluation")
       
-      predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values
+      predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten()
       # predictions = np.genfromtxt(predictions_fp, delimiter = ',') #np.load(predictions_fp)
       predictions = list(predictions)
 
       labels_idx = config['metadata']['clip_column_names'].index('label')
       data_fp = config['file_id_to_data_fp'][filename]
-      labels = list(pd.read_csv(data_fp, delimiter = ',', header = None).values[:, labels_idx])
+      labels = list(pd.read_csv(data_fp, delimiter = ',', header = None).values[:, labels_idx].flatten())
       # labels = list(np.genfromtxt(data_fp, delimiter = ',')[:, labels_idx]) #list(np.load(data_fp)[:, labels_idx])
       
       clip_id = filename.split('.')[0]
@@ -188,7 +188,7 @@ def generate_evaluations(config):
   for file_ids in to_consider:
     for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
       predictions_fp = os.path.join(config['predictions_dir'], filename)
-      track_length = len(pd.read_csv(predictions_fp, delimiter = ',', header = None).values)
+      track_length = len(pd.read_csv(predictions_fp, delimiter = ',', header = None))
       # track_length = len(np.genfromtxt(predictions_fp, delimiter = ','))#len(np.load(predictions_fp))
       if file_ids == config['train_file_ids']:
         target_filename = filename.split('.')[0] + '-train-track_visualization.png'

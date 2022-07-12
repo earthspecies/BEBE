@@ -56,7 +56,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
         labelbottom=False) # labels along the bottom edge are off
 
     # Clusters
-    clusters_data = pd.read_csv(predictions_fp, delimiter = ',', header = None).values #np.load(predictions_fp)
+    clusters_data = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten() #np.load(predictions_fp)
     to_plot = clusters_data[start_sample: end_sample]
     axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
     axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv', linewidths = 0.1)
