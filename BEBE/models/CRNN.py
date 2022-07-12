@@ -11,6 +11,7 @@ import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
+import pandas as pd
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -72,10 +73,10 @@ class CRNN(BehaviorModel):
     if read_latents:
       raise NotImplementedError("Supervised model is expected to read from raw data")
     else:
-      return np.genfromtxt(filepath, delimiter = ',')[:, self.cols_included] #[n_samples, n_features]
+      return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
     
   def load_labels(self, filepath):
-    labels = np.genfromtxt(filepath, delimiter = ',')[:, self.label_idx].astype(int)
+    labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)
     return labels 
     
   def fit(self):

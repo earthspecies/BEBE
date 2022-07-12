@@ -18,6 +18,7 @@ from skimage.transform import resize
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 from scipy.sparse import csc_matrix
+import pandas as pd
 
 class umapper(BehaviorModel):
   def __init__(self, config):
@@ -59,9 +60,11 @@ class umapper(BehaviorModel):
     if read_latents:
       raise NotImplementedError
     else:
-      #data = np.genfromtxt(filepath, delimiter = ',')[:, self.cols_included]
-      low_freq_data = np.genfromtxt(filepath, delimiter = ',')[:, self.low_freq_cols]
-      high_freq_data = np.genfromtxt(filepath, delimiter = ',')[:, self.high_freq_cols]
+      #data = np.genfromtxt(filepath, delimiter = ',')[:, self.cols_included]    
+      low_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.low_freq_cols]
+      high_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.high_freq_cols]
+      # low_freq_data = np.genfromtxt(filepath, delimiter = ',')[:, self.low_freq_cols]
+      # high_freq_data = np.genfromtxt(filepath, delimiter = ',')[:, self.high_freq_cols]
     
     axes = np.arange(0, np.shape(high_freq_data)[1])
     transformed = []
