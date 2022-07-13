@@ -9,26 +9,10 @@ from BEBE.models.model_superclass import BehaviorModel
 class hmm(BehaviorModel):
   def __init__(self, config):
     super(hmm, self).__init__(config)
-#     self.config = config
-#     self.read_latents = config['read_latents']
-#     self.model_config = config['hmm_config']
-    
-#     self.metadata = config['metadata']
-      
-#     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-#     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     self.time_bins = self.model_config['time_bins']
-    #self.obs_dim = len(self.config['input_vars'])
-  
-  # def load_model_inputs(self, filepath, read_latents = False):
-  #   if read_latents:
-  #     return np.load(filepath)
-  #   else:
-  #     return np.load(filepath)[:, self.cols_included]
     
   def fit(self):
-    ## get data. assume stored in memory for now
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
     else:
@@ -37,8 +21,19 @@ class hmm(BehaviorModel):
     #######
   
     dev_data = []
+    
+    rng = np.random.default_rng(seed = 31)
     for fp in dev_fps:
       obs = self.load_model_inputs(fp, read_latents = self.read_latents)
+      
+      # Possibly subselect from training data:
+      # Used to speed up initial hyperparameter tuning
+      if self.model_config['subselect_proportion'] < 1.:
+        total_len = np.shape(obs)[0]
+        to_select = int(np.ceil(total_len * self.model_config['subselect_proportion']))
+        start = int(rng.integers(0, high=total_len - to_select))
+        obs = obs[start:start + to_select, ...]
+        
       obs_list = [obs[i* self.time_bins: (i+1)* self.time_bins, :] for i in range(len(obs)//self.time_bins)]
       dev_data.extend(obs_list)
       
@@ -60,7 +55,6 @@ class hmm(BehaviorModel):
     
     # Because of how ssm handles sticky transitions, 
     # we have to specify how flat is the prior distribution over P_ii
-    # This is a bit strange how it's written
     
     prior_strength = self.model_config['sticky_prior_strength'] # 0 is non-informative prior, 1. is as if we already have num_transitions_train_seen-many samples of evidence for the prior 
     num_transitions_train_seen = len(dev_data) * (self.time_bins-1)
@@ -71,6 +65,7 @@ class hmm(BehaviorModel):
     prior_alpha = prior_alpha_unscaled * prior_scaling_factor + 1. # account for shift by 1. in sticky transition
     
     ###
+    # Instantiate HMM model
     
     if self.model_config['lags'] > 0:
       self.model = ssm.HMM(self.config['num_clusters'],
@@ -120,9 +115,3 @@ class hmm(BehaviorModel):
   def predict(self, data):
     predictions = self.model.most_likely_states(data)
     return predictions, None
-  
-  
-  # def predict_from_file(self, fp):
-  #   inputs = self.load_model_inputs(fp, read_latents = self.read_latents)
-  #   predictions, latents = self.predict(inputs)
-  #   return predictions, latents

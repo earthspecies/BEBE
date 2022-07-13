@@ -8,3 +8,4 @@ default_model_config:
   sticky_prior_strength : 0. 
   N_iters : 50
   lags : 1
+  subselect_proportion : 1.
