@@ -1,4 +1,4 @@
-experiment_name: kmeans
+experiment_name: rf
 input_vars:
 - AccX
 - AccY
@@ -11,11 +11,13 @@ input_vars:
 - GyrZ
 - Depth
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
-model: kmeans
+model: rf
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
-num_clusters: 28
+num_clusters: 9
 
-kmeans_config:
-  max_iter: 50
-  n_init: 1
-
+rf_config:
+  n_samples_window : 16
+  min_samples_split : 2
+  max_samples : 0.1
+  n_jobs : 1
+  n_estimators : 100

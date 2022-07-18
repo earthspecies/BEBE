@@ -86,7 +86,7 @@ class hmm(BehaviorModel):
     N_iters = self.model_config['N_iters']
     hmm_lls = self.model.fit(dev_data, 
                              method= "em", 
-                             num_iters=N_iters, 
+                             num_iters = N_iters, 
                              # num_epochs = N_iters,
                              init_method="kmeans",
                              # step_size=0.0001
