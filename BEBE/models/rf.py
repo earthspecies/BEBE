@@ -32,7 +32,8 @@ class rf(BehaviorModel):
   def __init__(self, config):
     super(rf, self).__init__(config)
     
-    self.n_samples_window = self.model_config['n_samples_window']
+    
+    self.n_samples_window = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.min_samples_split = self.model_config['min_samples_split']
     self.max_samples = self.model_config['max_samples']
     self.n_jobs = self.model_config['n_jobs']
