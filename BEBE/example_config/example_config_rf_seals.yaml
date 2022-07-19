@@ -1,4 +1,4 @@
-experiment_name: hmm_sub_sgd
+experiment_name: rf
 input_vars:
 - AccX
 - AccY
@@ -7,15 +7,14 @@ input_vars:
 - StaticAccY
 - StaticAccZ
 - Depth
-model: hmm
+model: rf
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
 num_clusters: 8
   
-hmm_config:
-  time_bins : 2500
-  prior_wait_sec : 5.
-  sticky_prior_strength : 0.
-  N_iters : 50
-  lags : 0
-  subselect_proportion : .5
+rf_config:
+  n_samples_window : 16
+  min_samples_split : 2
+  max_samples : 0.1
+  n_jobs : 1
+  n_estimators : 100
