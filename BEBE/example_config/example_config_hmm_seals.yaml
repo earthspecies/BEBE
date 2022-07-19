@@ -17,4 +17,4 @@ hmm_config:
   prior_wait_sec : 5.
   sticky_prior_strength : 0.
   N_iters : 50
-  lags : 0
+  lags : 3
