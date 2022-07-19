@@ -115,9 +115,9 @@ class rf(BehaviorModel):
   def fit(self):
     ## get data. assume stored in memory for now
     if self.read_latents:
-      train_fps = self.config['dev_data_latents_fp']
+      train_fps = self.config['train_data_latents_fp']
     else:
-      train_fps = self.config['dev_data_fp']
+      train_fps = self.config['train_data_fp']
     
     train_data = []
     train_labels = []
@@ -265,9 +265,9 @@ class rf(BehaviorModel):
 #   def fit(self):
 #     ## get data. assume stored in memory for now
 #     if self.read_latents:
-#       train_fps = self.config['dev_data_latents_fp']
+#       train_fps = self.config['train_data_latents_fp']
 #     else:
-#       train_fps = self.config['dev_data_fp']
+#       train_fps = self.config['train_data_fp']
     
 #     train_data = []
 #     train_labels = []
