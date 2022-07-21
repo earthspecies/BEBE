@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 import os
 import pandas as pd
+import tqdm
 
 def vectorized_slope(y):
   # compute slope along axis = 1, up to a constant multiple which depends only on the length of the time series
@@ -121,7 +122,8 @@ class rf(BehaviorModel):
     
     train_data = []
     train_labels = []
-    for fp in train_fps:
+    print("Preparing model inputs")
+    for fp in tqdm.tqdm(train_fps):
       data = self.load_model_inputs(fp)
       labels = self.load_labels(fp)
       data, labels = self.prepare_model_inputs(data, labels = labels)
