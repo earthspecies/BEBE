@@ -24,6 +24,9 @@ def train_model(config):
   elif config['model'] == 'umapper':
     model = models.umapper(config)
     
+  elif config['model'] == 'rf':
+    model = models.rf(config)
+    
   elif config['model'] == 'random':
     model = models.random(config)
 

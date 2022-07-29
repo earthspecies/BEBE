@@ -5,3 +5,4 @@ from BEBE.models.hmm import hmm
 from BEBE.models.umapper import umapper
 from BEBE.models.random import random
 from BEBE.models.CRNN import CRNN
+from BEBE.models.rf import rf
