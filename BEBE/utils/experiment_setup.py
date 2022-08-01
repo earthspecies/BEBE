@@ -185,16 +185,6 @@ def expand_config(config, save_latents = False):
 
 def accept_default_model_configs(config):
   # Makes sure that all the entries of the config file are properly filled in.  
-  # assert 'evaluation' in config
-  
-  # to be deprecated
-  config['evaluation'] = {}
-  
-  # if 'n_samples' not in config['evaluation']:
-  #   if config['model'] == 'supervised_nn':
-  #     config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
-  #   else:
-  #     config['evaluation']['n_samples'] = 100
       
   ### set up model-specific config    
     

@@ -33,7 +33,6 @@ class BEHAVIOR_DATASET(Dataset):
         
         self.data_stds = np.std(np.concatenate(self.data, axis = 0), axis = 0, keepdims = True) / 8
         self.num_channels = np.shape(self.data_stds)[1]
-        #self.labels = np.concatenate(self.labels, axis = 0)
         self.rng = np.random.default_rng()
         self.train = train
         
@@ -61,7 +60,6 @@ class BEHAVIOR_DATASET(Dataset):
           clip_number = np.where(index >= self.data_start_indices)[0][-1] #which clip do I draw from?
           labels_item = self.labels[clip_number]
         
-          #start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
           start = index - self.data_start_indices[clip_number]
           end = start+ self.temporal_window
           
@@ -75,7 +73,6 @@ class BEHAVIOR_DATASET(Dataset):
         data_item = self.data[clip_number]
         labels_item = self.labels[clip_number]
         
-        #start = min(index, self.data_points - self.temporal_window)   #Treat last temporal_window elements as the same.
         start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window
         
@@ -91,11 +88,7 @@ class BEHAVIOR_DATASET(Dataset):
         
         else:
           data_item = data_item[start:end, :]
-          labels_item = labels_item[start:end] #[:, start:end]
-        
-#         if self.train:
-#           blur = self.rng.normal(scale = self.data_stds, size = (self.temporal_window, self.num_channels))/8
-#           data_item = data_item +  2 * blur[:1, :] + blur
+          labels_item = labels_item[start:end] 
         
         data_item = torch.from_numpy(data_item)
         labels_item = torch.from_numpy(labels_item)

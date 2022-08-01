@@ -20,7 +20,6 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       num_rows = len(vars_to_plot) + 2
       
     fig, axes = plt.subplots(nrows=num_rows, ncols=1, figsize=(10, 3* num_rows))
-    #fig = plt.figure(figsize = (10, 2* num_rows))
     axes[0].set_title(predictions_fp.split('/')[-1] + ' start: ' + str(start_sample) + ' end: ' + str(end_sample))
     
     # Raw Data
@@ -28,7 +27,6 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
         idx = clip_column_names.index(var)
         to_plot = input_data[start_sample: end_sample, idx]
         
-        #ax = fig.add_subplot(num_rows,1,i+1)
         axes[i].set_xlim(left=0, right=(end_sample-start_sample) / sr)
         axes[i].plot(np.arange(len(to_plot))/ float(sr), to_plot, label = var)
         axes[i].set_ylabel(var)
@@ -37,9 +35,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
             which='both',      # both major and minor ticks are affected
             bottom=False,      # ticks along the bottom edge are off
             top=False,         # ticks along the top edge are off
-            labelbottom=False) # labels along the bottom edge are off
-        #plt.legend()
-    
+            labelbottom=False) # labels along the bottom edge are off    
     
     # Ground truths
     if config['unsupervised']:
@@ -65,7 +61,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
         labelbottom=False) # labels along the bottom edge are off
 
     # Plot predictions
-    class_predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten() #np.load(predictions_fp)
+    class_predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten() 
     
     if config['unsupervised']:
       # Plot discovered clusters
@@ -73,7 +69,6 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
       axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv', linewidths = 0.1)
       axes[-2].set_ylabel("Discovered motif number")
-      #axes[-2].set_yticks(range(config['num_clusters']))
 
       axes[-2].set_ylim(bottom=-0.5, top = config['num_clusters']-0.5)
       major_tick_spacing = max(1, config['num_clusters'] // 8)
@@ -99,7 +94,6 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
       axes[-1].set_yticks(label_ticks)
       axes[-1].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
-      #axes[-1].set_ylabel("Behavior")
       axes[-1].set_title("Model prediction (a posteriori assignment of discovered motifs to behavior labels)")
       axes[-1].set_xlabel("Time (seconds)")
       
