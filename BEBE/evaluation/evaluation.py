@@ -34,7 +34,7 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   else: 
     supervised = False
   
-  mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
+  scores, choices, probs = metrics.mapping_based_scores(y_true, 
                                                                y_pred, 
                                                                num_clusters, 
                                                                label_names, 
@@ -45,8 +45,8 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
                                                                # n_samples = n_samples, 
                                                                supervised = supervised
                                                               )
-  for key in mapping_based:
-    evaluation_dict[key] = mapping_based[key]
+  for key in scores:
+    evaluation_dict[key] = scores[key]
   
   ## Save
   
@@ -131,21 +131,25 @@ def generate_evaluations(config):
       all_labels.extend(labels)
         
     # Per-individual evaluation
+    
     label_names = config['metadata']['label_names'].copy()
     label_names.remove('unknown')
-    
+
     individual_f1s = {label_name : [] for label_name in label_names}
     # individual_precs = {label_name : [] for label_name in label_names}
     # individual_recs = {label_name : [] for label_name in label_names}
-    
+
     for individual_id in all_predictions_dict:
       predictions = np.array(all_predictions_dict[individual_id])
       labels = np.array(all_labels_dict[individual_id])
-      
+
       individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None)
-      
+
       for label_name in label_names:
-        individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
+        if config['unsupervised']:
+          individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
+        else: 
+          individual_f1s[label_name].append(individual_eval_dict['supervised_scores']['classification_f1'][label_name])
         # individual_precs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_precision'][label_name])
         # individual_recs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_recall'][label_name])
 
@@ -179,8 +183,11 @@ def generate_evaluations(config):
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
     
-    # Save consistency plot
-    bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
+    # Save consistency plot, i.e. compare individual vs overall performance
+    if config['unsupervised']:
+      bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
+    else:
+      bbvis.consistency_plot(individual_f1s, eval_dict['supervised_scores']['classification_f1'], config, target_fp = f1_consistency_target_fp)
   
   # Save example figures
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently

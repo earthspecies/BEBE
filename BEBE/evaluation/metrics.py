@@ -359,16 +359,9 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0,
     #                                                                          boundary_tolerance_frames = boundary_tolerance_frames, 
     #                                                                          n_iter = n_samples)
     # else:
-    mapping_based_score_dict['averaged_scores'] = None
+    # mapping_based_score_dict['averaged_scores'] = None
     
-    mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
-                                                            pred, 
-                                                            choices, 
-                                                            probs,
-                                                            label_names,
-                                                            unknown_value = unknown_value, 
-                                                            # boundary_tolerance_frames = boundary_tolerance_frames
-                                                           )
+    
     
     if supervised:
       mapping_based_score_dict['supervised_scores'] = get_supervised_scores(gt,
@@ -377,6 +370,15 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0,
                                                                             unknown_value=unknown_value,
                                                                             # boundary_tolerance_frames = boundary_tolerance_frames
                                                                            )
+    else:
+      mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
+                                                              pred, 
+                                                              choices,
+                                                              probs,
+                                                              label_names,
+                                                              unknown_value = unknown_value, 
+                                                              # boundary_tolerance_frames = boundary_tolerance_frames
+                                                             )
     
     return mapping_based_score_dict, choices, probs
     
