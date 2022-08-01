@@ -1,0 +1,23 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+evaluation: {}
+experiment_name: hmm_nonar
+hmm_config:
+  N_iters: 50
+  lags: 0
+  prior_wait_sec: 10.0
+  sticky_prior_strength: 2.0
+  time_bins: 2500
+input_vars:
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+- GyrX
+- GyrY
+- GyrZ
+model: hmm
+num_clusters: 24
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+read_latents: false

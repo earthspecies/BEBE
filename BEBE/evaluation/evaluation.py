@@ -26,7 +26,6 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   # mapping-based
   num_clusters = config['num_clusters']
   label_names = config['metadata']['label_names']
-  # boundary_tolerance_frames = int(config['metadata']['sr'] * config['evaluation']['boundary_tolerance_sec'])
   
   # scores for supervised model
   if config['unsupervised'] == False:
@@ -34,19 +33,17 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   else: 
     supervised = False
   
-  mapping_based, choices, probs = metrics.mapping_based_scores(y_true, 
+  scores, choices, probs = metrics.mapping_based_scores(y_true, 
                                                                y_pred, 
                                                                num_clusters, 
                                                                label_names, 
-                                                               # boundary_tolerance_frames = boundary_tolerance_frames, 
                                                                unknown_value = unknown_label,
                                                                choices = choices,
                                                                probs = probs,
-                                                               # n_samples = n_samples, 
                                                                supervised = supervised
                                                               )
-  for key in mapping_based:
-    evaluation_dict[key] = mapping_based[key]
+  for key in scores:
+    evaluation_dict[key] = scores[key]
   
   ## Save
   
@@ -77,12 +74,10 @@ def generate_predictions(model, config):
       if config['predict_and_evaluate']:
         predictions_fp = os.path.join(config['predictions_dir'], filename)
         np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
-        # np.save(predictions_fp, predictions)
 
       if config['save_latents']:
         latents_fp = os.path.join(config['latents_output_dir'], filename)
         np.savetxt(latents_fp, latents, delimiter=",")
-        # np.save(latents_fp, latents)
 
 def generate_evaluations(config):
   print("saving model outputs to %s " % config['output_dir'])
@@ -109,14 +104,11 @@ def generate_evaluations(config):
         raise ValueError("you need to save off all the model predictions before performing evaluation")
       
       predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten()
-      # predictions = np.genfromtxt(predictions_fp, delimiter = ',') #np.load(predictions_fp)
       predictions = list(predictions)
 
       labels_idx = config['metadata']['clip_column_names'].index('label')
       data_fp = config['file_id_to_data_fp'][filename]
-      labels = list(pd.read_csv(data_fp, delimiter = ',', header = None).values[:, labels_idx].flatten())
-      # labels = list(np.genfromtxt(data_fp, delimiter = ',')[:, labels_idx]) #list(np.load(data_fp)[:, labels_idx])
-      
+      labels = list(pd.read_csv(data_fp, delimiter = ',', header = None).values[:, labels_idx].flatten())      
       clip_id = filename.split('.')[0]
       individual_id = config['metadata']['clip_id_to_individual_id'][clip_id]
       
@@ -131,21 +123,25 @@ def generate_evaluations(config):
       all_labels.extend(labels)
         
     # Per-individual evaluation
+    
     label_names = config['metadata']['label_names'].copy()
     label_names.remove('unknown')
-    
+
     individual_f1s = {label_name : [] for label_name in label_names}
     # individual_precs = {label_name : [] for label_name in label_names}
     # individual_recs = {label_name : [] for label_name in label_names}
-    
+
     for individual_id in all_predictions_dict:
       predictions = np.array(all_predictions_dict[individual_id])
       labels = np.array(all_labels_dict[individual_id])
-      
+
       individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None)
-      
+
       for label_name in label_names:
-        individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
+        if config['unsupervised']:
+          individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
+        else: 
+          individual_f1s[label_name].append(individual_eval_dict['supervised_scores']['classification_f1'][label_name])
         # individual_precs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_precision'][label_name])
         # individual_recs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_recall'][label_name])
 
@@ -179,8 +175,11 @@ def generate_evaluations(config):
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
     
-    # Save consistency plot
-    bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
+    # Save consistency plot, i.e. compare individual vs overall performance
+    if config['unsupervised']:
+      bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
+    else:
+      bbvis.consistency_plot(individual_f1s, eval_dict['supervised_scores']['classification_f1'], config, target_fp = f1_consistency_target_fp)
   
   # Save example figures
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
@@ -189,7 +188,6 @@ def generate_evaluations(config):
     for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
       predictions_fp = os.path.join(config['predictions_dir'], filename)
       track_length = len(pd.read_csv(predictions_fp, delimiter = ',', header = None))
-      # track_length = len(np.genfromtxt(predictions_fp, delimiter = ','))#len(np.load(predictions_fp))
       if file_ids == config['train_file_ids']:
         target_filename = filename.split('.')[0] + '-train-track_visualization.png'
       elif file_ids == config['val_file_ids']:

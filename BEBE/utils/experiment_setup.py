@@ -31,6 +31,26 @@ def expand_config(config, save_latents = False):
   
   if config['save_latents']:
     config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
+  
+  # If model is supervised, set number of "clusters" (i.e. classes) to be the number of labels.
+  # Otherwise, if number of clusters is unspecified, set it to be max(20, 4*num known labels)
+  label_names = config['metadata']['label_names']
+  num_labels = len(label_names)
+  num_known_labels = num_labels - 1
+  
+  if config['unsupervised']:
+    if 'num_clusters' not in config:
+      config['num_clusters'] = max(20, 4 * num_known_labels) 
+  else:
+    config['num_clusters'] = num_labels
+    
+  # If data channels are unspecified, we use all available data channels.
+  # By matter of convention, these are all but the last two columns in the csv files, which are reserved for individual id and behavior label
+  
+  if 'input_vars' not in config:
+    config['input_vars'] = config['metadata']['clip_column_names'].copy()
+    config['input_vars'].remove('individual_id')
+    config['input_vars'].remove('label')
     
   # Unglob data filepaths and deal with splits
 
@@ -165,16 +185,6 @@ def expand_config(config, save_latents = False):
 
 def accept_default_model_configs(config):
   # Makes sure that all the entries of the config file are properly filled in.  
-  # assert 'evaluation' in config
-  
-  # to be deprecated
-  config['evaluation'] = {}
-  
-  # if 'n_samples' not in config['evaluation']:
-  #   if config['model'] == 'supervised_nn':
-  #     config['evaluation']['n_samples'] = 1 ## Number of maps to sample for averaged mapping based metric. Can be time consuming.
-  #   else:
-  #     config['evaluation']['n_samples'] = 100
       
   ### set up model-specific config    
     

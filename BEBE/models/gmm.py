@@ -8,20 +8,8 @@ import os
 class gmm(BehaviorModel):
   def __init__(self, config):
     super(gmm, self).__init__(config)
-    # self.config = config
-    # self.read_latents = config['read_latents']
-    # self.model_config = config['gmm_config']
+    self.subselect_proportion = self.model_config['subselect_proportion'] # If we subselect from data in order to store it all in memory
     self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
-    # self.metadata = config['metadata']
-      
-#     cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-#     self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
-  
-  # def load_model_inputs(self, filepath, read_latents = False):
-  #   if read_latents:
-  #     return np.load(filepath)
-  #   else:
-  #     return np.load(filepath)[:, self.cols_included]
     
   def fit(self):
     ## get data. assume stored in memory for now
@@ -32,6 +20,13 @@ class gmm(BehaviorModel):
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
+    
+    if self.subselect_proportion < 1.:
+        rng = np.random.default_rng()
+        total_samples = np.shape(dev_data)[0]
+        n_to_choose = int(self.subselect_proportion * total_samples)
+        dev_data = rng.choice(dev_data, n_to_choose, replace=False)
+        print("Subselecting %d out of %d total samples" % (n_to_choose, total_samples))
 
     self.model.fit(dev_data)
     

@@ -118,9 +118,6 @@ class vame(BehaviorModel):
     if os.path.exists(self.config['final_model_dir']):
       shutil.rmtree(self.config['final_model_dir'])    
     shutil.copytree(os.path.join(self.vame_experiment_dir, 'model'), self.config['final_model_dir'])
-    #target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
-    #with open(target_fp, 'wb') as f:
-    #  pickle.dump(self, f)
   
   def predict(self, data):
     # not implemented
