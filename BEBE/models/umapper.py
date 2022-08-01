@@ -49,7 +49,7 @@ class umapper(BehaviorModel):
         verbose = True
     )
     
-  def load_model_inputs(self, filepath, read_latents = False):
+  def load_model_inputs(self, filepath, read_latents = False, downsample = 1):
     # perform wavelet transform during loading
     # Perform morlet wavelet transform
     t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
@@ -71,13 +71,19 @@ class umapper(BehaviorModel):
     for axis in axes:
         sig = high_freq_data[:, axis]
         sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
-        transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
+        if downsample > 1:
+            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
+        else:
+            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
         
     axes = np.arange(0, np.shape(low_freq_data)[1])
     for axis in axes:
         sig = low_freq_data[:, axis]
         #sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
-        transformed.append(np.expand_dims(sig, 0)) # do not transform low frequency data
+        if downsample > 1:
+            transformed.append(np.expand_dims(sig, 0)[:, ::downsample]) # do not transform low frequency data
+        else:
+            transformed.append(np.expand_dims(sig, 0))
 
     transformed = np.concatenate(transformed, axis = 0)
     transformed = np.transpose(transformed)
@@ -92,7 +98,11 @@ class umapper(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     # load as wavelets
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents)[::self.downsample, :] for fp in dev_fps]
+    dev_data = []
+    print("Loading inputs")
+    for fp in tqdm(dev_fps):
+        dev_data.append(self.load_model_inputs(fp, read_latents = self.read_latents, downsample = self.downsample))
+    #dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents)[::self.downsample, :] for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
     
     # normalize and record normalizing constant
