@@ -45,11 +45,9 @@ def consistency_plot(per_class_per_individual_f1s, per_class_f1s, config, target
     ax.scatter(xloc, per_class_per_individual_f1s[key], c = 'blue')
     ax.scatter(i, per_class_f1s[key], c = 'green', marker = "_", s = 300)
 
-  #sorted(per_class_per_individual_f1s.keys())
   ax.set_ylabel("f1 score")
   ax.set_xticks(np.arange(len(sorted(per_class_per_individual_f1s.keys()))), )
   ax.set_xticklabels(sorted(per_class_per_individual_f1s.keys()), rotation=45)
-  #ax.set_xlabel("Behavior class")
   ax.set_title("f1 for different methods of assigning behavior labels to clusters")
   ax.legend()
 

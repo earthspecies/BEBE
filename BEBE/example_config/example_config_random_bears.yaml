@@ -1,0 +1,14 @@
+experiment_name: random
+input_vars:
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+- Wetdry
+model: random
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/pagano_bears
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears
+num_clusters: 40
+read_latents: False

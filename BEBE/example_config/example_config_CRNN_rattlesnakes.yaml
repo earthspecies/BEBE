@@ -6,14 +6,13 @@ input_vars:
 model: CRNN
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
-num_clusters: 4
   
 read_latents: false
 CRNN_config:
   downsizing_factor : 16
   lr : 0.001
   weight_decay : 0.001
-  n_epochs : 100
+  n_epochs : 20
   hidden_size : 64
   temporal_window_samples : 64
   batch_size : 64

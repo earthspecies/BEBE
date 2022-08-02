@@ -16,7 +16,6 @@ default_model_config:
   jitter_scale : 0
   blur_scale : 0
   conv_depth : 2
-  weight_factor : 0.5
   sparse_annotations : False
   ker_size : 7
   dilation : 1
