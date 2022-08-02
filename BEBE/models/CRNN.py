@@ -45,7 +45,6 @@ class CRNN(BehaviorModel):
     self.jitter_scale = self.model_config['jitter_scale']
     self.rescale_param = self.model_config['rescale_param']
     self.sparse_annotations = self.model_config['sparse_annotations']
-    self.weight_factor = self.model_config['weight_factor']
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
@@ -126,8 +125,8 @@ class CRNN(BehaviorModel):
     print("Number windowed test examples after subselecting: %d" % len(test_dataset))
     test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     
-    # Loss function; reweight by class proportions if desired
-    weight = (proportions ** self.weight_factor).to(device)
+    # Loss function; reweight by class proportions
+    weight = 1./ (proportions + 1e-6).to(device) 
     loss_fn = nn.CrossEntropyLoss(ignore_index = self.unknown_label, weight = weight)
     
     loss_fn_no_reduce = nn.CrossEntropyLoss(ignore_index = self.unknown_label, reduction = 'sum', weight = weight)
@@ -345,8 +344,11 @@ class Classifier(nn.Module):
             jitter = 0.
           x = x + blur + jitter 
         
-        for block in self.conv:
+        for block in self.conv[:1]:
           x = block(x)
+          
+        for block in self.conv[1:]:
+          x = block(x) + x
         
         x = torch.transpose(x, -1, -2)
         
