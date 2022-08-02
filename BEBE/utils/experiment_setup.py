@@ -80,7 +80,11 @@ def expand_config(config, save_latents = False):
   val_data_fp.sort()
   dev_data_fp.sort()
   
-  config['train_data_fp'] = train_data_fp
+  if 'use_val_in_train' in config and config['use_val_in_train']:
+    print("As requested, we are training on both train and val data")
+    config['train_data_fp'] = dev_data_fp
+  else:
+    config['train_data_fp'] = train_data_fp
   config['test_data_fp'] = test_data_fp
   config['val_data_fp'] = val_data_fp
   config['dev_data_fp'] = dev_data_fp
@@ -115,7 +119,11 @@ def expand_config(config, save_latents = False):
     dev_data_latents_fp.sort()
     val_data_latents_fp.sort()
     
-    config['train_data_latents_fp'] = train_data_latents_fp
+    if 'use_val_in_train' in config and config['use_val_in_train']:
+      print("As requested, we are training on both train and val data")
+      config['train_data_latents_fp'] = dev_data_latents_fp
+    else:
+      config['train_data_latents_fp'] = train_data_latents_fp
     config['test_data_latents_fp'] = test_data_latents_fp
     config['val_data_latents_fp'] = val_data_latents_fp
     config['dev_data_latents_fp'] = dev_data_latents_fp
