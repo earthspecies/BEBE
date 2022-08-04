@@ -70,10 +70,9 @@ def generate_predictions(model, config):
     for filename in tqdm.tqdm(file_ids):
       fp = config['file_id_to_model_input_fp'][filename]
       predictions, latents = model.predict_from_file(fp)
-      
-      if config['predict_and_evaluate']:
-        predictions_fp = os.path.join(config['predictions_dir'], filename)
-        np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
+
+      predictions_fp = os.path.join(config['predictions_dir'], filename)
+      np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
 
       if config['save_latents']:
         latents_fp = os.path.join(config['latents_output_dir'], filename)
@@ -83,9 +82,6 @@ def generate_evaluations(config):
   print("saving model outputs to %s " % config['output_dir'])
   choices = None # choices and probs are parameters for the mapping based metrics, we discover them using the train set on the first loop through
   probs = None
-  
-  if not config['predict_and_evaluate']:
-    return None
   
   if config['unsupervised']:
     to_consider = [config['dev_file_ids'], config['test_file_ids']]
