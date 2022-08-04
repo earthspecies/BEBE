@@ -344,11 +344,8 @@ class Classifier(nn.Module):
             jitter = 0.
           x = x + blur + jitter 
         
-        for block in self.conv[:1]:
+        for block in self.conv:
           x = block(x)
-          
-        for block in self.conv[1:]:
-          x = block(x) + x
         
         x = torch.transpose(x, -1, -2)
         
