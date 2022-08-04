@@ -1,5 +1,4 @@
 save_latents : false
-predict_and_evaluate : true
 unsupervised : false
   
 default_model_config:

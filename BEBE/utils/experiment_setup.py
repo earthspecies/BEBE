@@ -26,7 +26,6 @@ def expand_config(config, save_latents = False):
     default_config = yaml.load(file, Loader=yaml.FullLoader)
   
   config['save_latents'] = save_latents and default_config['save_latents'] #save latents if it makes sense for this model type
-  config['predict_and_evaluate'] = default_config['predict_and_evaluate']
   config['unsupervised'] = default_config['unsupervised']
   
   if config['save_latents']:
