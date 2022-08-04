@@ -1,18 +1,7 @@
 experiment_name: gmm
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- GyrX
-- GyrY
-- GyrZ
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
-num_clusters: 24
 
 gmm_config:
   max_iter: 150

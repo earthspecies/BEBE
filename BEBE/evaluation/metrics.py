@@ -81,15 +81,15 @@ def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
     labels = np.arange(len(label_names))
     labels = labels[labels != unknown_value]
     
-    precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['MAP_classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
     results['MAP_classification_precision_macro'] = float(np.mean(precisions))
     
-    recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['MAP_classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
     results['MAP_classification_recall_macro'] = float(np.mean(recalls))
     
-    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['MAP_classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['MAP_classification_f1_macro'] = float(np.mean(f1s))
 
@@ -112,15 +112,15 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0):
     labels = np.arange(len(label_names))
     labels = labels[labels != unknown_value]
     
-    precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
     results['classification_precision_macro'] = float(np.mean(precisions))
     
-    recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
     results['classification_recall_macro'] = float(np.mean(recalls))
     
-    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =0)
+    f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['classification_f1_macro'] = float(np.mean(f1s))
 

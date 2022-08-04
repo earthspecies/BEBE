@@ -109,8 +109,6 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       axes[-1].set_title("Model prediction")
       axes[-1].set_xlabel("Time (seconds)")
       
-                       
-
     if target_fp is not None:
         plt.savefig(target_fp); plt.close()
     

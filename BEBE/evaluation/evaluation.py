@@ -46,7 +46,6 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
     evaluation_dict[key] = scores[key]
   
   ## Save
-  
   if output_fp is not None:
     with open(output_fp, 'w') as file:
       yaml.dump(evaluation_dict, file)
@@ -93,7 +92,8 @@ def generate_evaluations(config):
     all_labels_dict = {}
     all_predictions = []
     all_labels = []
-
+    
+    # Generate predictions
     for filename in file_ids:      
       predictions_fp = os.path.join(config['predictions_dir'], filename)
       if not os.path.exists(predictions_fp):
@@ -118,30 +118,7 @@ def generate_evaluations(config):
       all_predictions.extend(predictions)
       all_labels.extend(labels)
         
-    # Per-individual evaluation
-    
-    label_names = config['metadata']['label_names'].copy()
-    label_names.remove('unknown')
-
-    individual_f1s = {label_name : [] for label_name in label_names}
-    # individual_precs = {label_name : [] for label_name in label_names}
-    # individual_recs = {label_name : [] for label_name in label_names}
-
-    for individual_id in all_predictions_dict:
-      predictions = np.array(all_predictions_dict[individual_id])
-      labels = np.array(all_labels_dict[individual_id])
-
-      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None)
-
-      for label_name in label_names:
-        if config['unsupervised']:
-          individual_f1s[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_f1'][label_name])
-        else: 
-          individual_f1s[label_name].append(individual_eval_dict['supervised_scores']['classification_f1'][label_name])
-        # individual_precs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_precision'][label_name])
-        # individual_recs[label_name].append(individual_eval_dict['MAP_scores']['MAP_classification_recall'][label_name])
-
-    # Evaluate    
+    # Overall evaluation: Lump all individuals together
     all_labels = np.array(all_labels)
     all_predictions = np.array(all_predictions)
     
@@ -149,33 +126,91 @@ def generate_evaluations(config):
       eval_output_fp = os.path.join(config['output_dir'], 'train_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "train_confusion_matrix.png")
       f1_consistency_target_fp = os.path.join(config['visualization_dir'], "train_f1_consistency.png")
+      f1_consistency_numerical_target_fp = os.path.join(config['output_dir'], "train_f1_consistency.yaml")
     elif file_ids == config['val_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'val_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "val_confusion_matrix.png")
       f1_consistency_target_fp = os.path.join(config['visualization_dir'], "val_f1_consistency.png")
+      f1_consistency_numerical_target_fp = os.path.join(config['output_dir'], "val_f1_consistency.yaml")
     elif file_ids == config['dev_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'dev_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "dev_confusion_matrix.png")
       f1_consistency_target_fp = os.path.join(config['visualization_dir'], "dev_f1_consistency.png")
+      f1_consistency_numerical_target_fp = os.path.join(config['output_dir'], "dev_f1_consistency.yaml")
     elif file_ids == config['test_file_ids']:
       eval_output_fp = os.path.join(config['output_dir'], 'test_eval.yaml')
       confusion_target_fp = os.path.join(config['visualization_dir'], "test_confusion_matrix.png")
       f1_consistency_target_fp = os.path.join(config['visualization_dir'], "test_f1_consistency.png")
+      f1_consistency_numerical_target_fp = os.path.join(config['output_dir'], "test_f1_consistency.yaml")
       
-
     if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
-      eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs)
+      eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, choices = choices, probs = probs)
     else: 
-      eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, output_fp = eval_output_fp, choices = choices, probs = probs)
+      eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, choices = choices, probs = probs)
+      
+    # Per-individual evaluation: Treat individuals as separate test sets
+    
+    ## First, we are evaluating to check the consistency of how clusters are assigned to labels, across individuals
+    ## This is mostly relevant to unsupervised models.
+    ## Second, we are evaluating using the same cluster-to-label assignment for all individuals. This gives us more test replicates, to get a better sense of model variance across different individuals
+    
+    label_names = config['metadata']['label_names'].copy()
+    label_names.remove('unknown')
+    
+    individual_f1s_individualized = {}
+    individual_f1s_individualized['per_label'] = {label_name : [] for label_name in label_names} # scores for individualized cluster -> label assignment
+    individual_scores = {'macro_f1s' : [], 'macro_precisions' : [], 'macro_recalls' : []} # scores for each individual, all using the same cluster -> label assignment we found earlier
+    macro_f1s_individualized = [] # scores for each individual, all using the same cluster -> label assignment we found earlier
 
+    for individual_id in sorted(all_predictions_dict.keys()):
+      predictions = np.array(all_predictions_dict[individual_id])
+      labels = np.array(all_labels_dict[individual_id])
+
+      individual_eval_dict_individualized, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None)
+
+      for label_name in label_names:
+        if config['unsupervised']:
+          individual_f1s_individualized['per_label'][label_name].append(individual_eval_dict_individualized['MAP_scores']['MAP_classification_f1'][label_name])
+        else: 
+          individual_f1s_individualized['per_label'][label_name].append(individual_eval_dict_individualized['supervised_scores']['classification_f1'][label_name])
+          
+      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = choices, probs = probs)
+      if config['unsupervised']:
+        individual_scores['macro_f1s'].append(individual_eval_dict['MAP_scores']['MAP_classification_f1_macro'])
+        individual_scores['macro_precisions'].append(individual_eval_dict['MAP_scores']['MAP_classification_precision_macro'])
+        individual_scores['macro_recalls'].append(individual_eval_dict['MAP_scores']['MAP_classification_recall_macro'])
+        macro_f1s_individualized.append(individual_eval_dict_individualized['MAP_scores']['MAP_classification_f1_macro'])
+      else:
+        individual_scores['macro_f1s'].append(individual_eval_dict['supervised_scores']['classification_f1_macro'])
+        individual_scores['macro_precisions'].append(individual_eval_dict['supervised_scores']['classification_precision_macro'])
+        individual_scores['macro_recalls'].append(individual_eval_dict['supervised_scores']['classification_recall_macro'])
+        macro_f1s_individualized.append(individual_eval_dict_individualized['supervised_scores']['classification_f1_macro'])
+                                            
+    eval_dict['individual_scores'] = individual_scores
+      
+    ## Save off evaluation  
+      
+    with open(eval_output_fp, 'w') as file:
+      yaml.dump(eval_dict, file)
+      
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
     
-    # Save consistency plot, i.e. compare individual vs overall performance
+    # Save consistency scores, i.e. compare individual vs overall performance for different ways of assigning clusters to labels
     if config['unsupervised']:
-      bbvis.consistency_plot(individual_f1s, eval_dict['MAP_scores']['MAP_classification_f1'], config, target_fp = f1_consistency_target_fp)
+      overall_f1_eval_scores = eval_dict['MAP_scores']['MAP_classification_f1']
     else:
-      bbvis.consistency_plot(individual_f1s, eval_dict['supervised_scores']['classification_f1'], config, target_fp = f1_consistency_target_fp)
+      overall_f1_eval_scores = eval_dict['supervised_scores']['classification_f1']
+      
+    bbvis.consistency_plot(individual_f1s_individualized['per_label'], overall_f1_eval_scores, config, target_fp = f1_consistency_target_fp)
+    
+    
+    classes = list(individual_f1s_individualized['per_label'].keys()).copy()
+    individual_f1s_individualized['mean_f1_individualized'] = {k: float(np.mean(individual_f1s_individualized['per_label'][k])) for k in classes} # first average across individuals
+    individual_f1s_individualized['macro_f1s_individualized'] = macro_f1s_individualized
+    with open(f1_consistency_numerical_target_fp, 'w') as file:
+      yaml.dump(individual_f1s_individualized, file)
+    
   
   # Save example figures
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
