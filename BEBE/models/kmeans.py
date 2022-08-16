@@ -15,7 +15,8 @@ class kmeans(BehaviorModel):
     self.model = KMeans(n_clusters = self.config['num_clusters'], verbose = 0, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
     
     self.whiten = self.model_config['whiten']
-    self.whitener = whitener_standalone()
+    self.n_components = self.model_config['n_components']
+    self.whitener = whitener_standalone(n_components = self.n_components)
     
   def fit(self):
     ## get data. assume stored in memory for now
