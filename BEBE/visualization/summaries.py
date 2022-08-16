@@ -8,7 +8,7 @@ def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
   unknown_idx = label_names.index('unknown')
   num_clusters = config['num_clusters']
   
-  M = cm(all_labels, all_predictions, labels = np.arange(num_clusters))
+  M = cm(all_labels, all_predictions, labels = np.arange(num_clusters), normalize = 'pred')
   to_plot_idx = np.arange(len(label_names))
   to_plot_idx = to_plot_idx[to_plot_idx != unknown_idx]
   M = M[to_plot_idx,:] # drop the unknown labels
@@ -21,6 +21,8 @@ def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
   plt.ylabel('Ground Truth Labels')
   plt.title(config['experiment_name'])
   figure.colorbar(Mplot, orientation = 'horizontal')
+  
+  plt.tight_layout()
   
   if target_fp == None:
     plt.show()
@@ -50,6 +52,8 @@ def consistency_plot(per_class_per_individual_f1s, per_class_f1s, config, target
   ax.set_xticklabels(sorted(per_class_per_individual_f1s.keys()), rotation=45)
   ax.set_title("f1 for different methods of assigning behavior labels to clusters")
   ax.legend()
+  
+  plt.tight_layout()
 
   if target_fp == None:
     plt.show()

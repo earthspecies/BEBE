@@ -11,12 +11,14 @@ import os
 from sklearn.metrics import homogeneity_score
  
 def homogeneity(labels_coarse, labels_fine):
+  # alternative name for sklearn homogeneity score
   return homogeneity_score(labels_coarse, labels_fine)
 
 def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
+    # array: 1-dim array
+    # returns: 1-dim boolean mask of array with 0's anywhere that is within tolerance_frames frames of a frame containing unknown_value
+    
     array = np.array(array)
-    # in: 1-dim array
-    # out: 1-dim boolean array with 0's anywhere that is within tolerance_frames frames of a frame containing unknown_value
     shifted_masks = []
     shifted_masks.append(array != unknown_value)
     for shift in range(1, tolerance_frames + 1):
@@ -31,13 +33,13 @@ def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
   
 # Discover probabilities of mapping cluster -> label based on confusion matrix
 def discover_probabilities(gt, pred, num_clusters, num_classes, unknown_value = 0):
-    # gt 1-dim array of gt labels (per frame)
-    # pred 1-dim array of predicted clusters (per frame)
-    # num_clusters number of clusters allowed, we assume the clusters are numbered 0,1,2,...   
-    # num_classes number of classes allowed, includes unknown, assume numbered 0,1,2,...
+    # gt: 1-dim array of gt labels (per frame)
+    # pred: 1-dim array of predicted clusters (per frame)
+    # num_clusters: number of clusters allowed, we assume the clusters are numbered 0,1,2,...   
+    # num_classes: number of classes allowed, includes unknown, assume numbered 0,1,2,...
     # Returns:
-    # choices, dict where choices[i] is a list of allowed values to map cluster i to
-    # probs, dict where probs[i] is a list of probabilites associated with the choies
+    # choices: dict where choices[i] is a list of allowed values to map cluster i to
+    # probs: dict where probs[i] is a list of probabilites associated with the choies
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
     gt_sub = gt[mask]
     pred_sub = pred[mask]
@@ -56,6 +58,8 @@ def discover_probabilities(gt, pred, num_clusters, num_classes, unknown_value = 
   
 # Find the best way of mapping cluster -> label
 def produce_MAP_cluster_to_label(choices, probs):
+    # choices: dict where choices[i] is a list of allowed values to map cluster i to
+    # probs: dict where probs[i] is a list of probabilites associated with the choies
     mapping_dict = {}
     for i in choices:
         best_idx = np.argmax(probs[i])
@@ -63,10 +67,15 @@ def produce_MAP_cluster_to_label(choices, probs):
     return lambda i : mapping_dict[i], mapping_dict
   
 def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
+    # gt: 1-dim array of gt labels (per frame)
+    # pred: 1-dim array of predicted clusters (per frame)
+    # choices: dict where choices[i] is a list of allowed values to map cluster i to
+    # probs: dict where probs[i] is a list of probabilites associated with the choies
+    # label_names: list of behavior label names
+  
     # For each cluster, looks for the label with highest overlap with that cluster
-    # (i.e. the Maximimum a posteriori estimate)
     # Maps that cluster to that label, and computes precision, recall, etc
-    # Returns a dict including the MAP mapping from clusters to labels
+    # Returns: dict including the MAP mapping from clusters to labels
     results = {}
     pred_list = list(pred)
     mapping, mapping_dict = produce_MAP_cluster_to_label(choices, probs)
@@ -96,7 +105,10 @@ def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
     return results
   
 def get_supervised_scores(gt, pred, label_names, unknown_value=0):
-    # Gets evaluation scores, assuming we have used a supervised model
+    # gt: 1-dim array of gt labels (per frame)
+    # pred: 1-dim array of predicted clusters (per frame)
+    # label_names: list of behavior label names
+    # returns dict of evaluation scores, assuming we have used a supervised model
     results = {}
     
     ## To avoid issues with macro averaging in sklearn, we have to make sure there are no 'unknowns' that are predicted by the model
@@ -127,7 +139,13 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0):
     return results
   
 def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, choices = None, probs = None, supervised = False):
-    # Main function to produce mapping based scores
+    # gt: 1-dim array of gt labels (per frame)
+    # pred: 1-dim array of predicted clusters (per frame)
+    # label_names: list of behavior label names
+    # unknown_value: integer label associated with unknown behavior
+    # choices: dict where choices[i] is a list of allowed values to map cluster i to
+    # probs: dict where probs[i] is a list of probabilites associated with the choies
+    # returns dict of evaluation scores, as well as the dictionaries choices and probs
     
     num_classes = len(label_names)
     

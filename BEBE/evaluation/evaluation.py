@@ -7,6 +7,8 @@ import tqdm
 import yaml
 
 def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None, probs = None):
+  # y_true, y_pred: list of integers
+  # choices, probs: dictionaries discovered by comparing train predictions with ground truth labels  
   
   evaluation_dict = {}
 
@@ -33,15 +35,15 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   else: 
     supervised = False
   
-  scores, choices, probs = metrics.mapping_based_scores(y_true, 
-                                                               y_pred, 
-                                                               num_clusters, 
-                                                               label_names, 
-                                                               unknown_value = unknown_label,
-                                                               choices = choices,
-                                                               probs = probs,
-                                                               supervised = supervised
-                                                              )
+  scores, choices, probs = metrics.mapping_based_scores(y_true,
+                                                        y_pred, 
+                                                        num_clusters, 
+                                                        label_names, 
+                                                        unknown_value = unknown_label,
+                                                        choices = choices,
+                                                        probs = probs,
+                                                        supervised = supervised
+                                                       )
   for key in scores:
     evaluation_dict[key] = scores[key]
   
@@ -78,8 +80,15 @@ def generate_predictions(model, config):
         np.savetxt(latents_fp, latents, delimiter=",")
 
 def generate_evaluations(config):
+  # Generates numerical metrics as well as visualizations
+  # Assumes config has been expanded by expand_config in experiment_setup.py
+  
   print("saving model outputs to %s " % config['output_dir'])
-  choices = None # choices and probs are parameters for the mapping based metrics, we discover them using the train set on the first loop through
+  
+  # choices and probs are parameters for the mapping based metrics used for unsupervised models
+  # we discover them using the train set on the first loop through
+  
+  choices = None 
   probs = None
   
   if config['unsupervised']:
@@ -93,7 +102,8 @@ def generate_evaluations(config):
     all_predictions = []
     all_labels = []
     
-    # Generate predictions
+    # Load predictions
+    
     for filename in file_ids:      
       predictions_fp = os.path.join(config['predictions_dir'], filename)
       if not os.path.exists(predictions_fp):
@@ -119,6 +129,7 @@ def generate_evaluations(config):
       all_labels.extend(labels)
         
     # Overall evaluation: Lump all individuals together
+    
     all_labels = np.array(all_labels)
     all_predictions = np.array(all_predictions)
     
@@ -148,11 +159,11 @@ def generate_evaluations(config):
     else: 
       eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, choices = choices, probs = probs)
       
-    # Per-individual evaluation: Treat individuals as separate test sets
+    # Per-individual evaluation: Treat individuals as separate test sets.
+    # This gives us more test replicates, to get a better sense of model variance across different individuals
     
-    ## First, we are evaluating to check the consistency of how clusters are assigned to labels, across individuals
-    ## This is mostly relevant to unsupervised models.
-    ## Second, we are evaluating using the same cluster-to-label assignment for all individuals. This gives us more test replicates, to get a better sense of model variance across different individuals
+    ## We also compute 'individualized' f1 scores, which uses a different method of assigning clusters to labels
+    ## Individualized scores are only relevant to unsupervised models.
     
     label_names = config['metadata']['label_names'].copy()
     label_names.remove('unknown')
@@ -196,14 +207,13 @@ def generate_evaluations(config):
     # Save confusion matrix
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
     
-    # Save consistency scores, i.e. compare individual vs overall performance for different ways of assigning clusters to labels
+    # Save 'individualized' scores, i.e. compare individual vs overall performance for different ways of assigning clusters to labels
     if config['unsupervised']:
       overall_f1_eval_scores = eval_dict['MAP_scores']['MAP_classification_f1']
     else:
       overall_f1_eval_scores = eval_dict['supervised_scores']['classification_f1']
       
     bbvis.consistency_plot(individual_f1s_individualized['per_label'], overall_f1_eval_scores, config, target_fp = f1_consistency_target_fp)
-    
     
     classes = list(individual_f1s_individualized['per_label'].keys()).copy()
     individual_f1s_individualized['mean_f1_individualized'] = {k: float(np.mean(individual_f1s_individualized['per_label'][k])) for k in classes} # first average across individuals
@@ -216,17 +226,17 @@ def generate_evaluations(config):
   rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
 
   for file_ids in to_consider:
-    for filename in list(rng.choice(file_ids, min(3, len(file_ids)), replace = False)):
+    for i, filename in enumerate(rng.choice(file_ids, 3, replace = True)):
       predictions_fp = os.path.join(config['predictions_dir'], filename)
       track_length = len(pd.read_csv(predictions_fp, delimiter = ',', header = None))
       if file_ids == config['train_file_ids']:
-        target_filename = filename.split('.')[0] + '-train-track_visualization.png'
+        target_filename = filename.split('.')[0] + '-' + str(i) + '-train-track_visualization.png'
       elif file_ids == config['val_file_ids']:
-        target_filename = filename.split('.')[0] + '-val-track_visualization.png'
+        target_filename = filename.split('.')[0] + '-' + str(i) + '-val-track_visualization.png'
       elif file_ids == config['dev_file_ids']:
-        target_filename = filename.split('.')[0] + '-dev-track_visualization.png'
+        target_filename = filename.split('.')[0] + '-' + str(i) + '-dev-track_visualization.png'
       elif file_ids == config['test_file_ids']:
-        target_filename = filename.split('.')[0] + '-test-track_visualization.png'
+        target_filename = filename.split('.')[0] + '-' + str(i) + '-test-track_visualization.png'
       target_fp = os.path.join(config['visualization_dir'], target_filename)
       data_fp = config['file_id_to_data_fp'][filename]
       if track_length <= 20000:

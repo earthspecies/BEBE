@@ -30,12 +30,17 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
         axes[i].set_xlim(left=0, right=(end_sample-start_sample) / sr)
         axes[i].plot(np.arange(len(to_plot))/ float(sr), to_plot, label = var)
         axes[i].set_ylabel(var)
-        axes[i].tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom=False,      # ticks along the bottom edge are off
-            top=False,         # ticks along the top edge are off
-            labelbottom=False) # labels along the bottom edge are off    
+        
+        if i == len(vars_to_plot)-1:
+          axes[i].set_xlabel("Time (seconds)")
+        else:
+          axes[i].tick_params(
+              axis='x',          # changes apply to the x-axis
+              which='both',      # both major and minor ticks are affected
+              bottom=False,      # ticks along the bottom edge are off
+              top=False,         # ticks along the top edge are off
+              labelbottom=False) # labels along the bottom edge are off
+    axes[0].set_title("Raw Data")
     
     # Ground truths
     if config['unsupervised']:
@@ -52,13 +57,14 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
     axes[position].set_yticks(label_ticks)
     axes[position].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
-    axes[position].set_title("Observed behavior")
-    axes[position].tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom=False,      # ticks along the bottom edge are off
-        top=False,         # ticks along the top edge are off
-        labelbottom=False) # labels along the bottom edge are off
+    axes[position].set_title("Ground Truth Behavior Labels")
+    axes[position].set_xlabel("Time (seconds)")
+    # axes[position].tick_params(
+    #     axis='x',          # changes apply to the x-axis
+    #     which='both',      # both major and minor ticks are affected
+    #     bottom=False,      # ticks along the bottom edge are off
+    #     top=False,         # ticks along the top edge are off
+    #     labelbottom=False) # labels along the bottom edge are off
 
     # Plot predictions
     class_predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten() 
@@ -74,15 +80,14 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       major_tick_spacing = max(1, config['num_clusters'] // 8)
       axes[-2].yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
       axes[-2].yaxis.set_minor_locator(MultipleLocator(1))
-
-
-      axes[-2].set_title("Discovered behavioral motifs")
-      axes[-2].tick_params(
-          axis='x',          # changes apply to the x-axis
-          which='both',      # both major and minor ticks are affected
-          bottom=False,      # ticks along the bottom edge are off
-          top=False,         # ticks along the top edge are off
-          labelbottom=False) # labels along the bottom edge are off
+      axes[-2].set_title("Discovered Clusters")
+      axes[i].set_xlabel("Time (seconds)")
+      # axes[-2].tick_params(
+      #     axis='x',          # changes apply to the x-axis
+      #     which='both',      # both major and minor ticks are affected
+      #     bottom=False,      # ticks along the bottom edge are off
+      #     top=False,         # ticks along the top edge are off
+      #     labelbottom=False) # labels along the bottom edge are off
     
       # Max a posteriori assignment clusters -> labels
       mapping_dict = eval_dict['MAP_scores']['MAP_mapping_dict']
@@ -94,7 +99,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
       axes[-1].set_yticks(label_ticks)
       axes[-1].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
-      axes[-1].set_title("Model prediction (a posteriori assignment of discovered motifs to behavior labels)")
+      axes[-1].set_title("Prediction of Behavior Based on Discovered Clusters")
       axes[-1].set_xlabel("Time (seconds)")
       
     else:
@@ -106,8 +111,10 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       label_ticks = [i for i in range(len(label_names)) if i != unknown_idx]
       axes[-1].set_yticks(label_ticks)
       axes[-1].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
-      axes[-1].set_title("Model prediction")
+      axes[-1].set_title("Model Prediction")
       axes[-1].set_xlabel("Time (seconds)")
+      
+    plt.tight_layout()
       
     if target_fp is not None:
         plt.savefig(target_fp); plt.close()
