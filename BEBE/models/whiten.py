@@ -4,12 +4,13 @@ from sklearn.decomposition import PCA
 import numpy as np
   
 class whitener_standalone():
-  def __init__(self):
+  def __init__(self, n_components = 'mle'):
     super(whitener_standalone, self).__init__()
     
     self.whitener = None
     self.data_means = None
     self.data_std = None
+    self.n_components = n_components
     
   def fit_transform(self, data):
     
@@ -21,7 +22,7 @@ class whitener_standalone():
     data = data / self.data_std    
     
     print("computing whitening transform")
-    pca = PCA(n_components = 'mle', whiten = True)
+    pca = PCA(n_components = self.n_components, whiten = True)
     transformed_data = pca.fit_transform(data)  
     self.whitener = pca
     print("whitened using %d components out of %d input dimensions" % (pca.n_components_ , np.shape(data)[1]))
