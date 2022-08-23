@@ -1,18 +1,14 @@
-experiment_name: kmeans
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- GyrX
-- GyrY
-- GyrZ
+experiment_name: kmeans_wavelet
 model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
-num_clusters: 24
-read_latents: False
-# data_latents_fp_glob: 
-# - /home/jupyter/behavior_benchmarks_outputs/HAR/whiten_humans/latents/*.npy
+
+kmeans_config:
+  max_iter: 500
+  n_init: 1
+  whiten : false
+  n_components : mle
+  wavelet_transform : true
+  morlet_w : 20.
+  n_wavelets : 25
+  downsample : 4

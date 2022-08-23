@@ -23,7 +23,6 @@ import pandas as pd
 class umapper(BehaviorModel):
   def __init__(self, config):
     super(umapper, self).__init__(config)
-    sr = config['metadata']['sr']
     self.morlet_w = self.model_config['morlet_w']
     self.n_wavelets = self.model_config['n_wavelets']
     self.image_border = self.model_config['image_border']
