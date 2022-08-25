@@ -46,7 +46,7 @@ class kmeans(BehaviorModel):
       transformed = []
       for axis in axes:
           sig = data[:, axis]
-          sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
+          sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize each channel independently
           if downsample > 1:
               transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
           else:

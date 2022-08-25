@@ -66,23 +66,29 @@ def produce_MAP_cluster_to_label(choices, probs):
         mapping_dict[int(i)] = int(choices[i][best_idx]) # cast as int for saving off results
     return lambda i : mapping_dict[i], mapping_dict
   
-def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
+def get_time_scale_ratio(pred, target_time_scale_sec, sr):
+    n_label_bouts = sum(pred[1:] != pred[:-1]) + 1
+    mean_dur_samples = len(pred) / n_label_bouts
+    mean_dur_sec = mean_dur_samples / sr
+    time_scale_ratio = mean_dur_sec / target_time_scale_sec
+    return float(time_scale_ratio)
+
+def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
+    # For each cluster, looks for the label with highest overlap with that cluster
+    # Maps that cluster to that label, and computes precision, recall, etc
+    # Returns: dict including the MAP mapping from clusters to labels
     # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
     # choices: dict where choices[i] is a list of allowed values to map cluster i to
     # probs: dict where probs[i] is a list of probabilites associated with the choies
     # label_names: list of behavior label names
-  
-    # For each cluster, looks for the label with highest overlap with that cluster
-    # Maps that cluster to that label, and computes precision, recall, etc
-    # Returns: dict including the MAP mapping from clusters to labels
     results = {}
     pred_list = list(pred)
     mapping, mapping_dict = produce_MAP_cluster_to_label(choices, probs)
     results['MAP_mapping_dict'] = mapping_dict    
     pred_mapped = np.array(list(map(mapping, pred_list)))
     
-    ### Get optimized classification scores
+    ### Get classification scores
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
     gt_sub = gt[mask]
     pred_sub = pred_mapped[mask]
@@ -101,10 +107,12 @@ def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0):
     f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['MAP_classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['MAP_classification_f1_macro'] = float(np.mean(f1s))
-
+    
+    results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)
+        
     return results
   
-def get_supervised_scores(gt, pred, label_names, unknown_value=0):
+def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
     # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
     # label_names: list of behavior label names
@@ -135,10 +143,14 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0):
     f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['classification_f1_macro'] = float(np.mean(f1s))
+    
+    results['time_scale_ratio'] = get_time_scale_ratio(pred, target_time_scale_sec, sr)
 
     return results
   
-def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, choices = None, probs = None, supervised = False):
+
+  
+def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, choices = None, probs = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
     # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
     # label_names: list of behavior label names
@@ -164,6 +176,8 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0,
                                                                             pred,
                                                                             label_names,
                                                                             unknown_value=unknown_value,
+                                                                            target_time_scale_sec = target_time_scale_sec,
+                                                                            sr = sr
                                                                            )
     else:
       mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
@@ -172,6 +186,8 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0,
                                                               probs,
                                                               label_names,
                                                               unknown_value = unknown_value, 
+                                                              target_time_scale_sec = target_time_scale_sec,
+                                                              sr = sr
                                                              )
     
     return mapping_based_score_dict, choices, probs
