@@ -80,7 +80,7 @@ def expand_config(config, save_latents = False):
   dev_data_fp.sort()
   
   if 'use_val_in_train' in config and config['use_val_in_train']:
-    print("As requested, we are training on both train and val data")
+    print("As requested, we are training on all available data")
     config['train_data_fp'] = dev_data_fp
   else:
     config['train_data_fp'] = train_data_fp
