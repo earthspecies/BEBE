@@ -1,13 +1,8 @@
 experiment_name: CRNN
-input_vars:
-- AccX
-- AccY
-- AccZ
 model: CRNN
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
   
-read_latents: false
 CRNN_config:
   downsizing_factor : 16
   lr : 0.001
@@ -16,15 +11,9 @@ CRNN_config:
   hidden_size : 64
   temporal_window_samples : 64
   batch_size : 64
-  dropout : 0
-  rescale_param : 0
-  jitter_scale : 0
-  blur_scale : 0
   conv_depth : 2
-  weight_factor : 0.5
-  sparse_annotations : False
+  sparse_annotations : false
   ker_size : 7
   dilation : 1
   gru_depth : 1
   gru_hidden_size : 32
-

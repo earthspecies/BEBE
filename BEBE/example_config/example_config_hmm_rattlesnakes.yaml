@@ -1,12 +1,7 @@
 experiment_name: hmm
-input_vars:
-- AccX
-- AccY
-- AccZ
 model: hmm
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/desantis_rattlesnakes
-num_clusters: 8
   
 hmm_config:
   time_bins : 2500

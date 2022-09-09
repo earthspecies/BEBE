@@ -1,19 +1,7 @@
-experiment_name: rf_per_sample
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- GyrX
-- GyrY
-- GyrZ
-- Depth
+experiment_name: rf
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
 model: rf
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
-num_clusters: 9
 
 rf_config:
   n_samples_window : 16

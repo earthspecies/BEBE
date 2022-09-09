@@ -1,8 +1,0 @@
-experiment_name: gmm
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
-model: gmm
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-
-gmm_config:
-  max_iter: 100
-  n_init: 1

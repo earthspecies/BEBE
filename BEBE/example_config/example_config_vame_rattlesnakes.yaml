@@ -1,12 +1,7 @@
 experiment_name: vame
-input_vars:
-- AccX
-- AccY
-- AccZ
 model: vame
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
-num_clusters: 20
 
 vame_config:
   batch_size : 256

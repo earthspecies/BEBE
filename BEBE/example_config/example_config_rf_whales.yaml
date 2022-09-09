@@ -1,20 +1,8 @@
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/friedlaender_whales
-evaluation: {}
 experiment_name: rf
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- Depth
-- Speed
-- Pitch
-- Roll
 model: rf
-num_clusters: 6
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/whales
+
 rf_config:
   n_samples_window : 16
   min_samples_split : 2

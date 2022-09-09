@@ -1,18 +1,7 @@
-experiment_name: umapper1
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- GyrX
-- GyrY
-- GyrZ
+experiment_name: umapper
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 model: umapper
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
-num_clusters: 24
 
 umapper_config:
   morlet_w : 1.
