@@ -31,18 +31,19 @@ def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
     mask = functools.reduce(operator.mul, shifted_masks, 1)
     return mask.astype(bool)
   
-# Discover probabilities of mapping cluster -> label based on confusion matrix
-def discover_probabilities(gt, pred, num_clusters, num_classes, unknown_value = 0):
-    # gt: 1-dim array of gt labels (per frame)
+def contingency_analysis(gt, pred, num_clusters, num_classes, unknown_value = 0):
+  # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
     # num_clusters: number of clusters allowed, we assume the clusters are numbered 0,1,2,...   
     # num_classes: number of classes allowed, includes unknown, assume numbered 0,1,2,...
     # Returns:
-    # choices: dict where choices[i] is a list of allowed values to map cluster i to
-    # probs: dict where probs[i] is a list of probabilites associated with the choies
+    # mapping dict
+    
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
     gt_sub = gt[mask]
     pred_sub = pred[mask]
+    
+    # Computes a (sparse) contingency matrix. Look for max value in each column
     choices = {}
     probs = {}
     for i in range(num_clusters):
@@ -54,17 +55,14 @@ def discover_probabilities(gt, pred, num_clusters, num_classes, unknown_value = 
             probs[i] = np.array([1.])
         else:
             probs[i] = counts / np.sum(counts)
-    return choices, probs
-  
-# Find the best way of mapping cluster -> label
-def produce_MAP_cluster_to_label(choices, probs):
-    # choices: dict where choices[i] is a list of allowed values to map cluster i to
-    # probs: dict where probs[i] is a list of probabilites associated with the choies
+            
     mapping_dict = {}
     for i in choices:
         best_idx = np.argmax(probs[i])
-        mapping_dict[int(i)] = int(choices[i][best_idx]) # cast as int for saving off results
-    return lambda i : mapping_dict[i], mapping_dict
+        mapping_dict[int(i)] = int(choices[i][best_idx])
+        
+    return mapping_dict
+                                          
   
 def get_time_scale_ratio(pred, target_time_scale_sec, sr):
     n_label_bouts = sum(pred[1:] != pred[:-1]) + 1
@@ -73,19 +71,18 @@ def get_time_scale_ratio(pred, target_time_scale_sec, sr):
     time_scale_ratio = mean_dur_sec / target_time_scale_sec
     return float(time_scale_ratio)
 
-def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
+def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
     # For each cluster, looks for the label with highest overlap with that cluster
     # Maps that cluster to that label, and computes precision, recall, etc
     # Returns: dict including the MAP mapping from clusters to labels
     # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
-    # choices: dict where choices[i] is a list of allowed values to map cluster i to
-    # probs: dict where probs[i] is a list of probabilites associated with the choies
+    # mapping_dict: cluster to label mapping discovered by contingency analysis
     # label_names: list of behavior label names
     results = {}
     pred_list = list(pred)
-    mapping, mapping_dict = produce_MAP_cluster_to_label(choices, probs)
-    results['MAP_mapping_dict'] = mapping_dict    
+    results['contingency_analysis_mapping_dict'] = mapping_dict    
+    mapping = lambda i : mapping_dict[i]
     pred_mapped = np.array(list(map(mapping, pred_list)))
     
     ### Get classification scores
@@ -97,16 +94,16 @@ def get_MAP_scores(gt, pred, choices, probs, label_names, unknown_value=0, targe
     labels = labels[labels != unknown_value]
     
     precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
-    results['MAP_classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
-    results['MAP_classification_precision_macro'] = float(np.mean(precisions))
+    results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
+    results['classification_precision_macro'] = float(np.mean(precisions))
     
     recalls = recall_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
-    results['MAP_classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
-    results['MAP_classification_recall_macro'] = float(np.mean(recalls))
+    results['classification_recall'] = {label_names[labels[i]] : float(recalls[i]) for i in range(len(recalls))}
+    results['classification_recall_macro'] = float(np.mean(recalls))
     
     f1s = f1_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
-    results['MAP_classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
-    results['MAP_classification_f1_macro'] = float(np.mean(f1s))
+    results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
+    results['classification_f1_macro'] = float(np.mean(f1s))
     
     results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)
         
@@ -150,45 +147,41 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
   
 
   
-def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, choices = None, probs = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
+def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, mapping_dict = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
     # gt: 1-dim array of gt labels (per frame)
     # pred: 1-dim array of predicted clusters (per frame)
     # label_names: list of behavior label names
     # unknown_value: integer label associated with unknown behavior
-    # choices: dict where choices[i] is a list of allowed values to map cluster i to
-    # probs: dict where probs[i] is a list of probabilites associated with the choies
-    # returns dict of evaluation scores, as well as the dictionaries choices and probs
+    # mapping_dict: dict where mapping_dict[i] the behavior label index that cluster i is sent to under contingency analysis
+    # returns dict of evaluation scores, as well as mapping dict
     
     num_classes = len(label_names)
     
-    # Compute choices and probabilities, essentially from confusion matrix
-    if choices == None:
-      choices, probs = discover_probabilities(gt,
-                                              pred,
-                                              num_clusters = num_clusters,
-                                              num_classes = num_classes,
-                                              unknown_value = unknown_value)
-    
-    mapping_based_score_dict = {}   
+    # Compute mapping dict if None
+    if mapping_dict == None:
+      mapping_dict = contingency_analysis(gt,
+                                          pred,
+                                          num_clusters = num_clusters,
+                                          num_classes = num_classes,
+                                          unknown_value = unknown_value)
     
     if supervised:
-      mapping_based_score_dict['supervised_scores'] = get_supervised_scores(gt,
-                                                                            pred,
-                                                                            label_names,
-                                                                            unknown_value=unknown_value,
-                                                                            target_time_scale_sec = target_time_scale_sec,
-                                                                            sr = sr
-                                                                           )
+      mapping_based_score_dict = get_supervised_scores(gt,
+                                                       pred,
+                                                       label_names,
+                                                       unknown_value=unknown_value,
+                                                       target_time_scale_sec = target_time_scale_sec,
+                                                       sr = sr
+                                                      )
     else:
-      mapping_based_score_dict['MAP_scores'] = get_MAP_scores(gt,
-                                                              pred, 
-                                                              choices,
-                                                              probs,
-                                                              label_names,
-                                                              unknown_value = unknown_value, 
-                                                              target_time_scale_sec = target_time_scale_sec,
-                                                              sr = sr
-                                                             )
+      mapping_based_score_dict = get_unsupervised_scores(gt,
+                                                         pred,
+                                                         mapping_dict,
+                                                         label_names,
+                                                         unknown_value = unknown_value, 
+                                                         target_time_scale_sec = target_time_scale_sec,
+                                                         sr = sr
+                                                        )
     
-    return mapping_based_score_dict, choices, probs
+    return mapping_based_score_dict, mapping_dict
     

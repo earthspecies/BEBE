@@ -6,9 +6,9 @@ import pandas as pd
 import tqdm
 import yaml
 
-def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None, probs = None, target_time_scale_sec = 1.):
+def perform_evaluation(y_true, y_pred, config, output_fp = None, mapping_dict = None, target_time_scale_sec = 1.):
   # y_true, y_pred: list of integers
-  # choices, probs: dictionaries discovered by comparing train predictions with ground truth labels  
+  # mapping_dict: dictionary which sends cluster indices to behavior label indices
   
   evaluation_dict = {}
 
@@ -36,17 +36,16 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
   else: 
     supervised = False
   
-  scores, choices, probs = metrics.mapping_based_scores(y_true,
-                                                        y_pred, 
-                                                        num_clusters, 
-                                                        label_names, 
-                                                        unknown_value = unknown_label,
-                                                        choices = choices,
-                                                        probs = probs,
-                                                        supervised = supervised,
-                                                        target_time_scale_sec = target_time_scale_sec,
-                                                        sr = sr
-                                                       )
+  scores, mapping_dict = metrics.mapping_based_scores(y_true,
+                                                      y_pred, 
+                                                      num_clusters, 
+                                                      label_names, 
+                                                      unknown_value = unknown_label,
+                                                      mapping_dict = mapping_dict,
+                                                      supervised = supervised,
+                                                      target_time_scale_sec = target_time_scale_sec,
+                                                      sr = sr
+                                                     )
   for key in scores:
     evaluation_dict[key] = scores[key]
   
@@ -56,7 +55,7 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, choices = None,
       yaml.dump(evaluation_dict, file)
       
   ## In any case, return as a dict    
-  return evaluation_dict, choices, probs
+  return evaluation_dict, mapping_dict
 
 def generate_predictions(model, config):
   # Generate predictions for each file
@@ -88,11 +87,8 @@ def generate_evaluations(config):
   
   print("saving model outputs to %s " % config['output_dir'])
   
-  # choices and probs are parameters for the mapping based metrics used for unsupervised models
-  # we discover them using the train set on the first loop through
-  
-  choices = None 
-  probs = None
+  # mapping_dict is generated through contingency analysis of train (dev) data  
+  mapping_dict = None 
   
   if config['unsupervised']:
     to_consider = [config['dev_file_ids'], config['test_file_ids']]
@@ -137,6 +133,8 @@ def generate_evaluations(config):
     # Perform Evaluation
     ######
     
+    eval_dict = {}
+    
     # Overall evaluation: Lump all individuals together
     
     all_labels = np.array(all_labels)
@@ -146,15 +144,15 @@ def generate_evaluations(config):
     label_names.remove('unknown')
       
     if file_ids == config['dev_file_ids'] or file_ids == config['train_file_ids']:
-      eval_dict, choices, probs = perform_evaluation(all_labels, all_predictions, config, choices = choices, probs = probs, target_time_scale_sec = time_scale)
+      eval_dict['overall_scores'], mapping_dict = perform_evaluation(all_labels, all_predictions, config, mapping_dict = mapping_dict, target_time_scale_sec = time_scale)
     else: 
-      eval_dict, _, _ = perform_evaluation(all_labels, all_predictions, config, choices = choices, probs = probs, target_time_scale_sec = time_scale)
+      eval_dict['overall_scores'], _ = perform_evaluation(all_labels, all_predictions, config, mapping_dict = mapping_dict, target_time_scale_sec = time_scale)
       
     # Per-individual evaluation: Treat individuals as separate test sets.
     # This gives us more test replicates, to get a better sense of model variance across different individuals
     
     ## We also compute 'individualized' f1 scores, which uses a different method of assigning clusters to labels
-    ## Individualized scores are only relevant to unsupervised models.
+    ## Note individualized scores are only relevant to unsupervised models.
     
     individual_f1s_individualized = {}
     individual_f1s_individualized['per_label'] = {label_name : [] for label_name in label_names} # scores for individualized cluster -> label assignment
@@ -166,29 +164,19 @@ def generate_evaluations(config):
       labels = np.array(all_labels_dict[individual_id])
       individual_time_scale = config['metadata']['mean_dur_sec_by_individual'][individual_id]
 
-      individual_eval_dict_individualized, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = None, probs = None, target_time_scale_sec = individual_time_scale)
+      individual_eval_dict_individualized, _ = perform_evaluation(labels, predictions, config, output_fp = None, mapping_dict = None, target_time_scale_sec = individual_time_scale)
 
       for label_name in label_names:
-        if config['unsupervised']:
-          individual_f1s_individualized['per_label'][label_name].append(individual_eval_dict_individualized['MAP_scores']['MAP_classification_f1'][label_name])
-        else: 
-          individual_f1s_individualized['per_label'][label_name].append(individual_eval_dict_individualized['supervised_scores']['classification_f1'][label_name])
+          individual_f1s_individualized['per_label'][label_name].append(individual_eval_dict_individualized['classification_f1'][label_name])
           
-      individual_eval_dict, _, _ = perform_evaluation(labels, predictions, config, output_fp = None, choices = choices, probs = probs, target_time_scale_sec = individual_time_scale)
-      if config['unsupervised']:
-        individual_scores['macro_f1s'].append(individual_eval_dict['MAP_scores']['MAP_classification_f1_macro'])
-        individual_scores['macro_precisions'].append(individual_eval_dict['MAP_scores']['MAP_classification_precision_macro'])
-        individual_scores['macro_recalls'].append(individual_eval_dict['MAP_scores']['MAP_classification_recall_macro'])
-        individual_scores['time_scale_ratios'].append(individual_eval_dict['MAP_scores']['time_scale_ratio'])
-  
-        macro_f1s_individualized.append(individual_eval_dict_individualized['MAP_scores']['MAP_classification_f1_macro'])
-      else:
-        individual_scores['macro_f1s'].append(individual_eval_dict['supervised_scores']['classification_f1_macro'])
-        individual_scores['macro_precisions'].append(individual_eval_dict['supervised_scores']['classification_precision_macro'])
-        individual_scores['macro_recalls'].append(individual_eval_dict['supervised_scores']['classification_recall_macro'])
-        individual_scores['time_scale_ratios'].append(individual_eval_dict['supervised_scores']['time_scale_ratio'])
-        macro_f1s_individualized.append(individual_eval_dict_individualized['supervised_scores']['classification_f1_macro'])
-                                            
+      individual_eval_dict, _ = perform_evaluation(labels, predictions, config, output_fp = None, mapping_dict = mapping_dict, target_time_scale_sec = individual_time_scale)
+
+      individual_scores['macro_f1s'].append(individual_eval_dict['classification_f1_macro'])
+      individual_scores['macro_precisions'].append(individual_eval_dict['classification_precision_macro'])
+      individual_scores['macro_recalls'].append(individual_eval_dict['classification_recall_macro'])
+      individual_scores['time_scale_ratios'].append(individual_eval_dict['time_scale_ratio'])
+      macro_f1s_individualized.append(individual_eval_dict_individualized['classification_f1_macro'])
+                                           
     eval_dict['individual_scores'] = individual_scores
     
     ######
@@ -224,10 +212,7 @@ def generate_evaluations(config):
     bbvis.confusion_matrix(all_labels, all_predictions, config, target_fp = confusion_target_fp)
     
     # Save 'individualized' scores, i.e. compare individual vs overall performance for different ways of assigning clusters to labels
-    if config['unsupervised']:
-      overall_f1_eval_scores = eval_dict['MAP_scores']['MAP_classification_f1']
-    else:
-      overall_f1_eval_scores = eval_dict['supervised_scores']['classification_f1']
+    overall_f1_eval_scores = eval_dict['overall_scores']['classification_f1']
       
     bbvis.consistency_plot(individual_f1s_individualized['per_label'], overall_f1_eval_scores, config, target_fp = f1_consistency_target_fp)
     
