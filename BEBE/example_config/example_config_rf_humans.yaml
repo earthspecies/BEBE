@@ -1,9 +1,0 @@
-experiment_name: rf
-model: rf
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
-  
-read_latents: false
-
-rf_config:
-  n_jobs : 60

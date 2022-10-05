@@ -1,13 +1,12 @@
-experiment_name: kmeans_wavelet
+experiment_name: kmeans
 model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 
 kmeans_config:
   max_iter: 500
-  n_init: 1
+  n_init: 10
   whiten : false
-  n_components : mle
   wavelet_transform : true
   morlet_w : 20.
   n_wavelets : 25

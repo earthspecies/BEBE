@@ -1,12 +1,7 @@
 experiment_name: umapper
-input_vars:
-- AccX
-- AccY
-- AccZ
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
 model: umapper
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
-num_clusters: 20
 
 umapper_config:
   morlet_w : 1.

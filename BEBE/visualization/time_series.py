@@ -90,7 +90,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
       #     labelbottom=False) # labels along the bottom edge are off
     
       # Max a posteriori assignment clusters -> labels
-      mapping_dict = eval_dict['MAP_scores']['MAP_mapping_dict']
+      mapping_dict = eval_dict['overall_scores']['contingency_analysis_mapping_dict']
       to_plot = class_predictions[start_sample: end_sample]
       to_plot = list(to_plot)
       to_plot = np.array(list(map(lambda x : mapping_dict[x], to_plot)))

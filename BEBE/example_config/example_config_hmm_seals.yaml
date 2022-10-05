@@ -1,16 +1,7 @@
-experiment_name: hmm_sub_sgd
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
-- Depth
+experiment_name: hmm
 model: hmm
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
-num_clusters: 8
   
 hmm_config:
   time_bins : 2500
@@ -18,4 +9,3 @@ hmm_config:
   sticky_prior_strength : 0.
   N_iters : 50
   lags : 0
-  subselect_proportion : .5

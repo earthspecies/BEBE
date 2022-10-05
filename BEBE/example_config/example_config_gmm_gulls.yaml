@@ -1,15 +1,7 @@
 experiment_name: gmm
-input_vars:
-- AccX
-- AccY
-- AccZ
-- StaticAccX
-- StaticAccY
-- StaticAccZ
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/maekawa_gulls
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/maekawa_gulls
-num_clusters: 20
 
 gmm_config:
   max_iter: 500

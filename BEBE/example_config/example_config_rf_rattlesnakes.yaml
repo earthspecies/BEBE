@@ -1,12 +1,7 @@
 experiment_name: rf
-input_vars:
-- AccX
-- AccY
-- AccZ
 model: rf
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/desantis_rattlesnakes
-num_clusters: 8
   
 rf_config:
   context_window_sec : 1
