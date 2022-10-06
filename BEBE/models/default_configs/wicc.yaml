@@ -1,0 +1,29 @@
+save_latents : false
+unsupervised : true
+  
+default_model_config:
+  downsizing_factor : 128
+  lr : 0.01
+  weight_decay : 1e-3
+  n_epochs : 150
+  hidden_size : 8
+  num_layers : 1
+  temporal_window_samples : 512 
+  # used for training only, to subselect
+  batch_size : 512
+  dropout : 0
+  jitter_scale : 0
+  blur_scale : 0
+  state_size : 64
+  downsample_rate : 1
+  context_window_samples : 5
+  max_iter_gmm : 500
+  tau_init : 2.
+  tau_decay_rate : .975
+  feature_expansion_factor : 1
+  diversity_alpha : 0.
+  context_window_stride : 1
+  pseudolabel_dir : null 
+  individualized_head : true
+  per_frame_model : 'gmm'
+  
