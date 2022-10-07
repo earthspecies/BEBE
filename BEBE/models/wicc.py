@@ -182,7 +182,7 @@ class wicc(BehaviorModel):
     
     ## Load up pseudo-labels
     
-    dev_pseudolabels = [self.load_pseudolabels(target_fn = str(Path(fp).stem) + '.npy') for fp in self.config['dev_file_ids']]
+    dev_pseudolabels = [self.load_pseudolabels(str(Path(fp).stem) + '.npy') for fp in self.config['dev_file_ids']]
     
     dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.context_window_stride, self.dim_individual_embedding)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
