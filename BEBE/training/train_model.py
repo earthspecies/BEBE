@@ -26,6 +26,12 @@ def train_model(config):
     
   elif config['model'] == 'random':
     model = models.random(config)
+    
+  elif config['model'] == 'wicc':
+    model = models.wicc(config)
+    
+  elif config['model'] == 'S4_supervised':
+    model = models.S4_supervised(config)
 
   else:
     raise ValueError('model type not recognized')

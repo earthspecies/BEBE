@@ -20,7 +20,7 @@ wicc_config:
   n_epochs: 150
   n_pseudolabels: 50
   num_layers: 2
-  pseudolabel_dir: null
+  pseudolabel_dir: /home/jupyter/behavior_benchmarks_outputs/HAR/wicc/pseudolabels
   rescale_param: 0
   state_size: 64
   tau_decay_rate: 0.975

@@ -6,3 +6,4 @@ from BEBE.models.umapper import umapper
 from BEBE.models.random import random
 from BEBE.models.CRNN import CRNN
 from BEBE.models.rf import rf
+from BEBE.models.wicc import wicc

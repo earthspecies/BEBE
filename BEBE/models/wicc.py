@@ -6,16 +6,18 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
-from behavior_benchmarks.models.wicc_utils import BEHAVIOR_DATASET
+from BEBE.models.wicc_utils import BEHAVIOR_DATASET
 import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
-from behavior_benchmarks.models.model_superclass import BehaviorModel
-from behavior_benchmarks.applications.S4.S4 import S4
+from BEBE.models.model_superclass import BehaviorModel
+from BEBE.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
 import scipy.special as special
 import math
+import pandas as pd
+from pathlib import Path
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -93,6 +95,7 @@ class wicc(BehaviorModel):
     print(_count_parameters(self.encoder))
   
   def load_pseudolabels(self, filename):
+    
     filepath = os.path.join(self.pseudolabel_dir, filename)
     labels = np.load(filepath).astype(int)
     return labels
@@ -148,7 +151,8 @@ class wicc(BehaviorModel):
       for fp in individual_fps:
         data = self.load_model_inputs(fp, read_latents = self.read_latents)
         pseudolabels = per_frame_model.predict(data)
-        target = os.path.join(self.pseudolabel_dir, fp.split('/')[-1])
+        target_fn = str(Path(fp).stem) + '.npy'
+        target = os.path.join(self.pseudolabel_dir, target_fn)
         np.save(target, pseudolabels)
         
     if self.per_frame_model == 'gmm':
@@ -173,11 +177,12 @@ class wicc(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
-    dev_ids = [np.load(fp)[:, -2] for fp in dev_fps] # assumes individual id is in column -2
+    dev_ids = [pd.read_csv(fp, delimiter = ',', header = None).values[:, -2] for fp in dev_fps]
+    # dev_ids = [np.load(fp)[:, -2] for fp in dev_fps] # assumes individual id is in column -2
     
     ## Load up pseudo-labels
     
-    dev_pseudolabels = [self.load_pseudolabels(fp) for fp in self.config['dev_file_ids']]
+    dev_pseudolabels = [self.load_pseudolabels(target_fn = str(Path(fp).stem) + '.npy') for fp in self.config['dev_file_ids']]
     
     dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.context_window_stride, self.dim_individual_embedding)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
@@ -562,42 +567,6 @@ class Decoder(nn.Module):
       logits = torch.transpose(logits, 1, 2)
       
       return logits
-    
-# # Legacy version, memory inefficient 
-# class Decoder(nn.Module): 
-#   # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
-#   def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
-#       super(Decoder, self).__init__()
-#       self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * context_window_samples * dim_individual_embedding, bias = False)
-#       self.n_pseudolabels = n_pseudolabels
-#       self.context_window_samples = context_window_samples
-#       self.dim_individual_embedding = dim_individual_embedding
-      
-#   def forward(self, q, individual_id):
-#       # q: one hot [batch, seq_len, n_clusters]
-#       # individual_id: one_hot [batch, dim_individual_embedding]
-    
-      
-#       logits = self.prediction_head(q) #[batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, context_window * n_pseudolabels * dim_individual_embedding]
-#       size = logits.size()
-      
-#       ##-> [batch, seq_len, n_pseudolabels, context_window, dim_individual_embedding]
-#       logits = logits.view(size[0], size[1], self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)
-      
-#       # zero out dimensions not associated with individual
-#       # unsqueeze so individual id is shape [batch, 1,1,1,dim_individual_embedding]
-#       individual_id = torch.unsqueeze(individual_id, 1)
-#       individual_id = torch.unsqueeze(individual_id, 1)
-#       individual_id = torch.unsqueeze(individual_id, 1)
-#       logits = logits * individual_id 
-      
-#       # -> [batch, seq_len, n_pseudolabels, context_window]
-#       logits = torch.sum(logits, -1, keepdim = False)
-      
-#       # -> [batch, n_pseudolabels, seq_len, context_window]
-#       logits = torch.transpose(logits, 1, 2)
-      
-#       return logits  
 
 class ContextGenerator(nn.Module):
     # [batch, 1, padded_temporal_window] -> [batch, context_window, temporal_window]

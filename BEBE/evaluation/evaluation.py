@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import tqdm
 import yaml
+import warnings
 
 def perform_evaluation(y_true, y_pred, config, output_fp = None, mapping_dict = None, target_time_scale_sec = 1.):
   # y_true, y_pred: list of integers
@@ -29,6 +30,9 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, mapping_dict = 
   # mapping-based
   num_clusters = config['num_clusters']
   label_names = config['metadata']['label_names']
+  
+  if num_clusters != max(20, 4*(len(label_names)-1)):
+    warnings.warn("Using a non-default number of clusters N. Results using different values of N should not be compared to each other.")
   
   # scores for supervised model
   if config['unsupervised'] == False:
