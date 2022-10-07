@@ -17,10 +17,10 @@ wicc_config:
   jitter_scale: 0
   lr: 0.01
   max_iter_gmm: 500
-  n_epochs: 150
+  n_epochs: 50
   n_pseudolabels: 50
   num_layers: 2
-  pseudolabel_dir: /home/jupyter/behavior_benchmarks_outputs/HAR/wicc/pseudolabels
+  # pseudolabel_dir: null
   rescale_param: 0
   state_size: 64
   tau_decay_rate: 0.975
@@ -28,5 +28,5 @@ wicc_config:
   temporal_window_samples: 2048
   weight_decay: 0
   per_frame_model : 'gmm'
-  # pseudolabel_dir : '/home/jupyter/behavior_benchmarks_outputs/HAR/wicc_kmeans/predictions'
+  pseudolabel_dir : /home/jupyter/behavior_benchmarks_outputs/HAR/wicc/pseudolabels
   # individualized_head : false

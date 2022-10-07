@@ -11,13 +11,14 @@ import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
-from BEBE.applications.S4.S4 import S4
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
 import scipy.special as special
 import math
 import pandas as pd
 from pathlib import Path
+from BEBE.applications.S4.S4 import S4
+
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"

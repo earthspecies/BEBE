@@ -6,7 +6,7 @@ from scipy import special as ss
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch_lightning.utilities import rank_zero_only
+#from pytorch_lightning.utilities import rank_zero_only
 from einops import rearrange, repeat
 import opt_einsum as oe
 
@@ -19,11 +19,12 @@ def get_logger(name=__name__, level=logging.INFO) -> logging.Logger:
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
-
+    
+    print("Assuming single-GPU setup for logging")
     # this ensures all logging levels get marked with the rank zero decorator
     # otherwise logs would get multiplied for each GPU process in multi-GPU setup
-    for level in ("debug", "info", "warning", "error", "exception", "fatal", "critical"):
-        setattr(logger, level, rank_zero_only(getattr(logger, level)))
+    # for level in ("debug", "info", "warning", "error", "exception", "fatal", "critical"):
+    #     setattr(logger, level, rank_zero_only(getattr(logger, level)))
 
     return logger
 log = get_logger(__name__)

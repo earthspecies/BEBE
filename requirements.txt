@@ -23,3 +23,5 @@ tqdm==4.62.3
 umap==0.1.1
 umap_learn==0.5.2
 opencv-python==4.6.0.66
+einops
+opt_einsum

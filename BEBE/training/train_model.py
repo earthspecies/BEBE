@@ -1,40 +1,56 @@
-import BEBE.models as models
+from BEBE.models.kmeans import kmeans
+from BEBE.models.vame import vame
+from BEBE.models.hmm import hmm
+from BEBE.models.umapper import umapper
+from BEBE.models.random import random
+from BEBE.models.CRNN import CRNN
+from BEBE.models.rf import rf
 
 def train_model(config):
   ## Instantiate model
 
   if config['model'] == 'gmm':
-    model = models.gmm(config)
+    from BEBE.models.gmm import gmm as m
     
   elif config['model'] == 'kmeans':
-    model = models.kmeans(config)
+    from BEBE.models.kmeans import kmeans as m
+    #model = models.kmeans(config)
     
   elif config['model'] == 'vame':
-    model = models.vame(config)
+    from BEBE.models.vame import vame as m
+    #model = models.vame(config)
     
   elif config['model'] == 'hmm':
-    model = models.hmm(config)
+    from BEBE.models.hmm import hmm as m
+    #model = models.hmm(config)
     
   elif config['model'] == 'CRNN':
-    model = models.CRNN(config)
+    from BEBE.models.CRNN import CRNN as m
+    #model = models.CRNN(config)
     
   elif config['model'] == 'umapper':
-    model = models.umapper(config)
+    from BEBE.models.umapper import umapper as m
+    #model = models.umapper(config)
     
   elif config['model'] == 'rf':
-    model = models.rf(config)
+    from BEBE.models.rf import rf as m
+    #model = models.rf(config)
     
   elif config['model'] == 'random':
-    model = models.random(config)
+    from BEBE.models.random import random as m
+    #model = models.random(config)
     
   elif config['model'] == 'wicc':
-    model = models.wicc(config)
+    from BEBE.models.wicc import wicc as m
+    #model = wicc(config)
     
   elif config['model'] == 'S4_supervised':
     model = models.S4_supervised(config)
 
   else:
     raise ValueError('model type not recognized')
+    
+  model = m(config)
 
   # Train model
   print("Training model")
