@@ -17,8 +17,7 @@ import scipy.special as special
 import math
 import pandas as pd
 from pathlib import Path
-from BEBE.applications.S4.S4 import S4
-
+from BEBE.models.S4_utils import Encoder
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -75,7 +74,6 @@ class wicc(BehaviorModel):
       self.dim_individual_embedding = 1
     
     self.encoder =  Encoder(self.n_features,
-                            self.n_clusters,
                             hidden_size = self.hidden_size,
                             state_size = self.state_size,
                             n_s4_blocks = self.n_s4_blocks,
@@ -84,6 +82,8 @@ class wicc(BehaviorModel):
                             dropout = self.dropout,
                             blur_scale = self.blur_scale,
                             jitter_scale = self.jitter_scale).to(device)
+    
+    self.encoder_head =  nn.Linear(self.encoder.output_dims, self.n_clusters).to(device)
     
     self.decoder = Decoder(self.n_clusters,
                            self.n_pseudolabels,
@@ -191,7 +191,7 @@ class wicc(BehaviorModel):
     loss_fn = nn.CrossEntropyLoss(ignore_index = -1)
     diversity_loss_fn = DiversityLoss(alpha = self.diversity_alpha, n_clusters = self.n_clusters)
     
-    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}], lr=self.lr, amsgrad = True)
+    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.encoder_head.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}], lr=self.lr, amsgrad = True)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
     
@@ -338,6 +338,8 @@ class wicc(BehaviorModel):
   def train_epoch(self, t, dataloader, loss_fn, diversity_loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.encoder.train()
+    self.encoder_head.train()
+    self.decoder.train()
     gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
     acc_score = torchmetrics.Accuracy(mdmc_average = 'global').to(device)
     train_loss = 0
@@ -363,7 +365,8 @@ class wicc(BehaviorModel):
         individual_id = individual_id.to(device = device, dtype = torch.float)
         
         # Compute prediction error
-        latent_logits = self.encoder(X)
+        latents = self.encoder(X)
+        latent_logits = self.encoder_head(latents)
         diversity_loss = diversity_loss_fn(latent_logits)
         q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1) # [batch, seq_len, n_clusters]
         logits = self.decoder(q, individual_id)
@@ -401,6 +404,8 @@ class wicc(BehaviorModel):
   
   def predict(self, data):
       self.encoder.eval()
+      self.encoder_head.eval()
+      self.decoder.eval()
       alldata= data
 
       predslist = []
@@ -414,7 +419,8 @@ class wicc(BehaviorModel):
         with torch.no_grad():
           data = np.expand_dims(data, axis =0)
           data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
-          preds = self.encoder(data)
+          latents = self.encoder(data)
+          preds = self.encoder_head(latents)
           preds = preds.cpu().detach().numpy()
           preds = np.squeeze(preds, axis = 0)
           preds = np.argmax(preds, axis = -1).astype(np.uint8)
@@ -426,7 +432,8 @@ class wicc(BehaviorModel):
       with torch.no_grad():
         data = np.expand_dims(data, axis =0)
         data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
-        preds = self.encoder(data)
+        latents = self.encoder(data)
+        preds = self.encoder_head(latents)
         preds = preds.cpu().detach().numpy()
         preds = np.squeeze(preds, axis = 0)
         preds = np.argmax(preds, axis = -1).astype(np.uint8)
@@ -436,93 +443,6 @@ class wicc(BehaviorModel):
       preds = np.concatenate(predslist)
       return preds, None  
       
-class S4Block(nn.Module):
-    def __init__(self, H, N, dropout= 0.):
-      super(S4Block, self).__init__()
-      self.ln1 = nn.LayerNorm(H)
-      self.s4 = S4(H, d_state = N, bidirectional = True, dropout = dropout, transposed = False)
-      self.ln2 = nn.LayerNorm(H)
-      self.linear2 = nn.Linear(H, 2*H)
-      self.linear3 = nn.Linear(2*H, H)
-      
-    def forward(self, x):
-      y = x
-      x = self.ln1(x)
-      x = self.s4(x)[0]
-      x = y+ x
-      
-      y = x
-      x = self.ln2(x)
-      x = self.linear2(x)
-      x = nn.functional.gelu(x)
-      x = self.linear3(x)
-      x = y+ x
-      return x
-
-class Encoder(nn.Module):
-    def __init__(self, n_features, n_clusters, hidden_size, state_size, n_s4_blocks, downsample_rate, feature_expansion_factor, dropout, blur_scale = 0, jitter_scale = 0):
-        super(Encoder, self).__init__()
-        self.blur_scale = blur_scale
-        self.jitter_scale = jitter_scale
-        
-        self.embedding = nn.Linear(n_features, hidden_size)
-        
-        self.bn = nn.BatchNorm1d(n_features)
-        self.downsample_rate = downsample_rate
-        self.down1 = nn.Conv1d(hidden_size, feature_expansion_factor * hidden_size, self.downsample_rate, stride = self.downsample_rate)
-        self.down2 = nn.Conv1d(feature_expansion_factor * hidden_size, (feature_expansion_factor ** 2) * hidden_size, self.downsample_rate, stride = self.downsample_rate)
-        
-        self.s4_blocks_1 = nn.ModuleList([S4Block(hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
-        self.s4_blocks_2 = nn.ModuleList([S4Block(feature_expansion_factor * hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
-        self.s4_blocks_3 = nn.ModuleList([S4Block((feature_expansion_factor ** 2) * hidden_size, state_size, dropout = dropout) for i in range(n_s4_blocks)])
-        self.head = nn.Conv1d((feature_expansion_factor ** 2) * hidden_size, n_clusters, 1, padding = 'same')
-        
-    def forward(self, x):
-        seq_len = x.size()[-2]
-        
-        x = torch.transpose(x, -1, -2)
-        x = self.bn(x)
-        x = torch.transpose(x, -1, -2)
-        
-        if self.training:
-          # Perform augmentations to normalized data
-          size = x.size()
-          if self.blur_scale:
-            blur = self.blur_scale * torch.randn(size, device = x.device)
-          else:
-            blur = 0.
-          if self.jitter_scale:
-            jitter = self.jitter_scale *torch.randn((size[0], 1, size[2]), device = x.device)
-          else:
-            jitter = 0.
-          x = x + blur + jitter 
-        
-        x = self.embedding(x)
-        
-        for block in self.s4_blocks_1:
-          x = block(x)
-          
-        x = torch.transpose(x, -1, -2)
-        x = self.down1(x)
-        x = torch.transpose(x, -1, -2)
-        
-        for block in self.s4_blocks_2:
-          x = block(x)
-          
-        x = torch.transpose(x, -1, -2)
-        x = self.down2(x)
-        x = torch.transpose(x, -1, -2)
-        
-        for block in self.s4_blocks_3:
-          x = block(x)
-        
-        x = torch.transpose(x, 1,2) # [batch, seq_len, n_features] -> [batch, n_features, seq_len]
-        logits = self.head(x) # -> [batch, n_clusters, seq_len]
-        
-        logits = nn.functional.interpolate(logits, size=seq_len, mode='nearest-exact')
-        logits = torch.transpose(logits, 1,2) # -> [batch, seq_len, n_clusters]
-        return logits  
-
 class Decoder(nn.Module):
   # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
   def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
@@ -594,3 +514,6 @@ class DiversityLoss(nn.Module):
         avg_probs = torch.mean(probs, dim = [0, 1]) # -> [n_clusters]
         d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7))))        
         return d
+      
+      
+

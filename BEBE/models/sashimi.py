@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
 import pandas as pd
+from BEBE.applications.S4.sashimi import Sashimi as backbone
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -19,52 +20,54 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 def _count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-class CRNN(BehaviorModel):
+class sashimi(BehaviorModel):
   def __init__(self, config):
-    super(CRNN, self).__init__(config)
+    super(sashimi, self).__init__(config)
     print(f"Using {device} device")
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     
     ##
-    
-    self.conv_depth = self.model_config['conv_depth']
-    self.ker_size = self.model_config['ker_size']
-    self.dilation = self.model_config['dilation']
-    self.gru_depth = self.model_config['gru_depth']
-    self.gru_hidden_size = self.model_config['gru_hidden_size']
-    
+    ##
     self.downsizing_factor = self.model_config['downsizing_factor']
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
     self.n_epochs = self.model_config['n_epochs']
-    self.hidden_size = self.model_config['hidden_size']
-    self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
     self.blur_scale = self.model_config['blur_scale']
     self.jitter_scale = self.model_config['jitter_scale']
+    self.temporal_window_samples = self.model_config['temporal_window_samples']
     self.rescale_param = self.model_config['rescale_param']
     self.sparse_annotations = self.model_config['sparse_annotations']
+    
+    self.hidden_size=self.model_config['hidden_size']
+    self.n_layers= self.model_config['n_layers']
+    self.pool= self.model_config['pool']
+    self.expand= self.model_config['expand']
+    self.ff= self.model_config['ff']
+    
+    
+    assert self.temporal_window_samples % int(np.prod(self.pool)) == 0, 'downsampling must divide temporal_window_samples'
+    ##
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
-    
+        
     self.model = Classifier(self.n_features,
                             self.n_classes,
-                            self.conv_depth,
-                            self.ker_size,
                             self.hidden_size,
-                            self.dilation,
-                            self.gru_depth,
-                            self.gru_hidden_size,
+                            self.n_layers,
+                            self.pool,
+                            self.expand,
+                            self.ff,
                             dropout = self.dropout,
                             blur_scale = self.blur_scale,
                             jitter_scale = self.jitter_scale).to(device)
     
-    print(self.model)
+    #print(self.model)
     print('Model parameters:')
     print(_count_parameters(self.model))
   
@@ -273,8 +276,14 @@ class CRNN(BehaviorModel):
   def predict(self, data):
     ###
     self.model.eval()
+    alldata= data
     
-    alldata= data    
+    alldata= data
+    alldata_len = np.shape(alldata)[0]
+    total_downsample = int(np.prod(self.pool)) # sequence length should be divisible by total_downsample in order to downsample
+    pad_len = (total_downsample - alldata_len % total_downsample) % total_downsample
+    alldata = np.pad(alldata, ((0, pad_len), (0, 0)))
+    
     predslist = []
     pred_len = self.temporal_window_samples
     for i in range(0, np.shape(alldata)[0], pred_len):
@@ -287,78 +296,31 @@ class CRNN(BehaviorModel):
         preds = preds.cpu().detach().numpy()
         preds = np.squeeze(preds, axis = 0)
         preds = np.argmax(preds, axis = 0).astype(np.uint8)
-        
         predslist.append(preds)
+        
     preds = np.concatenate(predslist)
+    preds = preds[:alldata_len]
     return preds, None  
 
-
 class Classifier(nn.Module):
-    def __init__(self, n_features, n_classes, conv_depth, ker_size, hidden_size, dilation, gru_depth, gru_hidden_size, dropout, blur_scale = 0, jitter_scale = 0):
+    def __init__(self, n_features, n_classes, d_model, n_layers, pool, expand, ff, dropout, blur_scale = 0, jitter_scale = 0):
         super(Classifier, self).__init__()
-        self.blur_scale = blur_scale
-        self.jitter_scale = jitter_scale
         
-        self.bn = nn.BatchNorm1d(n_features)
-        
-        n_head_input_features = n_features
-        n_gru_input_features = n_features
-        
-        self.conv_depth = conv_depth
-        self.conv = []
-        if self.conv_depth > 0:
-          n_head_input_features = hidden_size
-          n_gru_input_features = hidden_size
-          self.conv = [_conv_block_1d(n_features, hidden_size, ker_size, dilation = dilation)]
-          for i in range(conv_depth - 1):
-            self.conv.append(_conv_block_1d(hidden_size, hidden_size, ker_size, dilation = dilation))
-        
-        self.conv = nn.ModuleList(self.conv)
-        
-        self.gru_depth = gru_depth
-        
-        if self.gru_depth > 0:
-          n_head_input_features = gru_hidden_size * 2
-          self.gru = nn.GRU(n_gru_input_features, gru_hidden_size, num_layers = gru_depth, bidirectional = True, batch_first = True, dropout = dropout)
-        
-        self.head = nn.Linear(n_head_input_features, n_classes)
-        
+        self.pre_embedding = nn.Linear(n_features, d_model)
+        self.encoder = backbone(d_model=d_model,
+                                n_layers=n_layers,
+                                pool=pool,
+                                expand=expand,
+                                ff=ff,
+                                bidirectional=True,
+                                unet=True,
+                                dropout=dropout)
+        self.head = nn.Linear(d_model, n_classes)
         
     def forward(self, x):
-        # X is [batch, seq_len, channels]
-        seq_len = x.size()[-2]
-        
-        x = torch.transpose(x, -1, -2)
-        x = self.bn(x)
-        
-        if self.training:
-          # Perform augmentations to normalized data
-          size = x.size()
-          if self.blur_scale:
-            blur = self.blur_scale * torch.randn(size, device = x.device)
-          else:
-            blur = 0.
-          if self.jitter_scale:
-            jitter = self.jitter_scale *torch.randn((size[0], 1, size[2]), device = x.device)
-          else:
-            jitter = 0.
-          x = x + blur + jitter 
-        
-        for block in self.conv:
-          x = block(x)
-        
-        x = torch.transpose(x, -1, -2)
-        
-        if self.gru_depth > 0:
-          x, _ = self.gru(x)
-        logits = self.head(x)
-        logits = torch.transpose(logits, -1, -2)
-        return logits  
-
-def _conv_block_1d(in_channels, out_channels, kernel_size, dilation = 1):
-  block = nn.Sequential(
-    nn.Conv1d(in_channels, out_channels, kernel_size, dilation = dilation, padding='same', bias=False),
-    torch.nn.BatchNorm1d(out_channels),
-    nn.ReLU()
-  )
-  return block
+        x = self.pre_embedding(x)
+        x = self.encoder(x)[0]
+        x = self.head(x)
+        logits = torch.transpose(x, -1, -2)
+        return logits
+      

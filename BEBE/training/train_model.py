@@ -1,10 +1,10 @@
-from BEBE.models.kmeans import kmeans
-from BEBE.models.vame import vame
-from BEBE.models.hmm import hmm
-from BEBE.models.umapper import umapper
-from BEBE.models.random import random
-from BEBE.models.CRNN import CRNN
-from BEBE.models.rf import rf
+# from BEBE.models.kmeans import kmeans
+# from BEBE.models.vame import vame
+# from BEBE.models.hmm import hmm
+# from BEBE.models.umapper import umapper
+# from BEBE.models.random import random
+# from BEBE.models.CRNN import CRNN
+# from BEBE.models.rf import rf
 
 def train_model(config):
   ## Instantiate model
@@ -44,8 +44,8 @@ def train_model(config):
     from BEBE.models.wicc import wicc as m
     #model = wicc(config)
     
-  elif config['model'] == 'S4_supervised':
-    model = models.S4_supervised(config)
+  elif config['model'] == 'sashimi':
+    from BEBE.models.sashimi import sashimi as m
 
   else:
     raise ValueError('model type not recognized')

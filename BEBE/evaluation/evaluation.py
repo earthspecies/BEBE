@@ -31,14 +31,11 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, mapping_dict = 
   num_clusters = config['num_clusters']
   label_names = config['metadata']['label_names']
   
-  if num_clusters != max(20, 4*(len(label_names)-1)):
-    warnings.warn("Using a non-default number of clusters N. Results using different values of N should not be compared to each other.")
-  
-  # scores for supervised model
-  if config['unsupervised'] == False:
-    supervised = True
-  else: 
-    supervised = False
+  # # scores for supervised model
+  # if config['unsupervised'] == False:
+  #   supervised = True
+  # else: 
+  #   supervised = False
   
   scores, mapping_dict = metrics.mapping_based_scores(y_true,
                                                       y_pred, 
@@ -46,7 +43,7 @@ def perform_evaluation(y_true, y_pred, config, output_fp = None, mapping_dict = 
                                                       label_names, 
                                                       unknown_value = unknown_label,
                                                       mapping_dict = mapping_dict,
-                                                      supervised = supervised,
+                                                      supervised = not config['unsupervised'],
                                                       target_time_scale_sec = target_time_scale_sec,
                                                       sr = sr
                                                      )
@@ -96,6 +93,8 @@ def generate_evaluations(config):
   
   if config['unsupervised']:
     to_consider = [config['dev_file_ids'], config['test_file_ids']]
+    if config['num_clusters'] != max(20, 4*(len(label_names)-1)):
+      warnings.warn("Using a non-default number of clusters N. Results using different values of N should not be compared to each other.")
   else:
     to_consider = [config['train_file_ids'], config['val_file_ids'], config['test_file_ids']]
   
