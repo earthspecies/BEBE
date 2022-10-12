@@ -305,7 +305,10 @@ class sashimi(BehaviorModel):
 class Classifier(nn.Module):
     def __init__(self, n_features, n_classes, d_model, n_layers, pool, expand, ff, dropout, blur_scale = 0, jitter_scale = 0):
         super(Classifier, self).__init__()
+        self.blur_scale = blur_scale
+        self.jitter_scale = jitter_scale
         
+        self.bn = nn.BatchNorm1d(n_features)
         self.pre_embedding = nn.Linear(n_features, d_model)
         self.encoder = backbone(d_model=d_model,
                                 n_layers=n_layers,
@@ -318,6 +321,23 @@ class Classifier(nn.Module):
         self.head = nn.Linear(d_model, n_classes)
         
     def forward(self, x):
+        x = torch.transpose(x, -1, -2)
+        x = self.bn(x)
+        x = torch.transpose(x, -1, -2)
+        
+        if self.training:
+          # Perform augmentations to normalized data
+          size = x.size()
+          if self.blur_scale:
+            blur = self.blur_scale * torch.randn(size, device = x.device)
+          else:
+            blur = 0.
+          if self.jitter_scale:
+            jitter = self.jitter_scale *torch.randn((size[0], 1, size[2]), device = x.device)
+          else:
+            jitter = 0.
+          x = x + blur + jitter 
+      
         x = self.pre_embedding(x)
         x = self.encoder(x)[0]
         x = self.head(x)
