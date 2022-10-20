@@ -6,16 +6,18 @@ Each dataset consists of a number of csv files, which are all of the format `[n_
 
 The task is to predict, for each sample, the behavior label (supervised) or cluster index (unsupervised). So models should output predictions of the form `[n_samples,]`, where each entry is an integer. 
 
-In the code, the data is split into `train`, `val`, and `test` sets. For training unsupervised models, and also for training supervised models after performing hyperparameter selection, we use both `train` and `val` sets. These two sets together are called the `dev` set. Note this differs from the terminology in the manuscript (where `val` isn't mentioned by name, and where `dev` is called the train set).
+In the code, the data is split into `train`, `val`, and `test` sets. For training unsupervised models, and also for training supervised models after performing hyperparameter selection, we use both `train` and `val` sets. These two sets together are called the `dev` set. Note this differs from the terminology in the article (where `val` isn't mentioned by name, and where `dev` is called the train set).
 
 In order to evaluate model performance, we compute classification metrics using predicted behavior labels. We also compute `time scale ratio`, which is supposed to capture how over- or under-segmented the predictions are compared to the ground truth labels. For unsupervised models, it is necessary to also perform the contingency analysis step described in the manuscript.
 
-For all performence scores, we average scores across all individuals being used for evaluation. These `individual_scores` are reported in `test_eval.yaml`, as well as `dev_eval.yaml` (for unsupervised models). To obtain the final scores we report in the manuscript, individual scores are also averaged across three training runs.
+For all performence scores, we average scores across all individuals being used for evaluation. These `individual_scores` are reported in `test_eval.yaml`, as well as `dev_eval.yaml` (for unsupervised models). To obtain the final scores we report in the manuscript, individual scores are also averaged across three training runs. Evaluation files also report `overall_scores`, which are not documented in the paper. These are scores taken across the entire data split, without regards to individuals (i.e., macro-averaged by behavior class but micro-averaged by individual).
 
 ## Install necessary Python packages:
 
 ```
-cat requirements.txt | sed -e '/^\s*#.*$/d' -e '/^\s*$/d' | xargs -n 1 python -m pip install
+conda create -n BEBE python=3.7 pytorch cudatoolkit=11.3 torchvision torchaudio cudnn -c pytorch -c conda-forge
+conda activate BEBE
+pip install -r requirements.txt
 pip install -e BEBE/applications/ssm/
 ```
 

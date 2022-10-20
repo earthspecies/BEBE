@@ -93,7 +93,7 @@ def generate_evaluations(config):
   
   if config['unsupervised']:
     to_consider = [config['dev_file_ids'], config['test_file_ids']]
-    if config['num_clusters'] != max(20, 4*(len(label_names)-1)):
+    if config['num_clusters'] != max(20, 4*(len(config['metadata']['label_names'])-1)):
       warnings.warn("Using a non-default number of clusters N. Results using different values of N should not be compared to each other.")
   else:
     to_consider = [config['train_file_ids'], config['val_file_ids'], config['test_file_ids']]
