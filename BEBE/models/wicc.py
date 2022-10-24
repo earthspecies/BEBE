@@ -345,7 +345,9 @@ class wicc(BehaviorModel):
     train_loss = 0
     train_predictions_loss = 0
     train_diversity_loss = 0
+    train_ts_loss = 0
     num_batches_seen = 0
+    ts_loss_fn = TimeScaleLoss()
     
     num_batches_todo = 1 + len(dataloader) // self.downsizing_factor
     with tqdm.tqdm(dataloader, unit = "batch", total = num_batches_todo) as tepoch:
@@ -368,13 +370,16 @@ class wicc(BehaviorModel):
         latents = self.encoder(X)
         latent_logits = self.encoder_head(latents)
         diversity_loss = diversity_loss_fn(latent_logits)
+        
         q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1) # [batch, seq_len, n_clusters]
+        ts_loss = ts_loss_fn(q)
         logits = self.decoder(q, individual_id)
         predictions_loss = loss_fn(logits, y) 
-        loss = predictions_loss + diversity_loss
+        loss = predictions_loss + diversity_loss + ts_loss
         train_loss += loss.item()
         train_predictions_loss += predictions_loss.item()
         train_diversity_loss += diversity_loss.item()
+        train_ts_loss += ts_loss.item()
         
         labels_adjusted = y
         labels_adjusted = torch.maximum(labels_adjusted, torch.zeros_like(labels_adjusted)) # torchmetrics doesn't handle -1 labels so we treat them as gmm cluster number 0. introduces small error
@@ -392,8 +397,9 @@ class wicc(BehaviorModel):
     # acc = 0.
     train_predictions_loss = train_predictions_loss / num_batches_seen
     train_diversity_loss = train_diversity_loss / num_batches_seen
+    train_ts_loss = train_ts_loss / num_batches_seen
     train_loss = train_loss / num_batches_seen
-    print("Train loss: %f, Prediction loss %f, Diversity loss %f, Train accuracy: %f, Temperature: %f" % (train_loss, train_predictions_loss, train_diversity_loss, acc, gumbel_tau))
+    print("Train loss: %f, Prediction loss %f, Diversity loss %f, Time Scale loss %f, Train accuracy: %f, Temperature: %f" % (train_loss, train_predictions_loss, train_diversity_loss, train_ts_loss, acc, gumbel_tau))
     return train_loss, train_predictions_loss, train_diversity_loss, acc
     
   def save(self):
@@ -515,5 +521,24 @@ class DiversityLoss(nn.Module):
         d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7))))        
         return d
       
-      
-
+class TimeScaleLoss(nn.Module):
+    def __init__(self):
+        super(TimeScaleLoss, self).__init__()
+        desired_sec_per_label = 120
+        desired_labels_per_sec = 1. / desired_sec_per_label
+        n_labels = 4
+        n_clusters = 20
+        sr = 5
+        self.target_ratio = (desired_labels_per_sec * n_clusters) / (sr * n_labels)
+        self.temporal_window_samples = 2048
+        
+    def forward(self, x):
+        # compute number of transitions
+        diff = torch.nn.functional.relu(x[:, 1:, :] - x[:, :-1, :])
+        diff = torch.sum(diff, axis = -1)
+        
+        # avg number of clusters/sample
+        actual_ratio = torch.mean(diff) + (1./self.temporal_window_samples)        
+        loss = 8*(actual_ratio - self.target_ratio)**2 
+        return loss
+        
