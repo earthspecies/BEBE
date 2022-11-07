@@ -52,25 +52,25 @@ class BEHAVIOR_DATASET(Dataset):
         else:
           individual_id = 0
         
-        pad_left = (self.context_window_samples - 1) // 2
-        pad_right = self.context_window_samples - 1 - pad_left
+#         pad_left = (self.context_window_samples - 1) // 2
+#         pad_right = self.context_window_samples - 1 - pad_left
         
-        pad_left = pad_left * self.context_window_stride
-        pad_right = pad_right * self.context_window_stride
+#         pad_left = pad_left * self.context_window_stride
+#         pad_right = pad_right * self.context_window_stride
         
-        padded_labels = np.pad(labels_item, (pad_left, pad_right), mode = 'constant', constant_values = -1)
-        # context_labels = []
-        
-#         for i in range(0, self.context_window_stride * self.context_window_samples, self.context_window_stride):
-#           context_labels.append(padded_labels[i: i + self.temporal_window])
-          
-#         context_labels = np.stack(context_labels, axis = -1) #[temporal_window, context_window_samples]
-        
-        # convert individual_id to one_hot [dim_individual_embedding]
+#         padded_labels = np.pad(labels_item, (pad_left, pad_right), mode = 'constant', constant_values = -1)
+#         # context_labels = []
+
+# #         for i in range(0, self.context_window_stride * self.context_window_samples, self.context_window_stride):
+# #           context_labels.append(padded_labels[i: i + self.temporal_window])
+
+# #         context_labels = np.stack(context_labels, axis = -1) #[temporal_window, context_window_samples]
+
+#         # convert individual_id to one_hot [dim_individual_embedding]
         individual_id_one_hot = np.zeros((self.dim_individual_embedding,))
         individual_id_one_hot[individual_id] = 1.
         
         
-        return torch.from_numpy(data_item), torch.from_numpy(padded_labels), torch.from_numpy(individual_id_one_hot)
+        return torch.from_numpy(data_item), torch.from_numpy(labels_item), torch.from_numpy(individual_id_one_hot)
 
   

@@ -1,0 +1,31 @@
+experiment_name: wicc_hmm_6
+model: wicc
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs
+  
+wicc_config:
+  batch_size: 1
+  blur_scale: 0
+  context_window_samples: 101
+  context_window_stride: 2
+  diversity_alpha: 40.0
+  downsample_rate: 1
+  downsizing_factor: 10000
+  dropout: 0
+  feature_expansion_factor: 1
+  hidden_size: 64
+  individualized_head: true
+  jitter_scale: 0
+  lr: 0.001
+  max_iter_gmm: 500
+  n_epochs: 100
+  n_pseudolabels: 50
+  num_layers: 4
+  per_frame_model: gmm
+  pseudolabel_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs/wicc_hmm/pseudolabels
+  rescale_param: 0
+  state_size: 64
+  tau_decay_rate: 0.985
+  tau_init: 2.0
+  temporal_window_samples: 100000
+  weight_decay: 0.001

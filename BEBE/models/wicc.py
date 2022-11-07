@@ -19,6 +19,8 @@ import pandas as pd
 from pathlib import Path
 from BEBE.models.S4_utils import Encoder
 
+pool_rate = 32
+
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -90,7 +92,12 @@ class wicc(BehaviorModel):
                            self.context_window_samples,
                            self.dim_individual_embedding).to(device)
     
-    self.context_generator = ContextGenerator(self.context_window_samples, self.context_window_stride).to(device)
+    self.mu_decoder= MuDecoder(self.n_clusters,
+                               self.n_pseudolabels,
+                               self.context_window_samples,
+                               self.dim_individual_embedding).to(device)
+    
+    self.context_generator = ContextGenerator(self.context_window_samples, self.context_window_stride, self.n_pseudolabels).to(device)
     
     print('Encoder parameters:')
     print(_count_parameters(self.encoder))
@@ -98,7 +105,8 @@ class wicc(BehaviorModel):
   def load_pseudolabels(self, filename):
     
     filepath = os.path.join(self.pseudolabel_dir, filename)
-    labels = np.load(filepath).astype(int)
+    #labels = np.load(filepath).astype(int)
+    labels = pd.read_csv(filepath, delimiter = ',', header = None).values.astype(int).flatten()
     return labels
   
   def generate_pseudolabels(self):
@@ -136,7 +144,7 @@ class wicc(BehaviorModel):
         sigma = np.std(dev_data, axis = 0, keepdims = True)
         dev_data = (dev_data - mu) / (sigma + 1e-6)
         
-        per_frame_model = KMeans(n_clusters=self.n_pseudolabels, n_init=10, max_iter=self.max_iter_gmm, verbose=0)
+        per_frame_model = KMeans(n_clusters=self.n_pseudolabels, n_init=1, max_iter=self.max_iter_gmm, verbose=0)
       
       per_frame_model.fit(dev_data)
       
@@ -152,9 +160,10 @@ class wicc(BehaviorModel):
       for fp in individual_fps:
         data = self.load_model_inputs(fp, read_latents = self.read_latents)
         pseudolabels = per_frame_model.predict(data)
-        target_fn = str(Path(fp).stem) + '.npy'
+        target_fn = str(Path(fp).stem) + '.csv'
         target = os.path.join(self.pseudolabel_dir, target_fn)
-        np.save(target, pseudolabels)
+        #np.save(target, pseudolabels)
+        pd.DataFrame(pseudolabels.astype('int')).to_csv(target, index = False, header = False)
         
     if self.per_frame_model == 'gmm':
       gmm_ms = {}    
@@ -183,15 +192,15 @@ class wicc(BehaviorModel):
     
     ## Load up pseudo-labels
     
-    dev_pseudolabels = [self.load_pseudolabels(str(Path(fp).stem) + '.npy') for fp in self.config['dev_file_ids']]
+    dev_pseudolabels = [self.load_pseudolabels(fn) for fn in self.config['dev_file_ids']]
     
     dev_dataset = BEHAVIOR_DATASET(dev_data, dev_pseudolabels, dev_ids, True, self.temporal_window_samples, self.context_window_samples, self.context_window_stride, self.dim_individual_embedding)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
-    loss_fn = nn.CrossEntropyLoss(ignore_index = -1)
+    loss_fn = MarkovMLELoss() #nn.CrossEntropyLoss(ignore_index = -1)
     diversity_loss_fn = DiversityLoss(alpha = self.diversity_alpha, n_clusters = self.n_clusters)
     
-    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.encoder_head.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}], lr=self.lr, amsgrad = True)
+    optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.encoder_head.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.decoder.parameters()}, {'params' : self.mu_decoder.parameters()}], lr=self.lr, amsgrad = True)
     
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=0, last_epoch=- 1, verbose=False)
     
@@ -271,60 +280,60 @@ class wicc(BehaviorModel):
     lr_fp = os.path.join(self.config['output_dir'], 'learning_rate.png')
     fig.savefig(lr_fp)
     plt.close()
-    
-    # Cluster visualizations
-    #w = self.decoder.weight.data.cpu().view((self.n_pseudolabels, self.context_window_samples, -1, self.n_clusters)).numpy() 
-    w = self.decoder.weight.data.cpu().view((self.n_clusters, self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)).numpy() 
-    w = np.transpose(w, (1, 2, 3, 0))
-    
-    
-    dev_individual_ids = []
-    for fp in self.config['metadata']['dev_clip_ids']: # search for files associated with that target_individual
-        clip_id = fp.split('/')[-1].split('.')[0]
-        individual_id = self.config['metadata']['clip_id_to_individual_id'][clip_id]
-        dev_individual_ids.append(individual_id)
 
-    dev_individual_ids = sorted(set(dev_individual_ids))
-    fig = plt.figure(figsize=(15, 15))
-    ax = plt.subplot(111)
-    ax.spines['top'].set_color('none')
-    ax.spines['bottom'].set_color('none')
-    ax.spines['left'].set_color('none')
-    ax.spines['right'].set_color('none')
-    ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
-    ax.set_title("Visualization of cluster meaning for different individuals")
+#     # Cluster visualizations
+#     #w = self.decoder.weight.data.cpu().view((self.n_pseudolabels, self.context_window_samples, -1, self.n_clusters)).numpy() 
+#     w = self.decoder.weight.data.cpu().view((self.n_clusters, self.n_pseudolabels, self.context_window_samples, self.dim_individual_embedding)).numpy() 
+#     w = np.transpose(w, (1, 2, 3, 0))
 
-    n_rows = min(5, self.n_clusters)
-    n_cols = min(5, len(dev_individual_ids))
 
-    for i in range(n_rows):
-        for k in range(n_cols):
-            axs = fig.add_subplot(n_rows, n_cols, 1 + n_cols * i + k)
-            if self.individualized_head:
-              ind = dev_individual_ids[k]
-            else:
-              ind = 0
-            x = w[:, :, ind, i]
-            # softmax over pseudolabels
-            x = special.softmax(x, axis = 0) 
-            for j in range(self.n_pseudolabels):
-                axs.plot(x[j, :])
-            axs.tick_params(
-                axis='x',          # changes apply to the x-axis
-                which='both',      # both major and minor ticks are affected
-                bottom=False,      # ticks along the bottom edge are off
-                top=False,         # ticks along the top edge are off
-                labelbottom=False) # labels along the bottom edge are off
+#     dev_individual_ids = []
+#     for fp in self.config['metadata']['dev_clip_ids']: # search for files associated with that target_individual
+#         clip_id = fp.split('/')[-1].split('.')[0]
+#         individual_id = self.config['metadata']['clip_id_to_individual_id'][clip_id]
+#         dev_individual_ids.append(individual_id)
 
-    ax.set_xlabel('Each column is a different individual; subplot x axis represents time')
-    ax.set_ylabel('Each row is a different cluster; subplot y axis represents pseudolabel probability')
-    clustervis_fp = os.path.join(self.config['output_dir'], 'wicc_clusters.png')
-    fig.savefig(clustervis_fp)
-    plt.close()
-    
+#     dev_individual_ids = sorted(set(dev_individual_ids))
+#     fig = plt.figure(figsize=(15, 15))
+#     ax = plt.subplot(111)
+#     ax.spines['top'].set_color('none')
+#     ax.spines['bottom'].set_color('none')
+#     ax.spines['left'].set_color('none')
+#     ax.spines['right'].set_color('none')
+#     ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+#     ax.set_title("Visualization of cluster meaning for different individuals")
+
+#     n_rows = min(5, self.n_clusters)
+#     n_cols = min(5, len(dev_individual_ids))
+
+#     for i in range(n_rows):
+#         for k in range(n_cols):
+#             axs = fig.add_subplot(n_rows, n_cols, 1 + n_cols * i + k)
+#             if self.individualized_head:
+#               ind = dev_individual_ids[k]
+#             else:
+#               ind = 0
+#             x = w[:, :, ind, i]
+#             # softmax over pseudolabels
+#             x = special.softmax(x, axis = 0) 
+#             for j in range(self.n_pseudolabels):
+#                 axs.plot(x[j, :])
+#             axs.tick_params(
+#                 axis='x',          # changes apply to the x-axis
+#                 which='both',      # both major and minor ticks are affected
+#                 bottom=False,      # ticks along the bottom edge are off
+#                 top=False,         # ticks along the top edge are off
+#                 labelbottom=False) # labels along the bottom edge are off
+
+#     ax.set_xlabel('Each column is a different individual; subplot x axis represents time')
+#     ax.set_ylabel('Each row is a different cluster; subplot y axis represents pseudolabel probability')
+#     clustervis_fp = os.path.join(self.config['output_dir'], 'wicc_clusters.png')
+#     fig.savefig(clustervis_fp)
+#     plt.close()
+
     # Model selection criteria
     model_selection = {}
-    model_selection['final_acc'] = float(dev_acc[-1].item())
+    model_selection['final_acc'] = 0 #float(dev_acc[-1].item())
     model_selection['final_prediction_loss'] = dev_predictions_loss[-1]
     model_selection['final_diversity_loss'] = dev_diversity_loss[-1]
     model_selection['final_loss'] = dev_loss[-1]
@@ -340,6 +349,7 @@ class wicc(BehaviorModel):
     self.encoder.train()
     self.encoder_head.train()
     self.decoder.train()
+    self.mu_decoder.train()
     gumbel_tau = self.tau_init * (self.tau_decay_rate ** t)
     acc_score = torchmetrics.Accuracy(mdmc_average = 'global').to(device)
     train_loss = 0
@@ -360,21 +370,24 @@ class wicc(BehaviorModel):
         # use a 1d convolution to generate context labels
         #y : [batch, temporal_window + padding]
         y = torch.unsqueeze(y, 1) # -> [batch, 1, temporal_window + padding]
-        y = self.context_generator(y) # -> [batch, context_window, temporal_window]
-        y = torch.transpose(y, 1,2) # -> [batch, temporal_window, context_window]
-        y = y.to(torch.long)
-        #
+        y = self.context_generator(y) # -> [batch, n_pseudolabels, temporal_window, context_window]
+        y = torch.transpose(y, 1, 2) # -> [batch, temporal_window, n_pseudolabels, context_window]
+        
         individual_id = individual_id.to(device = device, dtype = torch.float)
         
         # Compute prediction error
         latents = self.encoder(X)
         latent_logits = self.encoder_head(latents)
+        
+        
         diversity_loss = diversity_loss_fn(latent_logits)
         
         q = torch.nn.functional.gumbel_softmax(latent_logits, tau=gumbel_tau, hard=True, dim=- 1) # [batch, seq_len, n_clusters]
-        ts_loss = ts_loss_fn(q)
-        logits = self.decoder(q, individual_id)
-        predictions_loss = loss_fn(logits, y) 
+        ts_loss = 0*ts_loss_fn(q)
+        logits = self.decoder(q, individual_id)  # [batch, seq_len, n_pseudolabels, n_pseudolabels] 
+        logits_mu = self.mu_decoder(q, individual_id) #[batch, seq_len, n_pseudolabels]
+        
+        predictions_loss = loss_fn(y, logits, logits_mu) 
         loss = predictions_loss + diversity_loss + ts_loss
         train_loss += loss.item()
         train_predictions_loss += predictions_loss.item()
@@ -383,7 +396,7 @@ class wicc(BehaviorModel):
         
         labels_adjusted = y
         labels_adjusted = torch.maximum(labels_adjusted, torch.zeros_like(labels_adjusted)) # torchmetrics doesn't handle -1 labels so we treat them as gmm cluster number 0. introduces small error
-        acc_score.update(logits, labels_adjusted)
+        #acc_score.update(logits, labels_adjusted)
 
         # Backpropagation
         optimizer.zero_grad()
@@ -393,8 +406,8 @@ class wicc(BehaviorModel):
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
         
-    acc = acc_score.compute()
-    # acc = 0.
+    # acc = acc_score.compute()
+    acc = 0.
     train_predictions_loss = train_predictions_loss / num_batches_seen
     train_diversity_loss = train_diversity_loss / num_batches_seen
     train_ts_loss = train_ts_loss / num_batches_seen
@@ -406,59 +419,100 @@ class wicc(BehaviorModel):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
-  
-  
+
   def predict(self, data):
       self.encoder.eval()
       self.encoder_head.eval()
       self.decoder.eval()
+      self.mu_decoder.eval()
       alldata= data
 
       predslist = []
       pred_len = self.temporal_window_samples
+      
+      alldata= data
+      alldata_len = np.shape(alldata)[0]
+      total_downsample = pool_rate
+      # add padding: sequence length should be divisible by total_downsample in order to downsample
+      pad_len = (total_downsample - alldata_len % total_downsample) % total_downsample
+      alldata = np.pad(alldata, ((0, pad_len), (0, 0)))
 
-      current_start_step = 0
-      for i in range(0, np.shape(alldata)[0] - 2* pred_len, pred_len):
-        current_start_step = i
-        data = alldata[current_start_step:current_start_step+pred_len, :] # window
+      predslist = []
+      pred_len = self.temporal_window_samples
+      for i in range(0, np.shape(alldata)[0], pred_len):
+        data = alldata[i:i+pred_len, :] 
 
         with torch.no_grad():
           data = np.expand_dims(data, axis =0)
           data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
           latents = self.encoder(data)
+          # latents = torch.transpose(latents, -1, -2)
+          # latents = torch.nn.AvgPool1d(pool_rate)(latents)
+          # latents = torch.transpose(latents, -1, -2)
           preds = self.encoder_head(latents)
           preds = preds.cpu().detach().numpy()
           preds = np.squeeze(preds, axis = 0)
           preds = np.argmax(preds, axis = -1).astype(np.uint8)
-
+          
+          # preds = np.repeat(preds, pool_rate, axis = -1)
           predslist.append(preds)
 
-      current_start_step += pred_len
-      data = alldata[current_start_step:, :] # lump the last couple windows together; avoids tiny remainder windows
-      with torch.no_grad():
-        data = np.expand_dims(data, axis =0)
-        data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
-        latents = self.encoder(data)
-        preds = self.encoder_head(latents)
-        preds = preds.cpu().detach().numpy()
-        preds = np.squeeze(preds, axis = 0)
-        preds = np.argmax(preds, axis = -1).astype(np.uint8)
-
-        predslist.append(preds)
-
       preds = np.concatenate(predslist)
-      return preds, None  
+      preds = preds[:alldata_len]
       
-class Decoder(nn.Module):
-  # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, n_pseudolabels, seq_len, context_window]
+      return preds, None  
+
+#   def predict(self, data):
+#       self.encoder.eval()
+#       self.encoder_head.eval()
+#       self.decoder.eval()
+#       alldata= data
+
+#       predslist = []
+#       pred_len = self.temporal_window_samples
+
+#       current_start_step = 0
+#       for i in range(0, np.shape(alldata)[0] - 2* pred_len, pred_len):
+#         current_start_step = i
+#         data = alldata[current_start_step:current_start_step+pred_len, :] # window
+
+#         with torch.no_grad():
+#           data = np.expand_dims(data, axis =0)
+#           data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+#           latents = self.encoder(data)
+#           preds = self.encoder_head(latents)
+#           preds = preds.cpu().detach().numpy()
+#           preds = np.squeeze(preds, axis = 0)
+#           preds = np.argmax(preds, axis = -1).astype(np.uint8)
+
+#           predslist.append(preds)
+
+#       current_start_step += pred_len
+#       data = alldata[current_start_step:, :] # lump the last couple windows together; avoids tiny remainder windows
+#       with torch.no_grad():
+#         data = np.expand_dims(data, axis =0)
+#         data = torch.from_numpy(data).type('torch.FloatTensor').to(device)
+#         latents = self.encoder(data)
+#         preds = self.encoder_head(latents)
+#         preds = preds.cpu().detach().numpy()
+#         preds = np.squeeze(preds, axis = 0)
+#         preds = np.argmax(preds, axis = -1).astype(np.uint8)
+
+#         predslist.append(preds)
+
+#       preds = np.concatenate(predslist)
+#       return preds, None  
+
+
+class MuDecoder(nn.Module):
+  # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, n_pseudolabels]
   def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
-      super(Decoder, self).__init__()
-      self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * context_window_samples * dim_individual_embedding, bias = False)
+      super(MuDecoder, self).__init__()
+      self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * dim_individual_embedding, bias = False)
       self.n_pseudolabels = n_pseudolabels
-      self.context_window_samples = context_window_samples
       self.dim_individual_embedding = dim_individual_embedding
       self.n_clusters = n_clusters
-      self.weight = nn.parameter.Parameter(torch.empty((1, n_clusters, n_pseudolabels *context_window_samples, dim_individual_embedding))) # weight is [1, n_clusters, n_pseudolabels * context_window_samples, dim_individual_embedding]
+      self.weight = nn.parameter.Parameter(torch.empty((1, n_clusters, n_pseudolabels , dim_individual_embedding))) 
       self.reset_parameters()
       
   def reset_parameters(self):
@@ -476,7 +530,7 @@ class Decoder(nn.Module):
       batch_size = size[0]
       seq_len = size[1]
       
-      weight = self.weight.expand(batch_size, self.n_clusters, self.n_pseudolabels * self.context_window_samples, self.dim_individual_embedding)
+      weight = self.weight.expand(batch_size, self.n_clusters, self.n_pseudolabels, self.dim_individual_embedding)
       
       # unsqueeze so individual id is shape [batch, 1,1,dim_individual_embedding]
       individual_id = torch.unsqueeze(individual_id, 1)
@@ -484,27 +538,76 @@ class Decoder(nn.Module):
       
       # grab weight only for relevant individual
       weight = weight * individual_id # ind_weights
-      weight = torch.sum(weight, -1)# weight is shape [batch, n_clusters, n_pseudolabels * context_window_samples]
-      logits = torch.bmm(q, weight) # logits is shape [batch, seq_len, n_pseudolabels *context_window_samples]
+      weight = torch.sum(weight, -1)# weight is shape [batch, n_clusters,  n_pseudolabels]
+      logits = torch.bmm(q, weight) # logits is shape [batch, seq_len, n_pseudolabels]
       
-      # -> [batch, seq_len, n_pseudolabels, context_window]
-      logits = logits.view(batch_size, seq_len, self.n_pseudolabels, self.context_window_samples)
       
-      # -> [batch, n_pseudolabels, seq_len, context_window]
-      logits = torch.transpose(logits, 1, 2)
+      return logits
+
+class Decoder(nn.Module):
+  # Linear [batch, seq_len, n_clusters] (one-hot representation) -> [batch, seq_len, n_pseudolabels, n_pseudolabels]
+  def __init__(self, n_clusters, n_pseudolabels, context_window_samples, dim_individual_embedding):
+      super(Decoder, self).__init__()
+      self.prediction_head = nn.Linear(n_clusters, n_pseudolabels * n_pseudolabels * dim_individual_embedding, bias = False)
+      self.n_pseudolabels = n_pseudolabels
+      self.context_window_samples = context_window_samples
+      self.dim_individual_embedding = dim_individual_embedding
+      self.n_clusters = n_clusters
+      self.weight = nn.parameter.Parameter(torch.empty((1, n_clusters, n_pseudolabels *n_pseudolabels, dim_individual_embedding))) # weight is [1, n_clusters, n_pseudolabels * context_window_samples, dim_individual_embedding]
+      self.reset_parameters()
+      
+  def reset_parameters(self):
+      # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+      # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
+      # https://github.com/pytorch/pytorch/issues/57109
+      nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+      
+  def forward(self, q, individual_id):
+      # q: one hot [batch, seq_len, n_clusters]
+      # individual_id: one_hot [batch, dim_individual_embedding]
+      
+      # stack weights to match batch
+      size = q.size()
+      batch_size = size[0]
+      seq_len = size[1]
+      
+      weight = self.weight.expand(batch_size, self.n_clusters, self.n_pseudolabels * self.n_pseudolabels, self.dim_individual_embedding)
+      
+      # unsqueeze so individual id is shape [batch, 1,1,dim_individual_embedding]
+      individual_id = torch.unsqueeze(individual_id, 1)
+      individual_id = torch.unsqueeze(individual_id, 1) 
+      
+      # grab weight only for relevant individual
+      weight = weight * individual_id # ind_weights
+      weight = torch.sum(weight, -1)# weight is shape [batch, n_clusters, n_pseudolabels * n_pseudolabels]
+      logits = torch.bmm(q, weight) # logits is shape [batch, seq_len, n_pseudolabels *n_pseudolabels]
+      
+      # -> [batch, seq_len, n_pseudolabels, n_pseudolabels] (logits of transition matrix)
+      logits = logits.view(batch_size, seq_len, self.n_pseudolabels, self.n_pseudolabels)
       
       return logits
 
 class ContextGenerator(nn.Module):
-    # [batch, 1, padded_temporal_window] -> [batch, context_window, temporal_window]
-    def __init__(self, context_window_samples, context_window_stride):
+    # [batch, 1, temporal_window] -> [batch, n_pseudolabels, temporal_window, context_window]
+    def __init__(self, context_window_samples, context_window_stride, n_pseudolabels):
       super(ContextGenerator, self).__init__()
       self.generator_kernel = torch.eye(context_window_samples, dtype = torch.float, device = device) #
       self.generator_kernel = torch.unsqueeze(self.generator_kernel, 1) #[context_window, 1, context_window]
       self.context_window_stride = context_window_stride
+      self.n_pseudolabels = n_pseudolabels
+      
       
     def forward(self, labels):
-      return nn.functional.conv1d(labels, self.generator_kernel, dilation = self.context_window_stride)
+      #[batch, context_window, temporal_window]
+      labels_expanded = nn.functional.conv1d(labels, self.generator_kernel, dilation = self.context_window_stride, padding='same').to(torch.long)
+      
+      #[batch, context_window, temporal_window, n_pseudolabels]
+      labels_expanded = torch.nn.functional.one_hot(labels_expanded, num_classes=self.n_pseudolabels)
+      
+      #[batch, n_pseudolabels, temporal_window, context_window]
+      labels_expanded = torch.transpose(labels_expanded, -1, -3)
+      
+      return labels_expanded.to(torch.float)
 
 class DiversityLoss(nn.Module):
     # Maximize label entropy across batches.
@@ -520,7 +623,7 @@ class DiversityLoss(nn.Module):
         avg_probs = torch.mean(probs, dim = [0, 1]) # -> [n_clusters]
         d = self.alpha *(1 - self.normalizing_factor * torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-7))))        
         return d
-      
+
 class TimeScaleLoss(nn.Module):
     def __init__(self):
         super(TimeScaleLoss, self).__init__()
@@ -541,4 +644,47 @@ class TimeScaleLoss(nn.Module):
         actual_ratio = torch.mean(diff) + (1./self.temporal_window_samples)        
         loss = 8*(actual_ratio - self.target_ratio)**2 
         return loss
+      
+      
+class MarkovMLELoss(nn.Module):
+    def __init__(self):
+        super(MarkovMLELoss, self).__init__()
         
+    def forward(self, targets, M, mu):
+        # targets: [batch, temporal_window, n_pseudolabels, context_window]
+        # M: [batch, seq_len, n_pseudolabels, n_pseudolabels]
+        # mu: [batch, seq_len, n_pseudolabels]
+        n_pseudolabels = targets.size()[2]
+        context_window = targets.size()[3]
+        batch = targets.size()[0]
+        seq_len = targets.size()[1]
+        
+        
+        targets_batch = targets.reshape(-1,  n_pseudolabels, context_window)
+        M_batch = M.reshape(-1, n_pseudolabels, n_pseudolabels)
+        mu_batch = mu.reshape(-1, n_pseudolabels)
+      
+        # transitions:
+        l1 = torch.bmm(M_batch, targets_batch)
+        l1 = torch.bmm(torch.transpose(targets_batch, -1, -2), l1)
+        l1 = torch.diagonal(l1, offset=1, dim1=-2, dim2=-1)
+        l1 = torch.sum(l1, dim = -1)
+        l1 = -l1.view(batch, seq_len)
+        
+        # transitions normalization:
+        l2 = torch.logsumexp(M_batch, dim = -1, keepdim= True)
+        l2 = torch.bmm(torch.transpose(targets_batch[:,:, :-1], -1, -2), l2)
+        l2 = torch.sum(l2, dim = (-1, -2))
+        l2 = l2.view(batch, seq_len)
+        
+        # initial condition:
+        l3 = torch.bmm(torch.transpose(targets_batch[:, :, :1], -1, -2), torch.unsqueeze(mu_batch, -1))
+        l3 = torch.squeeze(l3, -1)
+        l3 = -l3.view(batch, seq_len)
+        
+        # initial condition normalization:
+        l4 = torch.logsumexp(mu, dim = -1)
+    
+        loss = l1+l2+l3+l4
+        
+        return torch.mean(loss)

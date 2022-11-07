@@ -1,0 +1,21 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
+experiment_name: alternate_low_batch_size
+model: sashimi
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/seals_sashimi_v3
+sashimi_config:
+  batch_size: 16
+  downsizing_factor: 256
+  dropout: 0
+  expand: 1
+  ff: 2
+  hidden_size: 32
+  lr: 0.01
+  n_epochs: 100
+  n_layers: 3
+  pool:
+  - 1
+  - 2
+  sparse_annotations: false
+  temporal_window_samples: 512
+  weight_decay: 0
+use_val_in_train: true

@@ -76,11 +76,13 @@ def generate_predictions(model, config):
       predictions, latents = model.predict_from_file(fp)
 
       predictions_fp = os.path.join(config['predictions_dir'], filename)
-      np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
+      pd.DataFrame(predictions.astype('int')).to_csv(predictions_fp, index = False, header = False)
+      #np.savetxt(predictions_fp, predictions.astype('int'), fmt='%3i', delimiter=",")
 
       if config['save_latents']:
         latents_fp = os.path.join(config['latents_output_dir'], filename)
-        np.savetxt(latents_fp, latents, delimiter=",")
+        #np.savetxt(latents_fp, latents, delimiter=",")
+        pd.DataFrame(latents).to_csv(latents_fp, index = False, header = False)
 
 def generate_evaluations(config):
   # Generates numerical metrics as well as visualizations

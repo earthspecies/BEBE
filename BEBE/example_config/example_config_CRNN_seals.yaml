@@ -1,0 +1,20 @@
+CRNN_config:
+  batch_size: 32
+  conv_depth: 2
+  dilation: 1
+  downsizing_factor: 256
+  gru_depth: 1
+  gru_hidden_size: 64
+  hidden_size: 64
+  ker_size: 7
+  lr: 0.01
+  n_epochs: 100
+  sparse_annotations: false
+  temporal_window_samples: 512
+  weight_decay: 0.001
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/ladds_seals
+experiment_name: CRNN
+model: CRNN
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/ladds_seals
+read_latents: false
+use_val_in_train: true
