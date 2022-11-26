@@ -88,7 +88,7 @@ class rf(BehaviorModel):
     # Compute summary statistics (context features)
     features = []
     features.append(np.amax(context_data, axis = 1)) # max value
-    features.append(np.amax(context_data, axis = 1)) # min value
+    features.append(np.amin(context_data, axis = 1)) # min value
     mu = np.mean(context_data, axis = 1)
     features.append(mu) # mean
     sigma = np.std(context_data, axis = 1)

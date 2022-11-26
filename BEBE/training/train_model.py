@@ -44,6 +44,9 @@ def train_model(config):
     from BEBE.models.wicc import wicc as m
     #model = wicc(config)
     
+  elif config['model'] == 'iic':
+    from BEBE.models.iic import iic as m
+    
   elif config['model'] == 'sashimi':
     from BEBE.models.sashimi import sashimi as m
 
