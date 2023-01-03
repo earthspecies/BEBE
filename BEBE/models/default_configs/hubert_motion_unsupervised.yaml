@@ -1,0 +1,8 @@
+save_latents : false
+unsupervised : true
+  
+default_model_config:
+  model_path : null
+  max_iter : 100
+  n_init : 10
+  downsample : 1

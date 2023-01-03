@@ -1,0 +1,13 @@
+experiment_name: umapper
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
+model: umapper
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
+
+umapper_config:
+  morlet_w : 1.
+  n_wavelets : 10
+  n_neighbors : 16
+  min_dist : 0.1
+  downsample : 8
+  low_freq_cols : []
+  

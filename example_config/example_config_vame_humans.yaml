@@ -1,0 +1,15 @@
+experiment_name: vame
+model: vame
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+
+vame_config:
+  batch_size : 256
+  max_epochs : 100
+  beta: 1
+  zdims: 10
+  learning_rate : 0.0005
+  time_window_sec: 1.0
+  prediction_sec: 1.0
+  kmeans_lambda: 0.1
+  downsizing_factor : 64

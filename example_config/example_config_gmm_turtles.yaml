@@ -1,0 +1,8 @@
+experiment_name: gmm
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
+model: gmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
+
+gmm_config:
+  max_iter: 100
+  n_init: 1

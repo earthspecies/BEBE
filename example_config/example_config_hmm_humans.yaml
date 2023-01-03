@@ -1,0 +1,11 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+experiment_name: hmm
+model: hmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+
+hmm_config:
+  N_iters: 50
+  lags: 0
+  prior_wait_sec: 10.0
+  sticky_prior_strength: 0.0
+  time_bins: 2500

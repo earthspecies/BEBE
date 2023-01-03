@@ -1,0 +1,9 @@
+experiment_name: gmm
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/friedlaender_whales
+model: gmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/friedlaender_whales
+num_clusters: 50
+
+gmm_config:
+  max_iter: 150
+  n_init: 1

@@ -1,0 +1,8 @@
+experiment_name: gmm
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
+model: gmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
+
+gmm_config:
+  max_iter: 150
+  n_init: 1

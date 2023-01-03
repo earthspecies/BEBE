@@ -1,0 +1,19 @@
+experiment_name: CRNN
+model: CRNN
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+
+CRNN_config:
+  batch_size: 512
+  conv_depth: 2
+  dilation: 3
+  downsizing_factor: 1024
+  gru_depth: 0
+  gru_hidden_size: 64
+  hidden_size: 64
+  ker_size: 7
+  lr: 0.01
+  n_epochs: 100
+  sparse_annotations: false
+  temporal_window_samples: 2048
+  weight_decay: 0.01

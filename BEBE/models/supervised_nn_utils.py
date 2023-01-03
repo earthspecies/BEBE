@@ -3,6 +3,17 @@ from torch.utils.data.dataset import Dataset
 import numpy as np
 import os
 import tqdm
+import yaml
+import pickle
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Subset
+import torchmetrics
+import tqdm
+from matplotlib import pyplot as plt
+from matplotlib.ticker import MultipleLocator
+from BEBE.models.model_superclass import BehaviorModel
+import pandas as pd
     
 class BEHAVIOR_DATASET(Dataset):
     def __init__(self, data, labels, train, temporal_window_samples, config, rescale_param = 0):
@@ -95,22 +106,6 @@ class BEHAVIOR_DATASET(Dataset):
             
         return data_item, labels_item
 
-import yaml
-import numpy as np
-import pickle
-import os
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Subset
-import torchmetrics
-from BEBE.models.supervised_nn_utils import BEHAVIOR_DATASET
-import tqdm
-from matplotlib import pyplot as plt
-from matplotlib.ticker import MultipleLocator
-from BEBE.models.model_superclass import BehaviorModel
-import pandas as pd
-
-
 class SupervisedBehaviorModel(BehaviorModel):
   def __init__(self, config):
     super(SupervisedBehaviorModel, self).__init__(config)
@@ -131,6 +126,7 @@ class SupervisedBehaviorModel(BehaviorModel):
     self.jitter_scale = self.model_config['jitter_scale']
     self.rescale_param = self.model_config['rescale_param']
     self.sparse_annotations = self.model_config['sparse_annotations']
+    self.normalize = self.model_config['normalize']
     
     # Dataset Parameters
     
@@ -151,7 +147,10 @@ class SupervisedBehaviorModel(BehaviorModel):
     if read_latents:
       raise NotImplementedError("Supervised model is expected to read from raw data")
     else:
-      return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
+      x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
+      if self.normalize:
+        x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
+      return x
     
   def load_labels(self, filepath):
     labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)

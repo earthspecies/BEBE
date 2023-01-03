@@ -1,0 +1,19 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears
+experiment_name: CRNN
+model: CRNN
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/bears
+
+CRNN_config:
+  batch_size: 512
+  conv_depth: 2
+  dilation: 2
+  downsizing_factor: 1024
+  gru_depth: 1
+  gru_hidden_size: 64
+  hidden_size: 64
+  ker_size: 7
+  lr: 0.01
+  n_epochs: 100
+  sparse_annotations: true
+  temporal_window_samples: 2048
+  weight_decay: 0.001

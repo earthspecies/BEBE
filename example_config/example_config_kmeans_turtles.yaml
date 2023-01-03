@@ -1,0 +1,9 @@
+experiment_name: kmeans
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
+model: kmeans
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
+
+kmeans_config:
+  max_iter: 500
+  n_init: 10
+

@@ -40,15 +40,14 @@ def train_model(config):
     from BEBE.models.random import random as m
     #model = models.random(config)
     
-  elif config['model'] == 'wicc':
-    from BEBE.models.wicc import wicc as m
-    #model = wicc(config)
-    
   elif config['model'] == 'iic':
     from BEBE.models.iic import iic as m
     
-  elif config['model'] == 'sashimi':
-    from BEBE.models.sashimi import sashimi as m
+  elif config['model'] == 'hubert_motion':
+    from BEBE.models.hubert_motion import hubert_motion as m
+    
+  elif config['model'] == 'hubert_motion_unsupervised':
+    from BEBE.models.hubert_motion_unsupervised import hubert_motion_unsupervised as m
 
   else:
     raise ValueError('model type not recognized')

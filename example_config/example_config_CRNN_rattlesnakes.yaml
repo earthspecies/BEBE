@@ -1,0 +1,19 @@
+experiment_name: CRNN
+model: CRNN
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
+  
+CRNN_config:
+  downsizing_factor : 16
+  lr : 0.001
+  weight_decay : 0.001
+  n_epochs : 20
+  hidden_size : 64
+  temporal_window_samples : 64
+  batch_size : 64
+  conv_depth : 2
+  sparse_annotations : false
+  ker_size : 7
+  dilation : 1
+  gru_depth : 1
+  gru_hidden_size : 32

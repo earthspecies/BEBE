@@ -1,0 +1,11 @@
+experiment_name: hmm
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/jeantet_turtles
+model: hmm
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/jeantet_turtles
+ 
+hmm_config:
+  time_bins : 2500
+  prior_wait_sec : 5.
+  sticky_prior_strength : 3.
+  N_iters : 50
+  lags : 1

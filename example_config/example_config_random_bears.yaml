@@ -1,0 +1,4 @@
+experiment_name: random
+model: random
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/pagano_bears
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears

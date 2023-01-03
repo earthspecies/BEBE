@@ -1,0 +1,20 @@
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/pagano_bears
+experiment_name: hubert_motion_unsupervised_stage1_nonorm_0.9
+model: hubert_motion_unsupervised
+output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/bears
+
+input_vars : 
+- AccX
+- AccY
+- AccZ
+- StaticAccX
+- StaticAccY
+- StaticAccZ
+
+use_val_in_train: true
+
+hubert_motion_unsupervised_config:
+  model_path : /home/jupyter/hubert_motion/models/beartest_nonorm_0.9/checkpoints/checkpoint_last.pt
+  max_iter : 100
+  n_init : 10
+  downsample : 1
