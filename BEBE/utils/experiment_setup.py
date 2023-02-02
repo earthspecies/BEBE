@@ -2,7 +2,7 @@ import os
 import yaml
 import glob
 
-def expand_config(config, save_latents = False):
+def expand_config(config):
   ## accepts a human-generated config dictionary
   ## and adds in a bunch of entries for access later on
   
@@ -16,7 +16,7 @@ def expand_config(config, save_latents = False):
   with open(metadata_fp) as file:
     config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
   
-  # Based on model type, decide how to save latents, predictions, and evaluation
+  # Based on model type, decide how to save predictions and evaluation
   
   default_config_fp = os.path.join('BEBE', 'models', 'default_configs', config['model'] + '.yaml')
   if not os.path.exists(default_config_fp):
@@ -25,12 +25,8 @@ def expand_config(config, save_latents = False):
   with open(default_config_fp) as file:
     default_config = yaml.load(file, Loader=yaml.FullLoader)
   
-  config['save_latents'] = save_latents and default_config['save_latents'] #save latents if it makes sense for this model type
   config['unsupervised'] = default_config['unsupervised']
-  
-  if config['save_latents']:
-    config['latents_output_dir'] = os.path.join(config['output_dir'], 'latents')
-  
+ 
   # If model is supervised, set number of "clusters" (i.e. classes) to be the number of labels.
   # Otherwise, if number of clusters is unspecified, set it to be max(20, 4*num known labels)
   label_names = config['metadata']['label_names']
@@ -220,7 +216,7 @@ def accept_default_model_configs(config):
       
   return config
 
-def experiment_setup(config, save_latents = False):
+def experiment_setup(config):
   # put in default parameters if they are unspecified
   config = accept_default_model_configs(config)
   
@@ -229,7 +225,7 @@ def experiment_setup(config, save_latents = False):
   config['output_dir'] = output_dir
   
   # accept various defaults
-  config = expand_config(config, save_latents = save_latents)
+  config = expand_config(config)
   
   ## save off input config
   if not os.path.exists(output_dir):
@@ -252,8 +248,5 @@ def experiment_setup(config, save_latents = False):
     
   if not os.path.exists(config['temp_dir']):
     os.makedirs(config['temp_dir'])
-    
-  if config['save_latents'] and not os.path.exists(config['latents_output_dir']):
-    os.makedirs(config['latents_output_dir'])
     
   return config

@@ -2,16 +2,19 @@ from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix as cm
 
-def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
-  metadata = config['metadata']
+def confusion_matrix(all_labels, all_predictions, metadata, num_clusters, unsupervised, target_fp = None):
   label_names = metadata['label_names']
   unknown_idx = label_names.index('unknown')
-  num_clusters = config['num_clusters']
   
   M = cm(all_labels, all_predictions, labels = np.arange(num_clusters), normalize = 'pred')
   to_plot_idx = np.arange(len(label_names))
   to_plot_idx = to_plot_idx[to_plot_idx != unknown_idx]
-  M = M[to_plot_idx,:] # drop the unknown labels
+  if unsupervised:
+    to_plot_start = 0
+  else:
+    to_plot_start = 1
+    
+  M = M[to_plot_idx,to_plot_start:] # drop the unknown labels
 
   figure = plt.figure(figsize = (10, len(label_names) + 1))
   axes = figure.add_subplot(111)
@@ -19,7 +22,6 @@ def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
   Mplot = axes.matshow(M)
   plt.yticks(np.arange(len(label_names)-1), [label_names[x] for x in to_plot_idx], rotation=20)
   plt.ylabel('Ground Truth Labels')
-  plt.title(config['experiment_name'])
   figure.colorbar(Mplot, orientation = 'horizontal')
   
   plt.tight_layout()
@@ -31,7 +33,7 @@ def confusion_matrix(all_labels, all_predictions, config, target_fp = None):
     plt.savefig(target_fp); plt.close()
     
     
-def consistency_plot(per_class_per_individual_f1s, per_class_f1s, config, target_fp = None):
+def consistency_plot(per_class_per_individual_f1s, per_class_f1s, target_fp = None):
   # per_class_per_individual_f1s : dict of lists of f1 scores, 1 per individual. keys are behavior classes
   # per_class_f1s: dict of f1's, 1 per class
   

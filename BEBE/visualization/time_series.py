@@ -3,9 +3,8 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 import pandas as pd
 
-def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end_sample = 20000, vars_to_plot = None, target_fp = None):
+def plot_track(data_fp, predictions_fp, metadata, num_clusters, unsupervised, eval_dict, start_sample = 0, end_sample = 20000, vars_to_plot = None, target_fp = None):
     input_data = pd.read_csv(data_fp, delimiter = ',', header = None).values #np.load(data_fp)
-    metadata = config['metadata']
     sr = metadata['sr']
     clip_column_names = metadata['clip_column_names']
     label_names = metadata['label_names']
@@ -14,7 +13,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     if vars_to_plot is None:
         vars_to_plot = clip_column_names[:-2]
     
-    if config['unsupervised']:
+    if unsupervised:
       num_rows = len(vars_to_plot) + 3
     else:
       num_rows = len(vars_to_plot) + 2
@@ -43,7 +42,7 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[0].set_title("Raw Data")
     
     # Ground truths
-    if config['unsupervised']:
+    if unsupervised:
       position = -3
     else:
       position = -2
@@ -59,25 +58,19 @@ def plot_track(data_fp, predictions_fp, config, eval_dict, start_sample = 0, end
     axes[position].set_yticklabels([label_names[i] for i in label_ticks], fontsize = 8, rotation = 45)
     axes[position].set_title("Ground Truth Behavior Labels")
     axes[position].set_xlabel("Time (seconds)")
-    # axes[position].tick_params(
-    #     axis='x',          # changes apply to the x-axis
-    #     which='both',      # both major and minor ticks are affected
-    #     bottom=False,      # ticks along the bottom edge are off
-    #     top=False,         # ticks along the top edge are off
-    #     labelbottom=False) # labels along the bottom edge are off
 
     # Plot predictions
     class_predictions = pd.read_csv(predictions_fp, delimiter = ',', header = None).values.flatten() 
     
-    if config['unsupervised']:
+    if unsupervised:
       # Plot discovered clusters
       to_plot = class_predictions[start_sample: end_sample]
       axes[-2].set_xlim(left=0, right=(end_sample-start_sample)/ sr)
       axes[-2].scatter(np.arange(len(to_plot))/sr, to_plot, marker = '|', c = to_plot, cmap = 'hsv', linewidths = 0.1)
       axes[-2].set_ylabel("Discovered motif number")
 
-      axes[-2].set_ylim(bottom=-0.5, top = config['num_clusters']-0.5)
-      major_tick_spacing = max(1, config['num_clusters'] // 8)
+      axes[-2].set_ylim(bottom=-0.5, top = num_clusters-0.5)
+      major_tick_spacing = max(1, num_clusters // 8)
       axes[-2].yaxis.set_major_locator(MultipleLocator(major_tick_spacing))
       axes[-2].yaxis.set_minor_locator(MultipleLocator(1))
       axes[-2].set_title("Discovered Clusters")

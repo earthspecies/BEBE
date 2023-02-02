@@ -1,4 +1,3 @@
-save_latents : false
 unsupervised : false
   
 default_model_config:
