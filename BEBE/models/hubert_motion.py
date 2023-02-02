@@ -182,15 +182,15 @@ class hubert_motion(SupervisedBehaviorModel):
     
     
 class HubertMotionClassifier(nn.Module):
-    def __init__(self, model_path, num_classes, unfreeze_encoder = 0, embeddings_dim=768, multi_label=False):
+    def __init__(self, model_path, num_classes, unfreeze_encoder = 0, multi_label=False):
         super().__init__()
 
         models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_path])
+        # print(cfg.keys())
         self.model = models[0]
         self.unfreeze_encoder(unfreeze_encoder)
-        self.head = nn.Linear(in_features=embeddings_dim, out_features=num_classes)
-        # self.gru = nn.GRU(embeddings_dim, 64, 1, bidirectional = True)
-        # self.head = nn.Linear(in_features=128, out_features=num_classes)
+        
+        self.head = nn.Linear(in_features=cfg['model']['encoder_embed_dim'], out_features=num_classes)
             
     def unfreeze_encoder(self, unfreeze):
         if unfreeze == -1:
