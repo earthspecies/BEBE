@@ -17,7 +17,6 @@ def expand_config(config):
     config['metadata'] = yaml.load(file, Loader=yaml.FullLoader)
   
   # Based on model type, decide how to save predictions and evaluation
-  
   default_config_fp = os.path.join('BEBE', 'models', 'default_configs', config['model'] + '.yaml')
   if not os.path.exists(default_config_fp):
     raise ValueError('model type not recognized, make sure there is a default config file for your model')
@@ -41,14 +40,12 @@ def expand_config(config):
     
   # If data channels are unspecified, we use all available data channels.
   # By matter of convention, these are all but the last two columns in the csv files, which are reserved for individual id and behavior label
-  
   if 'input_vars' not in config:
     config['input_vars'] = config['metadata']['clip_column_names'].copy()
     config['input_vars'].remove('individual_id')
     config['input_vars'].remove('label')
     
   # Unglob data filepaths and deal with splits
-
   train_data_fp = []
   val_data_fp = []
   dev_data_fp = []
@@ -76,7 +73,7 @@ def expand_config(config):
   dev_data_fp.sort()
   
   if 'use_val_in_train' in config and config['use_val_in_train']:
-    print("As requested, we are training on all available data")
+    print("As requested, we are training on all available data (train+val)")
     config['train_data_fp'] = dev_data_fp
   else:
     config['train_data_fp'] = train_data_fp
@@ -127,7 +124,6 @@ def expand_config(config):
     config['read_latents'] = False
   
   # Set up a dictionary to keep track of file id's, the data filepaths, and (potentially) the latent filepaths:
-  
   file_id_to_data_fp = {}
   file_id_to_model_input_fp = {}
   
@@ -188,7 +184,6 @@ def expand_config(config):
 
 def accept_default_model_configs(config):
   # Makes sure that all the entries of the config file are properly filled in.  
-      
   ### set up model-specific config    
     
   model_type = config['model']
@@ -198,7 +193,6 @@ def accept_default_model_configs(config):
     config[model_config_name] = {}
     
   ### look up default settings
-  
   default_config_fp = os.path.join('BEBE', 'models', 'default_configs', config['model'] + '.yaml')
   if not os.path.exists(default_config_fp):
     raise ValueError('model type not recognized, make sure there is a default config file for your model')

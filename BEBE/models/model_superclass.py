@@ -19,12 +19,8 @@ class BehaviorModel():
   def load_model_inputs(self, filepath, read_latents = False):
     if read_latents:
       return pd.read_csv(filepath, delimiter = ',', header = None).values
-      # return np.genfromtxt(filepath, delimiter = ',')
-      #return np.load(filepath)
     else:
       return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
-      #return np.genfromtxt(filepath, delimiter = ',')[:, self.cols_included]
-      #return np.load(filepath)[:, self.cols_included]
     
   def fit(self):
     ##

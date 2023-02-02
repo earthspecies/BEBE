@@ -1,12 +1,10 @@
 from sklearn.ensemble import RandomForestClassifier
 from scipy import stats
-from skimage.transform import resize
 from BEBE.models.model_superclass import BehaviorModel
 import yaml
 import numpy as np
 import pickle
 import os
-import pandas as pd
 import tqdm
 
 def vectorized_slope(y):
@@ -16,7 +14,6 @@ def vectorized_slope(y):
   x = np.arange(0, np.shape(y)[1])
   x = np.reshape(x, (1, -1, 1))
   mu_x = np.mean(x)
-  
   return np.sum((x - mu_x) * (y- mu_y) , axis = 1)
   
 def autocorr(y, mu, sigma):
@@ -26,13 +23,11 @@ def autocorr(y, mu, sigma):
     mu = np.expand_dims(mu, axis = 1)
     numerator = (y[:, 1:, :] - mu) * (y[:, :-1, :] - mu)
     numerator = np.mean(numerator, axis = 1)
-
     return numerator / (sigma ** 2 + 1e-12)
   
 class rf(BehaviorModel):
   def __init__(self, config):
     super(rf, self).__init__(config)
-    
     
     self.n_samples_window = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.min_samples_split = self.model_config['min_samples_split']
@@ -67,15 +62,13 @@ class rf(BehaviorModel):
     # in: data [seq_len, n_features], labels [seq_len,]
     # out: mask of features [ceil(seq_len / n_samples_window), 8*n_features], labels [ceil(seq_len / n_samples_window),]
     
-    # Pad and reshape 
+    # Pad and reshape
     # pad seq_len by adding zeros to the end
     # data [seq_len, n_features] -> [seq_len/n_samples_window, n_samples_window, n_features]
     # labels [seq_len,] -> [seq_len/n_samples_window, n_samples_window] 
     seq_len = np.shape(data)[0]
-    
     pad_left = (self.n_samples_window - 1) // 2
     pad_right = self.n_samples_window - 1 - pad_left
-
     padded_data = np.pad(data, ((pad_left, pad_right), (0,0)))
     context_data = []
 
@@ -83,7 +76,6 @@ class rf(BehaviorModel):
         context_data.append(padded_data[i: i + seq_len, :])
         
     context_data = np.stack(context_data, axis = 1) #[seq_len, context_window_samples, n_features]
-    
     
     # Compute summary statistics (context features)
     features = []
@@ -97,21 +89,17 @@ class rf(BehaviorModel):
     features.append(stats.kurtosis(context_data, axis = 1)) # kurtosis
     features.append(vectorized_slope(context_data)) # slope (up to a constant)
     features.append(autocorr(context_data, mu, sigma)) # approximate autocorrelation
-    
     features = np.concatenate([data, *features], axis = -1)
     
     # mask windows where labels is unknown
-    
     if labels is not None:
       mask = labels != 0
       labels = labels[mask]
-      
       features = features[mask]
     else:
       labels = None
       
     return features, labels
- 
     
   def fit(self):
     ## get data. assume stored in memory for now
@@ -132,7 +120,6 @@ class rf(BehaviorModel):
     
     train_data = np.concatenate(train_data, axis = 0)
     train_labels = np.concatenate(train_labels, axis = 0)
-
     self.model.fit(train_data, train_labels)
     
   def save(self):
@@ -140,10 +127,8 @@ class rf(BehaviorModel):
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
 
-  
   def predict(self, data):
     raw_data_size = np.shape(data)[0]
     data, _ = self.prepare_model_inputs(data)
     predictions = self.model.predict(data)
-    
     return predictions, None

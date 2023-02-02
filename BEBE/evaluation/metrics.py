@@ -8,11 +8,6 @@ import operator
 import concurrent.futures
 import itertools
 import os
-from sklearn.metrics import homogeneity_score
- 
-def homogeneity(labels_coarse, labels_fine):
-  # alternative name for sklearn homogeneity score
-  return homogeneity_score(labels_coarse, labels_fine)
 
 def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
     # array: 1-dim array
@@ -32,12 +27,10 @@ def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
     return mask.astype(bool)
   
 def contingency_analysis(gt, pred, num_clusters, num_classes, unknown_value = 0):
-  # gt: 1-dim array of gt labels (per frame)
-    # pred: 1-dim array of predicted clusters (per frame)
+    # gt: 1-dim array of integers, ground truth labels (per frame)
+    # pred: 1-dim array of integers, predicted clusters (per frame)
     # num_clusters: number of clusters allowed, we assume the clusters are numbered 0,1,2,...   
     # num_classes: number of classes allowed, includes unknown, assume numbered 0,1,2,...
-    # Returns:
-    # mapping dict
     
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
     gt_sub = gt[mask]
@@ -63,7 +56,6 @@ def contingency_analysis(gt, pred, num_clusters, num_classes, unknown_value = 0)
         
     return mapping_dict
                                           
-  
 def get_time_scale_ratio(pred, target_time_scale_sec, sr):
     n_label_bouts = sum(pred[1:] != pred[:-1]) + 1
     mean_dur_samples = len(pred) / n_label_bouts
@@ -105,15 +97,14 @@ def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0
     results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['classification_f1_macro'] = float(np.mean(f1s))
     
-    results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)
-        
+    results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)  
     return results
   
 def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
-    # gt: 1-dim array of gt labels (per frame)
-    # pred: 1-dim array of predicted clusters (per frame)
-    # label_names: list of behavior label names
-    # returns dict of evaluation scores, assuming we have used a supervised model
+    # gt: 1-dim array of integer gt labels (per frame)
+    # pred: 1-dim array of integer predicted clusters (per frame)
+    # label_names: list of str behavior label names
+    # returns dict of evaluation scores
     results = {}
     
     ## To avoid issues with macro averaging in sklearn, we have to make sure there are no 'unknowns' that are predicted by the model
@@ -142,16 +133,13 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     results['classification_f1_macro'] = float(np.mean(f1s))
     
     results['time_scale_ratio'] = get_time_scale_ratio(pred, target_time_scale_sec, sr)
-
     return results
   
-
-  
 def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, mapping_dict = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
-    # gt: 1-dim array of gt labels (per frame)
-    # pred: 1-dim array of predicted clusters (per frame)
-    # label_names: list of behavior label names
-    # unknown_value: integer label associated with unknown behavior
+    # gt: 1-dim array of int gt labels (per frame)
+    # pred: 1-dim array of int predicted clusters (per frame)
+    # label_names: list of str behavior label names
+    # unknown_value: integer label associated with unknown behavior (default 0)
     # mapping_dict: dict where mapping_dict[i] the behavior label index that cluster i is sent to under contingency analysis
     # returns dict of evaluation scores, as well as mapping dict
     

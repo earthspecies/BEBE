@@ -1,11 +1,3 @@
-# from BEBE.models.kmeans import kmeans
-# from BEBE.models.vame import vame
-# from BEBE.models.hmm import hmm
-# from BEBE.models.umapper import umapper
-# from BEBE.models.random import random
-# from BEBE.models.CRNN import CRNN
-# from BEBE.models.rf import rf
-
 def train_model(config):
   ## Instantiate model
 
@@ -45,9 +37,6 @@ def train_model(config):
     
   elif config['model'] == 'hubert_motion':
     from BEBE.models.hubert_motion import hubert_motion as m
-    
-  elif config['model'] == 'hubert_motion_unsupervised':
-    from BEBE.models.hubert_motion_unsupervised import hubert_motion_unsupervised as m
 
   else:
     raise ValueError('model type not recognized')

@@ -34,8 +34,8 @@ def confusion_matrix(all_labels, all_predictions, metadata, num_clusters, unsupe
     
     
 def consistency_plot(per_class_per_individual_f1s, per_class_f1s, target_fp = None):
-  # per_class_per_individual_f1s : dict of lists of f1 scores, 1 per individual. keys are behavior classes
-  # per_class_f1s: dict of f1's, 1 per class
+  # per_class_per_individual_f1s (dict) : keys are behavior classes, values are lists of f1 scores, 1 per individual. 
+  # per_class_f1s (dict) : keys are behavior classes, values are mean f1 scores
   
   fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 9))
 

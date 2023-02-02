@@ -33,7 +33,6 @@ class umapper(BehaviorModel):
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
-    
     low_freq_cols_bool = [x in self.model_config['low_freq_cols'] for x in self.metadata['clip_column_names']] # which columns to not apply wavelet transform to
     self.low_freq_cols = [i for i, x in enumerate(low_freq_cols_bool) if x]
     
@@ -83,7 +82,6 @@ class umapper(BehaviorModel):
 
     transformed = np.concatenate(transformed, axis = 0)
     transformed = np.transpose(transformed)
-      
     return transformed
     
   def fit(self):
@@ -203,7 +201,6 @@ class umapper(BehaviorModel):
     # normalize
     normalize_denom = np.sum(data, axis = 1, keepdims = True)
     data = data / (normalize_denom + 1e-6)
-    
     data_downsampled = data[::self.downsample, :]
     
     # fit umap
@@ -216,7 +213,5 @@ class umapper(BehaviorModel):
     yq = np.minimum(yq, self.image_size-1)
     
     predictions = self.label_image[yq[:,0], yq[:, 1]]
-    
     predictions = resize(predictions, (np.shape(data)[0],), order=0, mode='constant')
-    
     return predictions, None

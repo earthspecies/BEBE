@@ -31,7 +31,6 @@ class iic(BehaviorModel):
     super(iic, self).__init__(config)
     print(f"Using {device} device")
     
-    ##
     self.downsizing_factor = self.model_config['downsizing_factor']
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
@@ -48,18 +47,13 @@ class iic(BehaviorModel):
     self.dilation = self.model_config['dilation']
     self.hidden_size = self.model_config['hidden_size']
     self.n_heads = self.model_config['n_heads']
-    ##
     
     assert self.context_window_samples > 1, 'context window should be larger than 1'
-    
-    # cols_included_bool = [x in self.config['input_vars'] for x in self.metadata['clip_column_names']] 
-    # self.cols_included = [i for i, x in enumerate(cols_included_bool) if x]
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     
     self.n_features = len(self.cols_included)
-    
     self.encoder = Encoder(self.n_features,
                            self.conv_depth,
                            self.ker_size,
@@ -75,8 +69,6 @@ class iic(BehaviorModel):
     print(_count_parameters(self.encoder))
   
   def fit(self):
-    
-    ## get data. assume stored in memory for now
     if self.read_latents:
       raise NotImplementedError
       dev_fps = self.config['dev_data_latents_fp']
@@ -84,19 +76,16 @@ class iic(BehaviorModel):
       dev_fps = self.config['dev_data_fp']
     
     dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
-    
     dev_dataset = BEHAVIOR_DATASET(dev_data, self.temporal_window_samples, True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     loss_fn = IICLoss(self.context_window_samples).to(device)
         
     optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.heads.parameters(), 'weight_decay' : self.weight_decay}], lr=self.lr, amsgrad = True)
-    
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=self.lr / 100, last_epoch=- 1, verbose=False)
     
     dev_loss = []
     dev_loss_per_head = {i : [] for i in range(self.n_heads)}
     dev_predictions_loss = []
-    
     learning_rates = []
     
     epochs = self.n_epochs
@@ -150,14 +139,12 @@ class iic(BehaviorModel):
     fig.savefig(lr_fp)
     plt.close()
     
-    
   def train_epoch(self, t, dataloader, loss_fn, optimizer):
     size = len(dataloader.dataset)
     self.encoder.train()
     self.heads.train()
     
     train_loss = 0
-    
     num_batches_seen = 0
     train_loss_per_head = [0 for i in range(len(self.heads))]
     
@@ -168,11 +155,9 @@ class iic(BehaviorModel):
           break
         num_batches_seen += 1
         X = X.to(device = device, dtype = torch.float)
-        
         X = self.encoder(X)
         
         all_loss = None
-        
         for i, head in enumerate(self.heads):
           probs = head(X)
           loss = loss_fn(probs) 
@@ -190,7 +175,6 @@ class iic(BehaviorModel):
         optimizer.step()
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
-        
     
     train_loss = train_loss / num_batches_seen
     train_loss_per_head = [l / num_batches_seen for l in train_loss_per_head]
@@ -232,9 +216,7 @@ class iic(BehaviorModel):
 class BEHAVIOR_DATASET(Dataset):
     def __init__(self, data, temporal_window_samples, train):
         self.temporal_window = temporal_window_samples
-        
         self.data = data
-        
         self.data_points = sum([np.shape(x)[0] for x in self.data])
         
         print('Initialize dataloader. Datapoints %d' %self.data_points)
@@ -248,7 +230,6 @@ class BEHAVIOR_DATASET(Dataset):
           
         assert counter == self.data_points - len(self.data) * self.temporal_window
         self.data_start_indices = np.array(self.data_start_indices)
-        
         self.train = train
         
     def __len__(self):        
@@ -332,7 +313,6 @@ class Encoder(nn.Module):
         
         self.conv = nn.ModuleList(self.conv)
         
-        
     def forward(self, x):
         # X is [batch, seq_len, channels]
         seq_len = x.size()[-2]
@@ -357,7 +337,6 @@ class Encoder(nn.Module):
           x = block(x)
           
         return x
-        
       
 class Head(nn.Module):
     def __init__(self, hidden_size, n_classes, softmax = True):

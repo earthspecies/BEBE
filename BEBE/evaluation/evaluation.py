@@ -6,25 +6,24 @@ import pandas as pd
 import tqdm
 import yaml
 import warnings
+from sklearn.metrics import homogeneity_score
 
 def perform_evaluation(y_true, y_pred, metadata, num_clusters, unsupervised, output_fp = None, mapping_dict = None, target_time_scale_sec = 1.):
-  # y_true, y_pred: list of integers
-  # mapping_dict: dictionary which sends cluster indices to behavior label indices
+  # y_true, y_pred (list): list of integers, corresponding to class/cluster index
+  # mapping_dict (dict): sends cluster indices (int) to behavior label indices (int)
   
   evaluation_dict = {}
 
   ## subselect to remove frames with unknown label
- 
   unknown_label = metadata['label_names'].index('unknown')
   sr = metadata['sr']
   mask = y_true != unknown_label
     
   ## Compute evaluation metrics
-  
   # information-theoretic
   y_true_sub = y_true[mask]
   y_pred_sub = y_pred[mask]
-  homogeneity = metrics.homogeneity(y_true_sub, y_pred_sub)
+  homogeneity = homogeneity_score(y_true_sub, y_pred_sub)
   evaluation_dict['homogeneity'] = float(homogeneity)
   
   # mapping-based
@@ -49,7 +48,7 @@ def perform_evaluation(y_true, y_pred, metadata, num_clusters, unsupervised, out
     with open(output_fp, 'w') as file:
       yaml.dump(evaluation_dict, file)
       
-  ## In any case, return as a dict    
+  ## Return as a dict    
   return evaluation_dict, mapping_dict
 
 def generate_predictions(model, config):
@@ -161,7 +160,6 @@ def generate_evaluations_standalone(metadata,
       
     # Per-individual evaluation: Treat individuals as separate test sets.
     # This gives us more test replicates, to get a better sense of model variance across different individuals
-    
     ## We also compute 'individualized' f1 scores, which uses a different method of assigning clusters to labels
     ## Note individualized scores are only relevant to unsupervised models.
     
@@ -233,7 +231,7 @@ def generate_evaluations_standalone(metadata,
     with open(f1_consistency_numerical_target_fp, 'w') as file:
       yaml.dump(individual_f1s_individualized, file)
   # Save example figures
-  rng = np.random.default_rng(seed = 607)  # we want to plot segments chosen a bit randomly, but also consistently
+  rng = np.random.default_rng(seed = 607)  # plot segments chosen randomly, but consistently across trials
 
   for file_ids in to_consider:
     for i, filename in enumerate(rng.choice(file_ids, 3, replace = True)):
@@ -280,11 +278,4 @@ def generate_evaluations(config):
                                   val_file_ids,
                                   test_file_ids,
                                   predictions_dir,
-                                  dataset_dir)
-  
-                                  
-                                  
-                                  
-                                  
-  
-  
+                                  dataset_dir)  

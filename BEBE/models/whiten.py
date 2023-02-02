@@ -6,14 +6,12 @@ import numpy as np
 class whitener_standalone():
   def __init__(self, n_components = 'mle'):
     super(whitener_standalone, self).__init__()
-    
     self.whitener = None
     self.data_means = None
     self.data_std = None
     self.n_components = n_components
     
   def fit_transform(self, data):
-    
     print("Whitening data")
     self.data_means = np.mean(data, axis = 0, keepdims = True)
     self.data_std = np.std(data, axis = 0, keepdims = True)

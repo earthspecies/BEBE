@@ -9,16 +9,12 @@ class CRNN(SupervisedBehaviorModel):
     super(CRNN, self).__init__(config)
     
     self.unknown_label = config['metadata']['label_names'].index('unknown')
-    
-    ##
-    
     self.conv_depth = self.model_config['conv_depth']
     self.ker_size = self.model_config['ker_size']
     self.dilation = self.model_config['dilation']
     self.gru_depth = self.model_config['gru_depth']
     self.gru_hidden_size = self.model_config['gru_hidden_size']
     self.hidden_size = self.model_config['hidden_size']
-    
     
     self.model = Classifier(self.n_features,
                             self.n_classes,
@@ -41,12 +37,10 @@ class Classifier(nn.Module):
         super(Classifier, self).__init__()
         self.blur_scale = blur_scale
         self.jitter_scale = jitter_scale
-        
         self.bn = nn.BatchNorm1d(n_features)
         
         n_head_input_features = n_features
         n_gru_input_features = n_features
-        
         self.conv_depth = conv_depth
         self.conv = []
         if self.conv_depth > 0:
@@ -57,15 +51,13 @@ class Classifier(nn.Module):
             self.conv.append(_conv_block_1d(hidden_size, hidden_size, ker_size, dilation = dilation))
         
         self.conv = nn.ModuleList(self.conv)
-        
-        self.gru_depth = gru_depth
-        
+  
+        self.gru_depth = gru_depth      
         if self.gru_depth > 0:
           n_head_input_features = gru_hidden_size * 2
           self.gru = nn.GRU(n_gru_input_features, gru_hidden_size, num_layers = gru_depth, bidirectional = True, batch_first = True, dropout = dropout)
         
         self.head = nn.Linear(n_head_input_features, n_classes)
-        
         
     def forward(self, x):
         # X is [batch, seq_len, channels]

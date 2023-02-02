@@ -9,7 +9,6 @@ from BEBE.models.model_superclass import BehaviorModel
 class hmm(BehaviorModel):
   def __init__(self, config):
     super(hmm, self).__init__(config)
-    
     self.time_bins = self.model_config['time_bins']
     
   def fit(self):
@@ -27,7 +26,6 @@ class hmm(BehaviorModel):
       obs = self.load_model_inputs(fp, read_latents = self.read_latents)
       
       # Possibly subselect from training data:
-      # Used to speed up initial hyperparameter tuning
       if self.model_config['subselect_proportion'] < 1.:
         total_len = np.shape(obs)[0]
         to_select = int(np.ceil(total_len * self.model_config['subselect_proportion']))
@@ -87,9 +85,7 @@ class hmm(BehaviorModel):
     hmm_lls = self.model.fit(dev_data, 
                              method= "em", 
                              num_iters = N_iters, 
-                             # num_epochs = N_iters,
                              init_method="kmeans",
-                             # step_size=0.0001
                             )
     
     # Save log likelihood and transition plots
@@ -105,7 +101,6 @@ class hmm(BehaviorModel):
     plt.imshow(self.model.transitions.transition_matrix)
     plt.savefig(trans_fp)
     plt.close()
-    #######
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")

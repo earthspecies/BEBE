@@ -14,7 +14,6 @@ import scipy.signal as signal
 class kmeans(BehaviorModel):
   def __init__(self, config):
     super(kmeans, self).__init__(config)
-
     self.model = KMeans(n_clusters = self.config['num_clusters'], verbose = 0, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
     
     self.whiten = self.model_config['whiten']
@@ -22,8 +21,8 @@ class kmeans(BehaviorModel):
     self.whitener = whitener_standalone(n_components = self.n_components)
     
     self.wavelet_transform = self.model_config['wavelet_transform']
-    # wavelet transform specific settings
     
+    # wavelet transform: specific settings
     self.morlet_w = self.model_config['morlet_w']
     self.n_wavelets = self.model_config['n_wavelets']
     self.downsample = self.model_config['downsample']

@@ -83,7 +83,6 @@ class vame(BehaviorModel):
     np.save(temp_dev_fp, dev_data)
     
     temp_test_fp = os.path.join(self.temp_data_dir, 'test_seq.npy')
-    #np.save(temp_test_fp, test_data)
     # We will use dev data for model selection
     np.save(temp_test_fp, dev_data)
     

@@ -8,11 +8,10 @@ import os
 class gmm(BehaviorModel):
   def __init__(self, config):
     super(gmm, self).__init__(config)
-    self.subselect_proportion = self.model_config['subselect_proportion'] # If we subselect from data in order to store it all in memory
+    self.subselect_proportion = self.model_config['subselect_proportion']
     self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
     
   def fit(self):
-    ## get data. assume stored in memory for now
     if self.read_latents:
       dev_fps = self.config['dev_data_latents_fp']
     else:

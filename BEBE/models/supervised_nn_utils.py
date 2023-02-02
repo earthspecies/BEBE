@@ -26,10 +26,7 @@ class BEHAVIOR_DATASET(Dataset):
         label_names = config['metadata']['label_names']
         self.num_classes = len(label_names)
         self.unknown_idx = label_names.index('unknown')
-        
-        
         self.data_points = sum([np.shape(x)[0] for x in self.data])
-        
         print('Initialize dataloader. Datapoints %d' %self.data_points)
             
         self.data_start_indices = []
@@ -41,7 +38,6 @@ class BEHAVIOR_DATASET(Dataset):
           
         assert counter == self.data_points - len(self.data) * self.temporal_window
         self.data_start_indices = np.array(self.data_start_indices)
-        
         self.data_stds = np.std(np.concatenate(self.data, axis = 0), axis = 0, keepdims = True) / 8
         self.num_channels = np.shape(self.data_stds)[1]
         self.rng = np.random.default_rng()
@@ -55,16 +51,13 @@ class BEHAVIOR_DATASET(Dataset):
         counts = []
         for i in range(self.num_classes):
           counts.append(len(all_labels[all_labels == i]))
-        
         total_labels = sum(counts[:self.unknown_idx] + counts[self.unknown_idx + 1:])
         weights = np.array([x/total_labels for x in counts], dtype = 'float')
         return torch.from_numpy(weights).type(torch.FloatTensor)
-          
       
     def get_annotated_windows(self):
         # Go through data, make a list of the indices of windows which actually have annotations.
         # Useful for speeding up supervised train time for sparsely labeled datasets.
-        
         indices_of_annotated_windows = []
         print("Subselecting data to speed up training")
         for index in tqdm.tqdm(range(self.__len__())):
@@ -83,7 +76,6 @@ class BEHAVIOR_DATASET(Dataset):
         
         data_item = self.data[clip_number]
         labels_item = self.labels[clip_number]
-        
         start = index - self.data_start_indices[clip_number]
         end = start+ self.temporal_window
         
@@ -129,11 +121,9 @@ class SupervisedBehaviorModel(BehaviorModel):
     self.normalize = self.model_config['normalize']
     
     # Dataset Parameters
-    
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
-    
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = len(self.cols_included)
     
@@ -239,7 +229,6 @@ class SupervisedBehaviorModel(BehaviorModel):
     print("Done!")
     
     ## Save training progress
-    
     # Loss
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     
@@ -308,13 +297,11 @@ class SupervisedBehaviorModel(BehaviorModel):
         pred = self.model(X)
         loss = loss_fn(pred, y)
         train_loss += loss.item()
-
         acc_score.update(pred.cpu(), y.cpu())
 
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        
         optimizer.step()
         loss_str = "%2.2f" % loss.item()
         tepoch.set_postfix(loss=loss_str)
@@ -349,15 +336,12 @@ class SupervisedBehaviorModel(BehaviorModel):
       pickle.dump(self, f)
   
   def predict(self, data):
-    ###
     self.model.eval()
-    
     alldata= data    
     predslist = []
     pred_len = self.temporal_window_samples
     for i in range(0, np.shape(alldata)[0], pred_len):
       data = alldata[i:i+pred_len, :] # window to acommodate more hidden states
-    
       with torch.no_grad():
         data = np.expand_dims(data, axis =0)
         data = torch.from_numpy(data).type('torch.FloatTensor').to(self.device)
@@ -365,7 +349,6 @@ class SupervisedBehaviorModel(BehaviorModel):
         preds = preds.cpu().detach().numpy()
         preds = np.squeeze(preds, axis = 0)
         preds = np.argmax(preds, axis = 0).astype(np.uint8)
-        
         predslist.append(preds)
     preds = np.concatenate(predslist)
     return preds, None  

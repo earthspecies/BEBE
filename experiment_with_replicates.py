@@ -1,11 +1,11 @@
+# Script to choose best hyperparameters (based on previously run experiments), and perform multiple replicates using the same hyperparameters.
+# Saves off mean and std of performance metrics, across all individuals and across all replicates.
+# By default, during replicate training the val data is included in the training data (only relevant to supervised models)
+
 import os
 import yaml
-import itertools
 import numpy as np
 from pathlib import Path
-import sys
-import BEBE.evaluation.evaluation as evaluation
-from tqdm import tqdm
 import argparse
 from plumbum import local, FG
 
