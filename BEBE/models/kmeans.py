@@ -27,7 +27,7 @@ class kmeans(BehaviorModel):
     self.n_wavelets = self.model_config['n_wavelets']
     self.downsample = self.model_config['downsample']
     
-  def load_model_inputs(self, filepath, read_latents = False, downsample = 1):
+  def load_model_inputs(self, filepath, downsample = 1):
     
     if self.wavelet_transform:
       # perform wavelet transform during loading
@@ -36,10 +36,7 @@ class kmeans(BehaviorModel):
       freq = np.linspace(1, fs/2, self.n_wavelets)
       widths = self.morlet_w*fs / (2*freq*np.pi)
 
-      if read_latents:
-        raise NotImplementedError
-      else: 
-        data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
 
       axes = np.arange(0, np.shape(data)[1])
       transformed = []
@@ -56,27 +53,21 @@ class kmeans(BehaviorModel):
       return transformed
     
     else:
-      if read_latents:
-        return pd.read_csv(filepath, delimiter = ',', header = None).values
-      else:
-        return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
 
     
   def fit(self):
     ## get data. assume stored in memory for now
-    if self.read_latents:
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    train_fps = self.config['train_data_fp']
     
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents, downsample = self.downsample) for fp in dev_fps]
-    dev_data = np.concatenate(dev_data, axis = 0)
+    train_data = [self.load_model_inputs(fp, downsample = self.downsample) for fp in train_fps]
+    train_data = np.concatenate(train_data, axis = 0)
     
     if self.whiten:
-      dev_data = self.whitener.fit_transform(dev_data)
+      train_data = self.whitener.fit_transform(train_data)
     
     print("fitting kmeans")
-    self.model.fit(dev_data)
+    self.model.fit(train_data)
     
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
@@ -85,7 +76,6 @@ class kmeans(BehaviorModel):
   
   def predict(self, data):
     if self.whiten:
-      data = self.whitener.transform(data)
-                         
+      data = self.whitener.transform(data)                         
     predictions = self.model.predict(data)
     return predictions, None

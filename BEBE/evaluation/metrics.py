@@ -97,7 +97,11 @@ def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0
     results['classification_f1'] = {label_names[labels[i]] : float(f1s[i]) for i in range(len(f1s))}
     results['classification_f1_macro'] = float(np.mean(f1s))
     
-    results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)  
+    results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)
+    
+    results['ground_truth_label_counts'] = {label_names[i] : int(sum(gt_sub == i)) for i in labels}
+    results['predicted_label_counts'] = {label_names[i] : int(sum(pred_sub == i)) for i in labels}
+    
     return results
   
 def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
@@ -110,7 +114,7 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     ## To avoid issues with macro averaging in sklearn, we have to make sure there are no 'unknowns' that are predicted by the model
     assert unknown_value == 0, "not implemented for unknown value other than 0"
     unknown_shift = (pred == unknown_value).astype(int)
-    pred = pred + unknown_shift
+    pred = pred + unknown_shift # set 0's to 1's.
     
     ### Get optimized classification scores
     mask = find_unknown_mask(gt, unknown_value = unknown_value)
@@ -133,6 +137,10 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     results['classification_f1_macro'] = float(np.mean(f1s))
     
     results['time_scale_ratio'] = get_time_scale_ratio(pred, target_time_scale_sec, sr)
+    
+    results['ground_truth_label_counts'] = {label_names[i] : int(sum(gt_sub == i)) for i in labels}
+    results['predicted_label_counts'] = {label_names[i] : int(sum(pred_sub == i)) for i in labels}
+    
     return results
   
 def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, mapping_dict = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
