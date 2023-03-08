@@ -12,6 +12,13 @@ def expand_config(config):
   config['final_model_dir'] = os.path.join(config['output_dir'], "final_model")
   config['visualization_dir'] = os.path.join(config['output_dir'], "visualizations")
   
+  # Fix random seed
+  if 'seed' not in config:
+    warnings.warn("Random seed not specified, initializing randomly")
+    config['seed'] = None
+  else:
+    print(f"Training with random seed {config['seed']}")
+  
   # load metadata
   metadata_fp = os.path.join(config['dataset_dir'], 'dataset_metadata.yaml')
   with open(metadata_fp) as file:
@@ -104,38 +111,6 @@ def expand_config(config):
   config['val_data_fp'] = val_data_fp
   
   assert len([*train_data_fp, *test_data_fp, *val_data_fp]) == len(config['metadata']['clip_ids']), "mismatch between expected number of files and actual files present. check dataset creation"
-  
-#   # Set up a dictionary to keep track of file id's and the data filepaths.
-#   filename_to_data_fp = {}
-  
-#   train_filenames = [] # filenames are of the form clip_id.csv
-#   test_filenames = []
-#   val_filenames = []
-#   dev_filenames = []
-  
-#   for fp in config['train_data_fp']:
-#     filename = fp.split('/')[-1]
-#     filename_to_data_fp[filename] = fp
-#     train_filenames.append(filename)
-  
-#   for fp in config['val_data_fp']:
-#     filename = fp.split('/')[-1]
-#     filename_to_data_fp[filename] = fp
-#     val_filenames.append(filename)
-      
-#   for fp in config['test_data_fp']:
-#     filename = fp.split('/')[-1]
-#     filename_to_data_fp[filename] = fp
-#     test_filenames.append(filename)
-    
-#   train_filenames.sort()
-#   test_filenames.sort()
-#   val_filenames.sort()
-  
-#   config['filename_to_data_fp'] = filename_to_data_fp
-#   config['train_filenames'] = train_filenames
-#   config['test_filenames'] = test_filenames
-#   config['val_filenames'] = val_filenames 
   return config
 
 def accept_default_model_configs(config):

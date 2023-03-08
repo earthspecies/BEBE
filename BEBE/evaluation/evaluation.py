@@ -88,6 +88,11 @@ def generate_evaluations_standalone(metadata,
   
   print(f"saving model outputs to {output_dir}")
   
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+    
+  if not os.path.exists(visualization_dir):
+    os.makedirs(visualization_dir)
   
   if unsupervised and num_clusters != max(20, 4*(len(metadata['label_names'])-1)):
     warnings.warn("Using a non-default number of clusters N. Results using different values of N should not be compared to each other.")

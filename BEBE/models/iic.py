@@ -17,6 +17,7 @@ import math
 import pandas as pd
 from pathlib import Path
 from sys import float_info
+import random
 
 EPS = float_info.epsilon
 
@@ -47,6 +48,10 @@ class iic(BehaviorModel):
     self.dilation = self.model_config['dilation']
     self.hidden_size = self.model_config['hidden_size']
     self.n_heads = self.model_config['n_heads']
+    
+    torch.manual_seed(self.config['seed'])
+    random.seed(self.config['seed'])
+    np.random.seed(self.config['seed'])
     
     assert self.context_window_samples > 1, 'context window should be larger than 1'
     

@@ -99,8 +99,8 @@ def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0
     
     results['time_scale_ratio'] = get_time_scale_ratio(pred_mapped, target_time_scale_sec, sr)
     
-    results['ground_truth_label_counts'] = {label_names[i] : int(sum(gt_sub == i)) for i in labels}
-    results['predicted_label_counts'] = {label_names[i] : int(sum(pred_sub == i)) for i in labels}
+    results['ground_truth_label_counts'] = {label_names[i] : int(np.sum(gt_sub == i)) for i in labels}
+    results['predicted_label_counts'] = {label_names[i] : int(np.sum(pred_sub == i)) for i in labels}
     
     return results
   
@@ -138,8 +138,8 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     
     results['time_scale_ratio'] = get_time_scale_ratio(pred, target_time_scale_sec, sr)
     
-    results['ground_truth_label_counts'] = {label_names[i] : int(sum(gt_sub == i)) for i in labels}
-    results['predicted_label_counts'] = {label_names[i] : int(sum(pred_sub == i)) for i in labels}
+    results['ground_truth_label_counts'] = {label_names[i] : int(np.sum(gt_sub == i)) for i in labels}
+    results['predicted_label_counts'] = {label_names[i] : int(np.sum(pred_sub == i)) for i in labels}
     
     return results
   

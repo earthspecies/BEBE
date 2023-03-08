@@ -9,7 +9,7 @@ class gmm(BehaviorModel):
   def __init__(self, config):
     super(gmm, self).__init__(config)
     self.subselect_proportion = self.model_config['subselect_proportion']
-    self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
+    self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'], random_state = self.config['seed'])
     
   def fit(self):
     if self.read_latents:
@@ -21,7 +21,7 @@ class gmm(BehaviorModel):
     dev_data = np.concatenate(dev_data, axis = 0)
     
     if self.subselect_proportion < 1.:
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(self.config['seed'])
         total_samples = np.shape(dev_data)[0]
         n_to_choose = int(self.subselect_proportion * total_samples)
         dev_data = rng.choice(dev_data, n_to_choose, replace=False)

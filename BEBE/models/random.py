@@ -7,7 +7,7 @@ import os
 class random(BehaviorModel):
   def __init__(self, config):
     super(random, self).__init__(config)
-    self.rng = np.random.default_rng()
+    self.rng = np.random.default_rng(self.config['seed'])
     self.num_clusters = self.config['num_clusters']
     
   def fit(self):

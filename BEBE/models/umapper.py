@@ -44,7 +44,8 @@ class umapper(BehaviorModel):
         n_neighbors = n_neighbors,
         min_dist = min_dist,
         metric = 'symmetric_kl',
-        verbose = True
+        verbose = True,
+        random_state = self.config['seed']
     )
     
   def load_model_inputs(self, filepath, read_latents = False, downsample = 1):

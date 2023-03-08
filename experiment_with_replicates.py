@@ -113,7 +113,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument('--target-dir', type=str, default = None, help = "path to directory containing hyperparameter selection experiments.")
   parser.add_argument('--target-config', type=str, default = None, help = "path to config that you want to replicate")
-  parser.add_argument('--n_replicates', type=int, required = True, help = "how many replicates to run")
+  parser.add_argument('--n-replicates', type=int, required = True, help = "how many replicates to run")
   parser.add_argument('--experiment-dir-parent', type=str, required = True, help = "parent of dir where you want to save results")
   parser.add_argument('--experiment-name', type=str, required=True, help="name of experiment")
   parser.add_argument('--do-not-use-val-in-train', action="store_true", help="Seperate out validation set (for initial hyperparameter sweep)")

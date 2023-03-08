@@ -14,7 +14,7 @@ import scipy.signal as signal
 class kmeans(BehaviorModel):
   def __init__(self, config):
     super(kmeans, self).__init__(config)
-    self.model = KMeans(n_clusters = self.config['num_clusters'], verbose = 0, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'])
+    self.model = KMeans(n_clusters = self.config['num_clusters'], verbose = 0, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'], random_state = self.config['seed'])
     
     self.whiten = self.model_config['whiten']
     self.n_components = self.model_config['n_components']

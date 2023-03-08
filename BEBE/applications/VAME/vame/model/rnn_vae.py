@@ -19,6 +19,7 @@ import tqdm
 import os
 import numpy as np
 from pathlib import Path
+import random
 
 from BEBE.applications.VAME.vame.util.auxiliary import read_config
 from BEBE.applications.VAME.vame.model.dataloader import SEQUENCE_DATASET
@@ -248,7 +249,7 @@ def train_model(config):
     """ HYPERPARAMTERS """
     # General
     CUDA = use_gpu
-    #SEED = 19
+    SEED = cfg['seed']
     TRAIN_BATCH_SIZE = cfg['batch_size']
     TEST_BATCH_SIZE = cfg['batch_size']
     EPOCHS = cfg['max_epochs']
@@ -306,19 +307,21 @@ def train_model(config):
     mse_losses = []
     fut_losses = []
 
-    #torch.manual_seed(SEED)
+    torch.manual_seed(SEED)
+    random.seed(SEED)
+    np.random.seed(SEED)
     
     if legacy == False:
         RNN = RNN_VAE
     else:
         RNN = RNN_VAE_LEGACY
     if CUDA:
-        #torch.cuda.manual_seed(SEED)
+        torch.cuda.manual_seed(SEED)
         model = RNN(TEMPORAL_WINDOW,ZDIMS,NUM_FEATURES,FUTURE_DECODER,FUTURE_STEPS, hidden_size_layer_1,
                         hidden_size_layer_2, hidden_size_rec, hidden_size_pred, dropout_encoder,
                         dropout_rec, dropout_pred, softplus).cuda()
     else: #cpu support ...
-        #torch.cuda.manual_seed(SEED)
+        torch.cuda.manual_seed(SEED)
         model = RNN(TEMPORAL_WINDOW,ZDIMS,NUM_FEATURES,FUTURE_DECODER,FUTURE_STEPS, hidden_size_layer_1,
                         hidden_size_layer_2, hidden_size_rec, hidden_size_pred, dropout_encoder,
                         dropout_rec, dropout_pred, softplus).to()
