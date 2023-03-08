@@ -12,18 +12,10 @@ class hmm(BehaviorModel):
     self.time_bins = self.model_config['time_bins']
     
   def fit(self):
-    if self.read_latents:
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
-    
-    #######
-  
     dev_data = []
-    
-    rng = np.random.default_rng(seed = 31)
+    dev_fps = self.config['dev_data_fp']
     for fp in dev_fps:
-      obs = self.load_model_inputs(fp, read_latents = self.read_latents)
+      obs = self.load_model_inputs(fp)
       
       # Possibly subselect from training data:
       if self.model_config['subselect_proportion'] < 1.:

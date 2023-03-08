@@ -1,8 +1,7 @@
-# ## class to normalize and whiten data
-
 from sklearn.decomposition import PCA
 import numpy as np
-  
+
+# class to normalize and whiten data
 class whitener_standalone():
   def __init__(self, n_components = 'mle'):
     super(whitener_standalone, self).__init__()
@@ -32,4 +31,5 @@ class whitener_standalone():
     data = data / self.data_std
     whitened_data = self.whitener.transform(data)
     
-    return whitened_data
+    return whitened_data  
+  

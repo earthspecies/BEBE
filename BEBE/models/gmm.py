@@ -12,12 +12,9 @@ class gmm(BehaviorModel):
     self.model = GaussianMixture(n_components = self.config['num_clusters'], verbose = 2, max_iter = self.model_config['max_iter'], n_init = self.model_config['n_init'], random_state = self.config['seed'])
     
   def fit(self):
-    if self.read_latents:
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    dev_fps = self.config['dev_data_fp']
     
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = [self.load_model_inputs(fp) for fp in dev_fps]
     dev_data = np.concatenate(dev_data, axis = 0)
     
     if self.subselect_proportion < 1.:

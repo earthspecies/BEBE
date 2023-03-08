@@ -5,7 +5,7 @@ import os
 import shutil
 import BEBE.applications.VAME.vame as VAME
 from BEBE.models.model_superclass import BehaviorModel
-from BEBE.models.whiten import whitener_standalone
+from BEBE.models.preprocess import whitener_standalone
 import torch
 from matplotlib import pyplot as plt
 

@@ -48,20 +48,17 @@ class umapper(BehaviorModel):
         random_state = self.config['seed']
     )
     
-  def load_model_inputs(self, filepath, read_latents = False, downsample = 1):
+  def load_model_inputs(self, filepath, downsample = 1):
     # perform wavelet transform during loading
     # Perform morlet wavelet transform
     t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
     fs = 1/dt
     freq = np.linspace(1, fs/2, self.n_wavelets)
     widths = self.morlet_w*fs / (2*freq*np.pi)
-    
-    if read_latents:
-      raise NotImplementedError
-    else:
-      # We can distinguish low and high frequency channels. By default, everything is considered high frequency  
-      low_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.low_freq_cols]
-      high_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.high_freq_cols]
+
+    # We can distinguish low and high frequency channels. By default, everything is considered high frequency  
+    low_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.low_freq_cols]
+    high_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.high_freq_cols]
     
     axes = np.arange(0, np.shape(high_freq_data)[1])
     transformed = []
@@ -86,17 +83,13 @@ class umapper(BehaviorModel):
     return transformed
     
   def fit(self):
-    ## get data. assume stored in memory for now
-    if self.read_latents:
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    dev_fps = self.config['dev_data_fp']
     
     # load as wavelets
     dev_data = []
     print("Loading inputs")
     for fp in tqdm(dev_fps):
-        dev_data.append(self.load_model_inputs(fp, read_latents = self.read_latents, downsample = self.downsample))
+        dev_data.append(self.load_model_inputs(fp, downsample = self.downsample))
     dev_data = np.concatenate(dev_data, axis = 0)
     
     # normalize and record normalizing constant

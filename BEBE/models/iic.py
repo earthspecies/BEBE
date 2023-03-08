@@ -74,13 +74,9 @@ class iic(BehaviorModel):
     print(_count_parameters(self.encoder))
   
   def fit(self):
-    if self.read_latents:
-      raise NotImplementedError
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    dev_fps = self.config['dev_data_fp']
     
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
+    dev_data = [self.load_model_inputs(fp) for fp in dev_fps]
     dev_dataset = BEHAVIOR_DATASET(dev_data, self.temporal_window_samples, True)
     dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     loss_fn = IICLoss(self.context_window_samples).to(device)

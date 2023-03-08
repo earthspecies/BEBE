@@ -2,7 +2,7 @@
 
 from sklearn.cluster import KMeans
 from BEBE.models.model_superclass import BehaviorModel
-from BEBE.models.whiten import whitener_standalone
+from BEBE.models.preprocess import whitener_standalone
 import yaml
 import numpy as np
 import pickle
