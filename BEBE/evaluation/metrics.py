@@ -98,7 +98,7 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     pred = pred + unknown_shift # set 0's to 1's.
     
     ### Get optimized classification scores
-    mask = find_unknown_mask(gt, unknown_value = unknown_value)
+    mask = (gt != unknown_value).astype(bool)
     gt_sub = gt[mask]
     pred_sub = pred[mask]
     
