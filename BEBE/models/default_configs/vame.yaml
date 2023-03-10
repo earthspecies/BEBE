@@ -18,7 +18,5 @@ default_model_config:
   scheduler_gamma : 0.2
   kmeans_lambda : 0.1 
   ## Scalar multiplied by kmeans loss
-  downsizing_factor : 64 
-  ## Train more efficiently, account for autocorrelation
   whiten : true
                            

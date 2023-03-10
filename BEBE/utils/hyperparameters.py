@@ -185,9 +185,10 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'min_dist' : [0],
                                 'downsample' : [4],
                                }
+    
   if model_type == 'vame':
     model_hyperparam_choices = {'batch_size' : [512], 
-                                'n_train_steps' : [20000],
+                                'n_train_steps' : [10000],
                                 'beta' : [1], ## Scalar multiplied by KL loss
                                 'zdims' : [20], ## Latent space dimensionality
                                 'learning_rate' : [0.001, 0.0003],
@@ -201,7 +202,6 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
   
   if model_type == 'iic':
-      
       if dataset_name == 'desantis_rattlesnakes':
         window_samples = 64
       elif dataset_name == 'ladds_seals':
@@ -237,10 +237,8 @@ def get_model_hyperparam_choices(model_type, dataset_name):
 
 #   if model_type == 'hmm':
 #       sweep_model_config = {'time_bins' : [2500],
-#                             'prior_wait_sec' : [5., 10.],
-#                             'sticky_prior_strength' : [0., 1., 2.],
 #                             'N_iters' : [50],
-#                             'lags' : [0, 1, 2, 3]
+#                             'lags' : [0, 1, 3]
 #                            }
 
 #       summary['vame_config'] = sweep_model_config

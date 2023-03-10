@@ -23,6 +23,12 @@ class vame(BehaviorModel):
     
     # Set up temporary VAME directory to follow the VAME package's formatting conventions
     project = 'temp_vame_project'
+    
+    # clear temp files from any previous run
+    if os.path.exists(config['temp_dir']):
+      shutil.rmtree(config['temp_dir'])
+      os.makedirs(config['temp_dir'])
+    
     self.config_vame_fp = VAME.init_new_project(project=project, videos=[], working_directory=config['temp_dir'])
     
     # Modify config_vame to reflect our conventions
@@ -30,11 +36,12 @@ class vame(BehaviorModel):
       config_vame = yaml.load(file, Loader=yaml.FullLoader)
       
     self.vame_experiment_dir = config_vame['project_path']
-  
+    
+    self.downsizing_factor = self.get_downsizing_factor() #subsample the data seen in each epoch by this factor. Ultimately, model_config['n_train_steps'] steps are spread across 100 epochs. This is to accommodate annealing of kl objective.
     config_vame['n_cluster'] = config['num_clusters']
     config_vame['n_init_kmeans'] = config['num_clusters']
     config_vame['batch_size'] = self.model_config['batch_size']
-    config_vame['max_epochs'] = self.get_n_epochs()
+    config_vame['max_epochs'] = 100
     config_vame['beta'] = self.model_config['beta']
     config_vame['zdims'] = self.model_config['zdims']
     config_vame['learning_rate'] = self.model_config['learning_rate']
@@ -46,8 +53,8 @@ class vame(BehaviorModel):
     config_vame['scheduler_gamma'] = self.model_config['scheduler_gamma']
     config_vame['kmeans_loss'] = self.model_config['zdims'] # Uses all singular values
     config_vame['kmeans_lambda'] = self.model_config['kmeans_lambda']
-    config_vame['downsizing_factor'] = self.model_config['downsizing_factor']
-    config_vame['model_convergence'] = self.model_config['max_epochs'] # Do not use early stopping
+    config_vame['downsizing_factor'] = self.downsizing_factor
+    config_vame['model_convergence'] = 100 # Do not use early stopping
     config_vame['seed'] = self.config['seed']
     
     self.whiten = self.model_config['whiten']
@@ -60,13 +67,13 @@ class vame(BehaviorModel):
     if not os.path.exists(self.temp_data_dir):
       os.makedirs(self.temp_data_dir)
       
-  def get_n_epochs(self):
+  def get_downsizing_factor(self):
     train_fps = self.config['train_data_fp']
     train_data = [self.load_model_inputs(fp) for fp in train_fps]
     train_data = np.concatenate(train_data, axis = 0)
-    data_len = np.shape(train_data)
-    max_n_epochs = int(np.ceil((self.model_config['n_train_steps'] * self.model_config['batch_size']) / data_len))
-    return max_n_epochs
+    data_len = np.shape(train_data)[0]    
+    downsizing_factor = int((100 * data_len) / (self.model_config['n_train_steps'] * self.model_config['batch_size']))
+    return downsizing_factor
     
   def fit(self):
     ## get data. assume stored in memory for now
