@@ -1,3 +1,6 @@
+# example usage:
+# python cross_val_experiment.py --experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments --experiment-name=HAR_CRNN --dataset-dir=/home/jupyter/behavior_data_local/data/formatted/HAR/ --model=CRNN --resume
+
 import os
 import yaml
 import numpy as np
@@ -35,7 +38,6 @@ def main(args):
       config = yaml.safe_load(f)
       
   # Set up final experiments
-  
   final_experiment_dir = os.path.join(experiment_dir_parent, args.experiment_name)    
   if not os.path.exists(final_experiment_dir):
       os.makedirs(final_experiment_dir)
