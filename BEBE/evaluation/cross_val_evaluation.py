@@ -79,7 +79,7 @@ def confusion_matrix(data, label_names, target_dir, name=""):
     plt.clf()
     ax = fig.add_subplot(111)
     ax.set_aspect(1)
-    sns.heatmap(data_normalized, annot=True, fmt='.3f', cmap = 'magma', cbar = False, ax = ax)
+    sns.heatmap(data_normalized, annot=True, fmt='.3f', cmap = 'magma', cbar = True, vmin = 0, vmax = 1, ax = ax)
     ax.set_title(f'Proportion of {name} motion behavioral states (rows sum to 1)')
     ax.set_yticks([i + 0.5 for i in range(len(label_names))])
     ax.set_yticklabels(label_names, rotation = 0)
