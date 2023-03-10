@@ -2,7 +2,10 @@ experiment_name: gmm
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 model: gmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
-num_clusters: 50
+test_folds : 
+- 0
+seed : 0
+static_acc_cutoff_freq : 0
 
 gmm_config:
   max_iter: 150

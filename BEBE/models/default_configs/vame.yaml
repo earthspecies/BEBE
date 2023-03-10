@@ -2,7 +2,7 @@ unsupervised : true
   
 default_model_config:
   batch_size : 256
-  max_epochs : 500
+  n_train_steps : 20000
   beta: 1 
   ## Scalar multiplied by KL loss
   zdims: 30 

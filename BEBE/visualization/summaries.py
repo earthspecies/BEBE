@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix as cm
 
 def confusion_matrix(all_labels, all_predictions, metadata, num_clusters, unsupervised, target_fp = None):
+  # confusion matrix for single experiment. If unsupervised, plots the contingency matrix of clusters against ground truth labels
   label_names = metadata['label_names']
   unknown_idx = label_names.index('unknown')
   
@@ -31,7 +32,6 @@ def confusion_matrix(all_labels, all_predictions, metadata, num_clusters, unsupe
     
   else:
     plt.savefig(target_fp); plt.close()
-    
     
 def consistency_plot(per_class_per_individual_f1s, per_class_f1s, target_fp = None):
   # per_class_per_individual_f1s (dict) : keys are behavior classes, values are lists of f1 scores, 1 per individual. 

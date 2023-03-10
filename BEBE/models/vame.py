@@ -34,13 +34,13 @@ class vame(BehaviorModel):
     config_vame['n_cluster'] = config['num_clusters']
     config_vame['n_init_kmeans'] = config['num_clusters']
     config_vame['batch_size'] = self.model_config['batch_size']
-    config_vame['max_epochs'] = self.model_config['max_epochs']
+    config_vame['max_epochs'] = self.get_n_epochs()
     config_vame['beta'] = self.model_config['beta']
     config_vame['zdims'] = self.model_config['zdims']
     config_vame['learning_rate'] = self.model_config['learning_rate']
     config_vame['time_window'] = int(self.model_config['time_window_sec'] * self.metadata['sr'])
     config_vame['prediction_decoder'] = self.model_config['prediction_decoder']
-    config_vame['prediction_steps'] = int(self.model_config['prediction_sec'] * self.metadata['sr'])
+    config_vame['prediction_steps'] = int(self.model_config['time_window_sec'] * self.metadata['sr']) # use time window = prediction window
     config_vame['scheduler'] = self.model_config['scheduler']
     config_vame['scheduler_step_size'] = self.model_config['scheduler_step_size']
     config_vame['scheduler_gamma'] = self.model_config['scheduler_gamma']
@@ -59,6 +59,14 @@ class vame(BehaviorModel):
     self.temp_data_dir = os.path.join(self.vame_experiment_dir, 'data', 'train')
     if not os.path.exists(self.temp_data_dir):
       os.makedirs(self.temp_data_dir)
+      
+  def get_n_epochs(self):
+    train_fps = self.config['train_data_fp']
+    train_data = [self.load_model_inputs(fp) for fp in train_fps]
+    train_data = np.concatenate(train_data, axis = 0)
+    data_len = np.shape(train_data)
+    max_n_epochs = int(np.ceil((self.model_config['n_train_steps'] * self.model_config['batch_size']) / data_len))
+    return max_n_epochs
     
   def fit(self):
     ## get data. assume stored in memory for now

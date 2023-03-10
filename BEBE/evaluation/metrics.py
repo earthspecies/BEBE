@@ -1,30 +1,9 @@
 import numpy as np
-from sklearn.metrics import confusion_matrix as cm
 from sklearn.metrics import precision_score, recall_score, f1_score
 from matplotlib import pyplot as plt
 import tqdm
-import functools
-import operator
-import concurrent.futures
-import itertools
 import os
-
-def find_unknown_mask(array, unknown_value = 0, tolerance_frames = 0):
-    # array: 1-dim array
-    # returns: 1-dim boolean mask of array with 0's anywhere that is within tolerance_frames frames of a frame containing unknown_value
-    
-    array = np.array(array)
-    shifted_masks = []
-    shifted_masks.append(array != unknown_value)
-    for shift in range(1, tolerance_frames + 1):
-        right_shifted_mask = array[shift:] != unknown_value
-        right_shifted_mask = np.append(right_shifted_mask, np.full(shift, False))
-        left_shifted_mask = array[:-shift] != unknown_value
-        left_shifted_mask = np.append(np.full(shift, False), left_shifted_mask)
-        shifted_masks.append(right_shifted_mask)
-        shifted_masks.append(left_shifted_mask)
-    mask = functools.reduce(operator.mul, shifted_masks, 1)
-    return mask.astype(bool)
+from sklearn.metrics import confusion_matrix
   
 def contingency_analysis(gt, pred, num_clusters, num_classes, unknown_value = 0):
     # gt: 1-dim array of integers, ground truth labels (per frame)
@@ -32,7 +11,7 @@ def contingency_analysis(gt, pred, num_clusters, num_classes, unknown_value = 0)
     # num_clusters: number of clusters allowed, we assume the clusters are numbered 0,1,2,...   
     # num_classes: number of classes allowed, includes unknown, assume numbered 0,1,2,...
     
-    mask = find_unknown_mask(gt, unknown_value = unknown_value)
+    mask = (gt != unknown_value).astype(bool) 
     gt_sub = gt[mask]
     pred_sub = pred[mask]
     
@@ -78,12 +57,14 @@ def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0
     pred_mapped = np.array(list(map(mapping, pred_list)))
     
     ### Get classification scores
-    mask = find_unknown_mask(gt, unknown_value = unknown_value)
+    mask = (gt != unknown_value).astype(bool)
     gt_sub = gt[mask]
     pred_sub = pred_mapped[mask]
     
     labels = np.arange(len(label_names))
     labels = labels[labels != unknown_value]
+    
+    cm = confusion_matrix(gt_sub, pred_sub, labels= labels)
     
     precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
@@ -102,7 +83,7 @@ def get_unsupervised_scores(gt, pred, mapping_dict, label_names, unknown_value=0
     results['ground_truth_label_counts'] = {label_names[i] : int(np.sum(gt_sub == i)) for i in labels}
     results['predicted_label_counts'] = {label_names[i] : int(np.sum(pred_sub == i)) for i in labels}
     
-    return results
+    return results, cm
   
 def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_scale_sec = 1., sr = 1.):
     # gt: 1-dim array of integer gt labels (per frame)
@@ -124,6 +105,8 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     labels = np.arange(len(label_names))
     labels = labels[labels != unknown_value]
     
+    cm = confusion_matrix(gt_sub, pred_sub, labels= labels)
+    
     precisions = precision_score(gt_sub, pred_sub, labels = labels, average = None, zero_division =1)
     results['classification_precision'] = {label_names[labels[i]] : float(precisions[i]) for i in range(len(precisions))}
     results['classification_precision_macro'] = float(np.mean(precisions))
@@ -141,7 +124,7 @@ def get_supervised_scores(gt, pred, label_names, unknown_value=0, target_time_sc
     results['ground_truth_label_counts'] = {label_names[i] : int(np.sum(gt_sub == i)) for i in labels}
     results['predicted_label_counts'] = {label_names[i] : int(np.sum(pred_sub == i)) for i in labels}
     
-    return results
+    return results, cm
   
 def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0, mapping_dict = None, supervised = False, target_time_scale_sec = 1., sr = 1.):
     # gt: 1-dim array of int gt labels (per frame)
@@ -162,22 +145,22 @@ def mapping_based_scores(gt, pred, num_clusters, label_names, unknown_value = 0,
                                           unknown_value = unknown_value)
     
     if supervised:
-      mapping_based_score_dict = get_supervised_scores(gt,
-                                                       pred,
-                                                       label_names,
-                                                       unknown_value=unknown_value,
-                                                       target_time_scale_sec = target_time_scale_sec,
-                                                       sr = sr
-                                                      )
+      mapping_based_score_dict, cm = get_supervised_scores(gt,
+                                                           pred,
+                                                           label_names,
+                                                           unknown_value=unknown_value,
+                                                           target_time_scale_sec = target_time_scale_sec,
+                                                           sr = sr
+                                                          )
     else:
-      mapping_based_score_dict = get_unsupervised_scores(gt,
-                                                         pred,
-                                                         mapping_dict,
-                                                         label_names,
-                                                         unknown_value = unknown_value, 
-                                                         target_time_scale_sec = target_time_scale_sec,
-                                                         sr = sr
-                                                        )
+      mapping_based_score_dict, cm = get_unsupervised_scores(gt,
+                                                             pred,
+                                                             mapping_dict,
+                                                             label_names,
+                                                             unknown_value = unknown_value, 
+                                                             target_time_scale_sec = target_time_scale_sec,
+                                                             sr = sr
+                                                            )
     
-    return mapping_based_score_dict, mapping_dict
+    return mapping_based_score_dict, mapping_dict, cm
     

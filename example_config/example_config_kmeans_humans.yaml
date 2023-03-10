@@ -1,10 +1,11 @@
-experiment_name: kmeans1
+experiment_name: kmeans0
 model: kmeans
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 test_folds : 
 - 0
 seed : 0
+static_acc_cutoff_freq : 0
 
 kmeans_config:
   max_iter: 500

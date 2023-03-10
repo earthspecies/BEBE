@@ -14,6 +14,7 @@ import umap
 from BEBE.models.model_superclass import BehaviorModel
 import pickle
 from skimage.transform import resize
+from BEBE.models.preprocess import static_acc_filter
 
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
@@ -33,12 +34,6 @@ class umapper(BehaviorModel):
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
-    low_freq_cols_bool = [x in self.model_config['low_freq_cols'] for x in self.metadata['clip_column_names']] # which columns to not apply wavelet transform to
-    self.low_freq_cols = [i for i, x in enumerate(low_freq_cols_bool) if x]
-    
-    high_freq_cols_bool = [(x in self.config['input_vars'] and x not in self.model_config['low_freq_cols']) for x in self.metadata['clip_column_names']] # which columns to apply wavelet transform to
-    self.high_freq_cols = [i for i, x in enumerate(high_freq_cols_bool) if x]
-    
     # initialize umap
     self.reducer = umap.UMAP(
         n_neighbors = n_neighbors,
@@ -56,27 +51,18 @@ class umapper(BehaviorModel):
     freq = np.linspace(1, fs/2, self.n_wavelets)
     widths = self.morlet_w*fs / (2*freq*np.pi)
 
-    # We can distinguish low and high frequency channels. By default, everything is considered high frequency  
-    low_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.low_freq_cols]
-    high_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.high_freq_cols]
+    data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+    data = static_acc_filter(data, self.config)
     
-    axes = np.arange(0, np.shape(high_freq_data)[1])
+    axes = np.arange(0, np.shape(data)[1])
     transformed = []
     for axis in axes:
-        sig = high_freq_data[:, axis]
+        sig = data[:, axis]
         sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
         if downsample > 1:
             transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
         else:
             transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
-        
-    axes = np.arange(0, np.shape(low_freq_data)[1])
-    for axis in axes:
-        sig = low_freq_data[:, axis]
-        if downsample > 1:
-            transformed.append(np.expand_dims(sig, 0)[:, ::downsample]) # do not transform low frequency data
-        else:
-            transformed.append(np.expand_dims(sig, 0))
 
     transformed = np.concatenate(transformed, axis = 0)
     transformed = np.transpose(transformed)

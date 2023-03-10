@@ -2,7 +2,7 @@
 
 from sklearn.cluster import KMeans
 from BEBE.models.model_superclass import BehaviorModel
-from BEBE.models.preprocess import whitener_standalone
+from BEBE.models.preprocess import whitener_standalone, static_acc_filter
 import yaml
 import numpy as np
 import pickle
@@ -28,7 +28,6 @@ class kmeans(BehaviorModel):
     self.downsample = self.model_config['downsample']
     
   def load_model_inputs(self, filepath, downsample = 1):
-    
     if self.wavelet_transform:
       # perform wavelet transform during loading
       t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
@@ -37,6 +36,7 @@ class kmeans(BehaviorModel):
       widths = self.morlet_w*fs / (2*freq*np.pi)
 
       data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      data = static_acc_filter(data, self.config)
 
       axes = np.arange(0, np.shape(data)[1])
       transformed = []
@@ -53,7 +53,11 @@ class kmeans(BehaviorModel):
       return transformed
     
     else:
-      return pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      if downsample > 1:
+          data = pd.read_csv(filepath, delimiter = ',', header = None).values[::downsample, self.cols_included]
+      else:
+          data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      return static_acc_filter(data, self.config)
 
     
   def fit(self):

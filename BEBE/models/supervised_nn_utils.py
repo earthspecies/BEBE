@@ -15,6 +15,8 @@ from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
 import random
 import pandas as pd
+from BEBE.models.preprocess import static_acc_filter
+
     
 class BEHAVIOR_DATASET(Dataset):
     def __init__(self, data, labels, train, temporal_window_samples, config, rescale_param = 0):
@@ -130,16 +132,24 @@ class SupervisedBehaviorModel(BehaviorModel):
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     self.n_classes = len(self.metadata['label_names']) 
-    self.n_features = len(self.cols_included)
+    self.n_features = self.get_n_features()
     
     # Specify in subclass
     self.model = None
     
   def _count_parameters(self):
     return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+  
+  def get_n_features(self):
+    # gets number of input channels; this varies depending on static acc filtering hyperparameter
+    train_fps = self.config['train_data_fp']
+    x = self.load_model_inputs(train_fps[0])
+    return np.shape(x)[1]
     
   def load_model_inputs(self, filepath):
     x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
+    x = static_acc_filter(x, self.config)
+
     if self.normalize:
       x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
     return x

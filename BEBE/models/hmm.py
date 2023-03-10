@@ -12,9 +12,9 @@ class hmm(BehaviorModel):
     self.time_bins = self.model_config['time_bins']
     
   def fit(self):
-    dev_data = []
-    dev_fps = self.config['dev_data_fp']
-    for fp in dev_fps:
+    train_data = []
+    train_fps = self.config['train_data_fp']
+    for fp in train_fps:
       obs = self.load_model_inputs(fp)
       
       # Possibly subselect from training data:
@@ -25,9 +25,9 @@ class hmm(BehaviorModel):
         obs = obs[start:start + to_select, ...]
         
       obs_list = [obs[i* self.time_bins: (i+1)* self.time_bins, :] for i in range(len(obs)//self.time_bins)]
-      dev_data.extend(obs_list)
+      train_data.extend(obs_list)
       
-    self.obs_dim = np.shape(dev_data[0])[1]
+    self.obs_dim = np.shape(train_data[0])[1]
     
     ###
     # Compute transition matrix prior probabilities
@@ -47,7 +47,7 @@ class hmm(BehaviorModel):
     # we have to specify how flat is the prior distribution over P_ii
     
     prior_strength = self.model_config['sticky_prior_strength'] # 0 is non-informative prior, 1. is as if we already have num_transitions_train_seen-many samples of evidence for the prior 
-    num_transitions_train_seen = len(dev_data) * (self.time_bins-1)
+    num_transitions_train_seen = len(train_data) * (self.time_bins-1)
     
     prior_scaling_factor = prior_strength * num_transitions_train_seen
     
@@ -74,7 +74,7 @@ class hmm(BehaviorModel):
                           )
       
     N_iters = self.model_config['N_iters']
-    hmm_lls = self.model.fit(dev_data, 
+    hmm_lls = self.model.fit(train_data, 
                              method= "em", 
                              num_iters = N_iters, 
                              init_method="kmeans",

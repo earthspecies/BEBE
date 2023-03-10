@@ -40,18 +40,10 @@ class rf(BehaviorModel):
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
-    
-  def load_model_inputs(self, filepath):
-
-    inputs = pd.read_csv(filepath, delimiter = ',', header = None).values
-    data = inputs[:, self.cols_included]
-      
-    return data
   
   def load_labels(self, filepath):
     inputs = pd.read_csv(filepath, delimiter = ',', header = None).values
     labels = inputs[:, self.label_idx].astype(int)
-
     return labels
   
   def prepare_model_inputs(self, data, labels = None):

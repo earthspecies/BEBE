@@ -5,6 +5,7 @@ dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 seed : 0
 test_folds: 
 - 0
+static_acc_cutoff_freq : 0
 
 CRNN_config:
   batch_size: 512

@@ -116,12 +116,9 @@ def expand_config(config):
 def accept_default_model_configs(config):
   # Makes sure that all the entries of the config file are properly filled in.  
   ### set up model-specific config    
-    
-  model_type = config['model']
-  model_config_name = model_type + "_config"
-  
-  if model_config_name not in config:
-    config[model_config_name] = {}
+      
+  if "model_config" not in config:
+    config["model_config"] = {}
     
   ### look up default settings
   default_config_fp = os.path.join('BEBE', 'models', 'default_configs', config['model'] + '.yaml')
@@ -136,8 +133,8 @@ def accept_default_model_configs(config):
   ### apply defaults if unspecified in training config file
       
   for key in default_model_config:
-    if key not in config[model_config_name]:
-      config[model_config_name][key] = default_model_config[key]
+    if key not in config["model_config"]:
+      config["model_config"][key] = default_model_config[key]
       
   return config
 
