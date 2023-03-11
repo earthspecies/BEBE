@@ -69,21 +69,21 @@ class umapper(BehaviorModel):
     return transformed
     
   def fit(self):
-    dev_fps = self.config['dev_data_fp']
+    train_fps = self.config['train_data_fp']
     
     # load as wavelets
-    dev_data = []
+    train_data = []
     print("Loading inputs")
-    for fp in tqdm(dev_fps):
-        dev_data.append(self.load_model_inputs(fp, downsample = self.downsample))
-    dev_data = np.concatenate(dev_data, axis = 0)
+    for fp in tqdm(train_fps):
+        train_data.append(self.load_model_inputs(fp, downsample = self.downsample))
+    train_data = np.concatenate(train_data, axis = 0)
     
     # normalize and record normalizing constant
-    normalize_denom = np.sum(dev_data, axis = 1, keepdims = True)
-    dev_data = dev_data / (normalize_denom + 1e-6)
+    normalize_denom = np.sum(train_data, axis = 1, keepdims = True)
+    train_data = train_data / (normalize_denom + 1e-6)
     
     # fit umap
-    y = self.reducer.fit_transform(dev_data)
+    y = self.reducer.fit_transform(train_data)
     
     # learn how to rescale into useful image
     self.translation = np.amin(y, axis = 0)
