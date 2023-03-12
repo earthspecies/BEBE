@@ -209,21 +209,21 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       else:
         window_samples = 2048
     
-      model_hyperparameter_choices = {'downsizing_factor' : [window_samples//4],
-                                      'lr' : [0.001],
-                                      'weight_decay' : [0],
-                                      'n_epochs' : [1000],
-                                      'hidden_size' : [64],
-                                      'temporal_window_samples' : [window_samples],
-                                      'batch_size' : [64],
-                                      'dropout' : [0],
-                                      'jitter_scale' : [0],
-                                      'blur_scale' : [0],
-                                      'context_window_samples' : [15, 51],
-                                      'conv_depth' : [4],
-                                      'ker_size' : [7],
-                                      'dilation' : [1, 5],
-                                      'n_heads' : [2]}
+      model_hyperparam_choices = {'downsizing_factor' : [window_samples//4],
+                                  'lr' : [0.001],
+                                  'weight_decay' : [0],
+                                  'n_epochs' : [1000],
+                                  'hidden_size' : [64],
+                                  'temporal_window_samples' : [window_samples],
+                                  'batch_size' : [64],
+                                  'dropout' : [0],
+                                  'jitter_scale' : [0],
+                                  'blur_scale' : [0],
+                                  'context_window_samples' : [15, 51],
+                                  'conv_depth' : [4],
+                                  'ker_size' : [7],
+                                  'dilation' : [1, 5],
+                                  'n_heads' : [2]}
     
   if model_type == 'random':
     model_hyperparam_choices = {}
