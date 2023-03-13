@@ -34,6 +34,10 @@ class umapper(BehaviorModel):
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
+    # set up cache predictions because umap.transform is slow
+    self.data_fp_to_start_and_end = {'train': {}, 'val': {}, 'test': {}} 
+    self.yq_cached = {'train' : None, 'val' : None, 'test' : None}
+    
     # initialize umap
     self.reducer = umap.UMAP(
         n_neighbors = n_neighbors,
@@ -58,9 +62,9 @@ class umapper(BehaviorModel):
     transformed = []
     for axis in axes:
         sig = data[:, axis]
-        sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
+        sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize signal before wavelet transform
         if downsample > 1:
-            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
+            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample]) # scipy normalizes morlet wavelets automatically
         else:
             transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
 
@@ -73,14 +77,17 @@ class umapper(BehaviorModel):
     
     # load as wavelets
     train_data = []
+    
+    pointer = 0
     print("Loading inputs")
     for fp in tqdm(train_fps):
-        train_data.append(self.load_model_inputs(fp, downsample = self.downsample))
+        data = self.load_model_inputs(fp, downsample = self.downsample)
+        l = np.shape(data)[0]
+        train_data.append(data)
+        self.data_fp_to_start_and_end['train'][fp] = (pointer, pointer + l)
+        pointer += l
+        
     train_data = np.concatenate(train_data, axis = 0)
-    
-    # normalize and record normalizing constant
-    normalize_denom = np.sum(train_data, axis = 1, keepdims = True)
-    train_data = train_data / (normalize_denom + 1e-6)
     
     # fit umap
     y = self.reducer.fit_transform(train_data)
@@ -92,6 +99,8 @@ class umapper(BehaviorModel):
     yq = (yq * self.scale_factor).astype(int) + self.image_border
     yq = np.maximum(yq, 0)
     yq = np.minimum(yq, self.image_size-1)
+    
+    self.yq_cached['train'] = yq
     
     # Turn into dense array format
     data = np.ones_like(yq[:, 0]) #every entry in the list yq contributes 1
@@ -172,15 +181,52 @@ class umapper(BehaviorModel):
     fp = os.path.join(self.config['output_dir'], 'UMAP_vis.png')
     plt.savefig(fp)
     
+    # cache val and test predictions
+    for split in ['val', 'test']:
+      pointer = 0
+      split_data = []
+      print(f"Caching predictions from {split}")
+      if len(self.config[f'{split}_data_fp']) == 0:
+          continue
+      for fp in tqdm(self.config[f'{split}_data_fp']):
+          data = self.load_model_inputs(fp, downsample = self.downsample)
+          l = np.shape(data)[0]
+          split_data.append(data)
+          self.data_fp_to_start_and_end[split][fp] = (pointer, pointer + l)
+          pointer += l
+
+      split_data = np.concatenate(split_data, axis = 0)
+
+      # transform
+      y = self.reducer.transform(split_data)
+
+      # learn how to rescale into useful image
+      yq = y - self.translation # translate
+      yq = (yq * self.scale_factor).astype(int) + self.image_border # rescale
+      yq = np.maximum(yq, 0) #crop
+      yq = np.minimum(yq, self.image_size-1)
+
+      self.yq_cached[split] = yq
+    
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
+    
+  def predict_from_file(self, fp):
+    inputs = self.load_model_inputs(fp)
+    for split in ['train', 'val', 'test']:
+      if fp in self.data_fp_to_start_and_end[split]:
+        start, end = self.data_fp_to_start_and_end[split][fp]
+        yq = self.yq_cached[split][start:end, :]
+        predictions = self.label_image[yq[:,0], yq[:, 1]]
+        predictions = resize(predictions, (np.shape(inputs)[0],), order=0, mode='constant')
+        return predictions, None
+    predictions, _ = self.predict(inputs)
+    return predictions, None
   
   def predict(self, data):
     # normalize
-    normalize_denom = np.sum(data, axis = 1, keepdims = True)
-    data = data / (normalize_denom + 1e-6)
     data_downsampled = data[::self.downsample, :]
     
     # fit umap
