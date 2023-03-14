@@ -70,7 +70,7 @@ class umapper(BehaviorModel):
 
     transformed = np.concatenate(transformed, axis = 0)
     transformed = np.transpose(transformed)
-    return transformed
+    return transformed.astype(np.float32)
     
   def fit(self):
     train_fps = self.config['train_data_fp']
