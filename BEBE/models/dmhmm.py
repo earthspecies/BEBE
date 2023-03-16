@@ -1,41 +1,37 @@
 import numpy as np
+import jax.random as jr
+import jax.numpy as jnp
+import pandas as pd
 import pickle
 import os
 from matplotlib import pyplot as plt
-from BEBE.models.model_superclass import BehaviorModel
-from dynamax.hidden_markov_model import GaussianHMM, DiagonalGaussianHMM, LinearAutoregressiveHMM
-import jax.random as jr
-# from functools import partial
-import jax.numpy as jnp
-from jax import vmap
-import warnings
 
-## Example config
-# model_config:
-#   time_bins: 1000
-#   N_iters: 10
-#   lags: 1
-#   type: autoregressive
-#   matrix_concentration: 1.1
+from dynamax.hidden_markov_model import GaussianHMM, DiagonalGaussianHMM
+
+from BEBE.models.preprocess import whitener_standalone, static_acc_filter, load_wavelet_transformed_data
+from BEBE.models.model_superclass import BehaviorModel
+
 
 class hmm(BehaviorModel):
   def __init__(self, config):
     super(hmm, self).__init__(config)
     self.random_seed = self.config['seed']
     self.oom_limit = 10000
-    if self.model_config["type"] == "full-covariance":
+
+    ## Model setup
+    if self.model_config["covariance"] == "full":
       self.model_creation = lambda emission_dim: GaussianHMM(
           self.config['num_clusters'], 
           emission_dim, 
           initial_probs_concentration=1.1, 
-          transition_matrix_concentration=self.model_config["matrix_concentration"], #1.1
+          transition_matrix_concentration=self.model_config["matrix_concentration"],
           transition_matrix_stickiness=0.0, 
           emission_prior_mean=0.0, 
-          emission_prior_concentration=0.1, 
-          emission_prior_scale=0.1, 
-          emission_prior_extra_df=0.1
+          emission_prior_concentration=self.model_config["mean_concentration"], 
+          emission_prior_scale=self.model_config["cov_scale"],
+          emission_prior_extra_df=self.model_config["cov_df"]
         )
-    elif self.model_config["type"] == "diagonal-covariance":
+    elif self.model_config["covariance"] == "diagonal":
       self.model_creation = lambda emission_dim: DiagonalGaussianHMM(
                           self.config['num_clusters'], 
                           emission_dim, 
@@ -43,44 +39,52 @@ class hmm(BehaviorModel):
                           transition_matrix_concentration=self.model_config["matrix_concentration"], 
                           transition_matrix_stickiness=0.0, 
                           emission_prior_mean=0.0, 
-                          emission_prior_mean_concentration=0.1, 
-                          emission_prior_concentration=0.1, 
-                          emission_prior_scale=0.1
+                          emission_prior_mean_concentration=self.model_config["mean_concentration"], 
+                          emission_prior_concentration=self.model_config["cov_concentration"], 
+                          emission_prior_scale=self.model_config["cov_scale"]
                           )
-    elif self.model_config["type"] == "autoregressive":
-      self.model_creation = lambda emission_dim: LinearAutoregressiveHMM(
-                              self.config['num_clusters'], 
-                              emission_dim, 
-                              num_lags=self.model_config['lags'], 
-                              initial_probs_concentration=1.1, 
-                              transition_matrix_concentration=self.model_config["matrix_concentration"], 
-                              transition_matrix_stickiness=0.0
-                              )
+
+    ## Pre-processing setup
+    self.whiten = self.model_config['whiten']
+    self.n_components = self.model_config['n_components']
+    self.whitener = whitener_standalone(n_components = self.n_components)
+    self.wavelet_transform = self.model_config['wavelet_transform']
+    # wavelet transform: specific settings
+    self.morlet_w = self.model_config['morlet_w']
+    self.n_wavelets = self.model_config['n_wavelets']
+    self.downsample = self.model_config['downsample']
+
+  def load_model_inputs(self, filepath, train=False):
+    if not self.wavelet_transform:
+      data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      data = static_acc_filter(data, self.config)
+    else:
+      data = load_wavelet_transformed_data(self, filepath, downsample = self.downsample)
+    if train: #for batching purposes
+      data = data[:-(data.shape[0] % self.model_config["time_bins"]), :]
+    return data
 
   def fit(self):
 
-    train_data_list = []
+    train_data = []
     for fp in self.config["train_data_fp"]:
-      x = self.load_model_inputs(fp)
-      x = x[:-(x.shape[0] % self.model_config["time_bins"]), :]
-      x_batches = np.stack(np.split(x, int(x.shape[0]/self.model_config["time_bins"]), axis=0))
-      train_data_list.append(x_batches)
+        x = self.load_model_inputs(fp, train=True)
+        x_batches = np.stack(np.split(x, int(x.shape[0]/self.model_config["time_bins"]), axis=0))
+        train_data.append(x_batches)
 
-    train_data = np.concatenate(train_data_list, axis=0)    
-    self.obs_dim = np.shape(train_data)[1]
-    self.feature_dim = np.shape(train_data)[2]
-    
+    train_data = np.concatenate(train_data, axis=0)
+    n_batches, self.obs_dim, self.feature_dim = train_data.shape
+
+    if self.whiten:
+      train_data = self.whitener.fit_transform(train_data.reshape(-1,self.feature_dim)).reshape(n_batches,self.obs_dim,-1)
+      self.feature_dim = train_data.shape[2]
+
     ###
     key = jr.PRNGKey(self.config['seed'])
     train_data = jnp.array(train_data)
     self.model = self.model_creation(self.feature_dim)
     params, param_props = self.model.initialize(key=key, method="kmeans", emissions=train_data)
-    if self.model_config["type"] == "autoregressive":
-      #This does not optimize well: NaNs after ~5 iterations.
-      inputs = vmap(self.model.compute_inputs)(train_data) #train_data.shape must be batch x obs_dim x feature_dim
-      self.model_params, log_probs = self.model.fit_em(params, param_props, train_data, inputs=inputs, num_iters=self.model_config["N_iters"])
-    else:
-      self.model_params, log_probs = self.model.fit_em(params, param_props, train_data, num_iters=self.model_config["N_iters"])
+    self.model_params, log_probs = self.model.fit_em(params, param_props, train_data, num_iters=self.model_config["N_iters"])
     bad_optimization = np.any(np.isnan(log_probs))
 
     # Save log likelihood and transition plots
@@ -108,9 +112,7 @@ class hmm(BehaviorModel):
   
   def predict(self, data):
     # assert len(data.shape) == 2 #time, features
-    if self.model_config["type"] == "autoregressive":
-      inputs = self.model.compute_inputs(data) 
-      predictions = self.model.most_likely_states(self.model_params, data, inputs=inputs)
-    else:
-      predictions = self.model.most_likely_states(self.model_params, data)
+    if self.whiten:
+      data = self.whitener.transform(data)
+    predictions = self.model.most_likely_states(self.model_params, data)
     return predictions, None
