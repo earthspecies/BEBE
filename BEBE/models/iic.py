@@ -35,7 +35,7 @@ class iic(BehaviorModel):
     
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
-    self.n_epochs = 500
+    self.n_epochs = 100
     self.downsizing_factor = self.get_downsizing_factor()
     self.context_window_samples = self.model_config['context_window_samples']
     self.batch_size = self.model_config['batch_size']
