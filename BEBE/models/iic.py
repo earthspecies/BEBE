@@ -32,10 +32,11 @@ class iic(BehaviorModel):
     super(iic, self).__init__(config)
     print(f"Using {device} device")
     
-    self.downsizing_factor = self.model_config['downsizing_factor']
+    
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
-    self.n_epochs = self.model_config['n_epochs']
+    self.n_epochs = 500
+    self.downsizing_factor = self.get_downsizing_factor()
     self.context_window_samples = self.model_config['context_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
@@ -78,6 +79,14 @@ class iic(BehaviorModel):
     train_fps = self.config['train_data_fp']
     x = self.load_model_inputs(train_fps[0])
     return np.shape(x)[1]
+  
+  def get_downsizing_factor(self):
+    train_fps = self.config['train_data_fp']
+    train_data = [self.load_model_inputs(fp) for fp in train_fps]
+    train_data = np.concatenate(train_data, axis = 0)
+    data_len = np.shape(train_data)[0]    
+    downsizing_factor = int((self.n_epochs * data_len) / (self.model_config['n_train_steps'] * self.model_config['batch_size']))
+    return downsizing_factor
   
   def fit(self):
     train_fps = self.config['train_data_fp']

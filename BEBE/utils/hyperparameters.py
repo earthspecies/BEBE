@@ -209,10 +209,9 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       else:
         window_samples = 2048
     
-      model_hyperparam_choices = {'downsizing_factor' : [window_samples//4],
-                                  'lr' : [0.001],
+      model_hyperparam_choices = {'lr' : [0.001],
                                   'weight_decay' : [0],
-                                  'n_epochs' : [1000],
+                                  'n_train_steps' : [100000],
                                   'hidden_size' : [64],
                                   'temporal_window_samples' : [window_samples],
                                   'batch_size' : [64],

@@ -14,7 +14,7 @@ import umap
 from BEBE.models.model_superclass import BehaviorModel
 import pickle
 from skimage.transform import resize
-from BEBE.models.preprocess import static_acc_filter
+from BEBE.models.preprocess import load_wavelet_transformed_data
 
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
@@ -48,29 +48,7 @@ class umapper(BehaviorModel):
     )
     
   def load_model_inputs(self, filepath, downsample = 1):
-    # perform wavelet transform during loading
-    # Perform morlet wavelet transform
-    t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
-    fs = 1/dt
-    freq = np.linspace(1, fs/2, self.n_wavelets)
-    widths = self.morlet_w*fs / (2*freq*np.pi)
-
-    data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
-    data = static_acc_filter(data, self.config)
-    
-    axes = np.arange(0, np.shape(data)[1])
-    transformed = []
-    for axis in axes:
-        sig = data[:, axis]
-        sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize signal before wavelet transform
-        if downsample > 1:
-            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample]) # scipy normalizes morlet wavelets automatically
-        else:
-            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
-
-    transformed = np.concatenate(transformed, axis = 0)
-    transformed = np.transpose(transformed)
-    return transformed.astype(np.float32)
+    return load_wavelet_transformed_data(self, filepath, downsample)
     
   def fit(self):
     train_fps = self.config['train_data_fp']

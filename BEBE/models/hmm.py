@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 from dynamax.hidden_markov_model import GaussianHMM, DiagonalGaussianHMM
 
-from BEBE.models.preprocess import whitener_standalone, static_acc_filter, load_wavelet_transformed_data
+from BEBE.models.preprocess import static_acc_filter, load_wavelet_transformed_data
 from BEBE.models.model_superclass import BehaviorModel
 
 
@@ -45,9 +45,7 @@ class hmm(BehaviorModel):
                           )
 
     ## Pre-processing setup
-    self.whiten = self.model_config['whiten']
     self.n_components = self.model_config['n_components']
-    self.whitener = whitener_standalone(n_components = self.n_components)
     self.wavelet_transform = self.model_config['wavelet_transform']
     # wavelet transform: specific settings
     self.morlet_w = self.model_config['morlet_w']
@@ -74,10 +72,6 @@ class hmm(BehaviorModel):
 
     train_data = np.concatenate(train_data, axis=0)
     n_batches, self.obs_dim, self.feature_dim = train_data.shape
-
-    if self.whiten:
-      train_data = self.whitener.fit_transform(train_data.reshape(-1,self.feature_dim)).reshape(n_batches,self.obs_dim,-1)
-      self.feature_dim = train_data.shape[2]
 
     ###
     key = jr.PRNGKey(self.config['seed'])
@@ -112,7 +106,5 @@ class hmm(BehaviorModel):
   
   def predict(self, data):
     # assert len(data.shape) == 2 #time, features
-    if self.whiten:
-      data = self.whitener.transform(data)
     predictions = self.model.most_likely_states(self.model_params, data)
     return predictions, None

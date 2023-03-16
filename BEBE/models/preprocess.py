@@ -25,7 +25,7 @@ def load_wavelet_transformed_data(self, filepath, downsample):
 
   transformed = np.concatenate(transformed, axis = 0)
   transformed = np.transpose(transformed)
-  return transformed
+  return transformed.astype(np.float32)
 
 # class to normalize and whiten data
 class whitener_standalone():
