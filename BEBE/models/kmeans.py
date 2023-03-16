@@ -2,14 +2,12 @@
 
 from sklearn.cluster import KMeans
 from BEBE.models.model_superclass import BehaviorModel
-from BEBE.models.preprocess import whitener_standalone, static_acc_filter
+from BEBE.models.preprocess import whitener_standalone, static_acc_filter, load_wavelet_transformed_data
 import yaml
 import numpy as np
 import pickle
 import os
 import pandas as pd
-import scipy.signal as signal
-
 
 class kmeans(BehaviorModel):
   def __init__(self, config):
@@ -29,28 +27,7 @@ class kmeans(BehaviorModel):
     
   def load_model_inputs(self, filepath, downsample = 1):
     if self.wavelet_transform:
-      # perform wavelet transform during loading
-      t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
-      fs = 1/dt
-      freq = np.linspace(1, fs/2, self.n_wavelets)
-      widths = self.morlet_w*fs / (2*freq*np.pi)
-
-      data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
-      data = static_acc_filter(data, self.config)
-
-      axes = np.arange(0, np.shape(data)[1])
-      transformed = []
-      for axis in axes:
-          sig = data[:, axis]
-          sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize each channel independently
-          if downsample > 1:
-              transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
-          else:
-              transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
-
-      transformed = np.concatenate(transformed, axis = 0)
-      transformed = np.transpose(transformed)
-      return transformed
+      return load_wavelet_transformed_data(self, filepath, downsample)
     
     else:
       if downsample > 1:
