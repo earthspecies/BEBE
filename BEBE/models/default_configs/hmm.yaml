@@ -1,9 +1,16 @@
 unsupervised : true
   
 default_model_config:
-  time_bins : 2500 
-  prior_wait_sec : 5. 
-  sticky_prior_strength : 0. 
-  N_iters : 50
-  lags : 1
-  subselect_proportion : 1.
+  time_bins: 2500
+  N_iters: 50
+  covariance: diagonal
+  matrix_concentration: 1.1
+  mean_concentration: 0.1
+  cov_scale: 0.1
+  cov_df: 0.1
+  cov_concentration: 0.1
+  cov_scale: 0.1
+  wavelet_transform : false
+  morlet_w : 5.
+  n_wavelets : 25
+  downsample : 1

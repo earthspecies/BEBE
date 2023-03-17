@@ -62,6 +62,15 @@ class hmm(BehaviorModel):
       data = data[:-(data.shape[0] % self.model_config["time_bins"]), :]
     return data
 
+  def zscore(self, data, train=False):
+    if train:
+      self.mu = data.reshape(-1, data.shape[-1]).mean(0)
+      self.std = data.reshape(-1, data.shape[-1]).std(0)
+    if len(data.shape) == 2: #time x features
+      return (data - self.mu[None, :])/self.std[None, :]
+    elif len(data.shape) == 3: #batch x time x features
+      return (data - self.mu[None, None, :])/self.std[None, None, :]
+
   def fit(self):
 
     train_data = []
@@ -71,6 +80,7 @@ class hmm(BehaviorModel):
         train_data.append(x_batches)
 
     train_data = np.concatenate(train_data, axis=0)
+    train_data = self.zscore(train_data, train=True)
     n_batches, self.obs_dim, self.feature_dim = train_data.shape
 
     ###
@@ -106,5 +116,6 @@ class hmm(BehaviorModel):
   
   def predict(self, data):
     # assert len(data.shape) == 2 #time, features
+    data = self.zscore(data, train=False)
     predictions = self.model.most_likely_states(self.model_params, data)
     return predictions, None
