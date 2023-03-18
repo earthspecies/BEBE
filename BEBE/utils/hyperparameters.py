@@ -150,7 +150,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'temporal_window_samples' : [window_samples], 
                                 'batch_size' : [32],
                                 'conv_depth' : [2],
-                                'sparse_annotations' : [False],
+                                'sparse_annotations' : [True],
                                 'ker_size' : [7],
                                 'dilation' : [1, 3, 5],
                                 'gru_depth' : [gru_depth],
