@@ -1,4 +1,5 @@
 import numpy as np
+import jax
 import jax.random as jr
 import jax.numpy as jnp
 import pandas as pd
@@ -45,7 +46,6 @@ class hmm(BehaviorModel):
                           )
 
     ## Pre-processing setup
-    self.n_components = self.model_config['n_components']
     self.wavelet_transform = self.model_config['wavelet_transform']
     # wavelet transform: specific settings
     self.morlet_w = self.model_config['morlet_w']
@@ -59,7 +59,7 @@ class hmm(BehaviorModel):
     else:
       data = load_wavelet_transformed_data(self, filepath, downsample = self.downsample)
     if train: #for batching purposes
-      data = data[:-(data.shape[0] % self.model_config["time_bins"]), :]
+      data = data[:-(data.shape[0] % self.model_config["temporal_window_samples"]), :]
     return data
 
   def zscore(self, data, train=False):
@@ -76,20 +76,21 @@ class hmm(BehaviorModel):
     train_data = []
     for fp in self.config["train_data_fp"]:
         x = self.load_model_inputs(fp, train=True)
-        x_batches = np.stack(np.split(x, int(x.shape[0]/self.model_config["time_bins"]), axis=0))
+        x_batches = np.stack(np.split(x, int(x.shape[0]/self.model_config["temporal_window_samples"]), axis=0))
         train_data.append(x_batches)
 
     train_data = np.concatenate(train_data, axis=0)
     train_data = self.zscore(train_data, train=True)
     n_batches, self.obs_dim, self.feature_dim = train_data.shape
-
     ###
-    key = jr.PRNGKey(self.config['seed'])
-    train_data = jnp.array(train_data)
-    self.model = self.model_creation(self.feature_dim)
-    params, param_props = self.model.initialize(key=key, method="kmeans", emissions=train_data)
-    self.model_params, log_probs = self.model.fit_em(params, param_props, train_data, num_iters=self.model_config["N_iters"])
-    bad_optimization = np.any(np.isnan(log_probs))
+    self.jax_device = "cpu" if self.model_config["covariance"] == "full" else "gpu"
+    with jax.default_device(jax.devices(self.jax_device)[0]):
+      key = jr.PRNGKey(self.config['seed'])
+      train_data = jnp.array(train_data)
+      self.model = self.model_creation(self.feature_dim)
+      params, param_props = self.model.initialize(key=key, method="kmeans", emissions=train_data)
+      self.model_params, log_probs = self.model.fit_em(params, param_props, train_data, num_iters=self.model_config["N_iters"])
+      bad_optimization = np.any(np.isnan(log_probs))
 
     # Save log likelihood and transition plots
     plt.plot(log_probs, label="EM")
@@ -117,5 +118,7 @@ class hmm(BehaviorModel):
   def predict(self, data):
     # assert len(data.shape) == 2 #time, features
     data = self.zscore(data, train=False)
-    predictions = self.model.most_likely_states(self.model_params, data)
+    with jax.default_device(jax.devices(self.jax_device)[0]):
+      data = jnp.array(data)
+      predictions = self.model.most_likely_states(self.model_params, data)
     return predictions, None
