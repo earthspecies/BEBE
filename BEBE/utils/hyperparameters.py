@@ -226,23 +226,29 @@ def get_model_hyperparam_choices(model_type, dataset_name):
     
   if model_type == 'random':
     model_hyperparam_choices = {}
-    
+
+  if model_type == 'hmm':
+    if dataset_name == 'desantis_rattlesnakes':
+      window_samples = 64
+    elif dataset_name == 'ladds_seals':
+      window_samples = 128
+    else:
+      window_samples = 2048
+
+    model_hyperparam_choices = {
+        "temporal_window_samples": [window_samples],
+        "N_iters": [50],
+        "covariance": ["diagonal", "full"],
+        "matrix_concentration": [1.1],
+        "mean_concentration": [0.1],
+        "cov_scale": [1.0],
+        "cov_df": [0.1],
+        "cov_concentration": [0.1],
+        "wavelet_transform" : [False],
+        "downsample" : [1]
+    }
+
   return model_hyperparam_choices
-  
-
-
-
-      
-
-#   if model_type == 'hmm':
-#       sweep_model_config = {'time_bins' : [2500],
-#                             'N_iters' : [50],
-#                             'lags' : [0, 1, 3]
-#                            }
-
-#       summary['vame_config'] = sweep_model_config
- 
-
       
 def get_static_acc_cutoff_choices(model_type, dataset_name):
   if model_type == "random":

@@ -1,7 +1,7 @@
 unsupervised : true
   
 default_model_config:
-  time_bins: 2500
+  temporal_window_samples: 2500
   N_iters: 50
   covariance: diagonal
   matrix_concentration: 1.1
@@ -9,7 +9,6 @@ default_model_config:
   cov_scale: 0.1
   cov_df: 0.1
   cov_concentration: 0.1
-  cov_scale: 0.1
   wavelet_transform : false
   morlet_w : 5.
   n_wavelets : 25
