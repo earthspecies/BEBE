@@ -11,6 +11,7 @@ from dynamax.hidden_markov_model import GaussianHMM, DiagonalGaussianHMM
 
 from BEBE.models.preprocess import static_acc_filter, load_wavelet_transformed_data
 from BEBE.models.model_superclass import BehaviorModel
+import torch
 
 
 class hmm(BehaviorModel):
@@ -59,7 +60,8 @@ class hmm(BehaviorModel):
     else:
       data = load_wavelet_transformed_data(self, filepath, downsample = self.downsample)
     if train: #for batching purposes
-      data = data[:-(data.shape[0] % self.model_config["temporal_window_samples"]), :]
+      if data.shape[0] % self.model_config["temporal_window_samples"] != 0:
+        data = data[:-(data.shape[0] % self.model_config["temporal_window_samples"]), :]
     return data
 
   def zscore(self, data, train=False):
@@ -83,7 +85,7 @@ class hmm(BehaviorModel):
     train_data = self.zscore(train_data, train=True)
     n_batches, self.obs_dim, self.feature_dim = train_data.shape
     ###
-    self.jax_device = "cpu" if self.model_config["covariance"] == "full" else "gpu"
+    self.jax_device = "cpu" if ( self.model_config["covariance"] == "full" or (not torch.cuda.is_available()) ) else "gpu"
     with jax.default_device(jax.devices(self.jax_device)[0]):
       key = jr.PRNGKey(self.config['seed'])
       train_data = jnp.array(train_data)
