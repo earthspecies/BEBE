@@ -180,10 +180,15 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
     
   if model_type == 'umapper':
+    if dataset_name == 'vehkaoja_dogs' or dataset_name == 'pagano_bears':
+      downsample = 16
+    else:
+      downsample = 4
+    
     model_hyperparam_choices = {'morlet_w' : [1., 5., 10., 15],
                                 'n_neighbors' : [16],
                                 'min_dist' : [0],
-                                'downsample' : [4],
+                                'downsample' : [downsample],
                                }
     
   if model_type == 'vame':
