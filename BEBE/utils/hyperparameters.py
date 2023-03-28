@@ -180,8 +180,10 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
     
   if model_type == 'umapper':
-    if dataset_name == 'vehkaoja_dogs' or dataset_name == 'pagano_bears':
+    if dataset_name == 'vehkaoja_dogs':
       downsample = 16
+    elif dataset_name == 'pagano_bears':
+      downsample = 32
     else:
       downsample = 4
     
