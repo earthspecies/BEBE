@@ -8,6 +8,8 @@ Please cite this paper if you use this code.
 
 <img src="https://user-images.githubusercontent.com/72874445/228656286-3266a247-1935-451c-b315-6b506f7adc24.png">
 
+For attributions of images used in this figure, see `license.txt`.
+
 ## Install necessary Python packages:
 
 BEBE was developed in Python 3.8, with Pytorch version 1.12.1. To set up a conda environment for BEBE, follow these steps:
