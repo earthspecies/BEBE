@@ -8,7 +8,7 @@ Please cite this paper if you use this code.
 
 <img src="https://user-images.githubusercontent.com/72874445/228656286-3266a247-1935-451c-b315-6b506f7adc24.png">
 
-For attributions of images used in this figure, see `license.txt`.
+For attributions of images used in this figure, see the file `ATTRIBUTIONS`.
 
 ## Install necessary Python packages:
 
