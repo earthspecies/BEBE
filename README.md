@@ -32,7 +32,7 @@ To replicate the experiments in the paper, run `python cross_val_experiment.py -
 
 Supported model types are `CNN`, `CRNN`, `rf`, `kmeans`, `wavelet-kmeans`, `gmm`, `hmm`, `umapper`, `vame`, `iic`, and `random`.
 
-Once these experiments have been run, final results are saved in the file `final_result_summary.yaml`. These are scores averaged across all individuals from the four test sets not used for hyperparameter selection.
+Once these experiments have been run, final results are saved in the file `final_result_summary.yaml`. These are scores averaged across all individuals from the four test sets not used for hyperparameter selection. The per-individual scores these are based on can be found in `fold_$i/test_eval.yaml` and `fold_$i/train_eval.yaml`, listed under `individual scores`.
 
 ## Standalone evaluation
 
