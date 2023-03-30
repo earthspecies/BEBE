@@ -194,7 +194,11 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
     
   if model_type == 'vame':
-    model_hyperparam_choices = {'batch_size' : [512], 
+    if dataset_name == 'vehkaoja_dogs':
+      batch_size = 256
+    else:
+      batch_size = 512
+    model_hyperparam_choices = {'batch_size' : [batch_size], 
                                 'n_train_steps' : [10000],
                                 'beta' : [0], ## Scalar multiplied by KL loss
                                 'zdims' : [20], ## Latent space dimensionality
@@ -204,8 +208,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'scheduler' : [1],
                                 'scheduler_step_size' : [100],
                                 'scheduler_gamma' : [0.2],
-                                'kmeans_lambda' : [0.1],
-                                'downsizing_factor' : [50]
+                                'kmeans_lambda' : [0.1]
                                }
   
   if model_type == 'iic':
