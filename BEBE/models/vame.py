@@ -89,6 +89,7 @@ class vame(BehaviorModel):
     
     train_losses = []
     kl_losses = []
+    km_losses = []
     mse_losses = []
     fut_losses = []
     learning_rates = []
@@ -96,28 +97,29 @@ class vame(BehaviorModel):
     epochs = self.n_epochs
     for t in range(epochs):
         print(f"Epoch {t}\n-------------------------------")
-        _, loss, _, kl_loss, mse_loss, fut_loss = train_epoch(train_dataloader,
-                                                              t,
-                                                              self.model,
-                                                              optimizer,
-                                                              'linear',
-                                                              self.beta,
-                                                              2,
-                                                              4,
-                                                              self.temporal_window_samples,
-                                                              self.prediction_decoder,
-                                                              self.prediction_steps,
-                                                              scheduler,
-                                                              'mean', 
-                                                              'mean',
-                                                              self.kmeans_loss,
-                                                              self.kmeans_lambda,
-                                                              self.batch_size, 
-                                                              False, 
-                                                              downsizing_factor = self.downsizing_factor)
+        _, loss, km_loss, kl_loss, mse_loss, fut_loss = train_epoch(train_dataloader,
+                                                                    t,
+                                                                    self.model,
+                                                                    optimizer,
+                                                                    'linear',
+                                                                    self.beta,
+                                                                    2,
+                                                                    4,
+                                                                    self.temporal_window_samples,
+                                                                    self.prediction_decoder,
+                                                                    self.prediction_steps,
+                                                                    scheduler,
+                                                                    'mean', 
+                                                                    'mean',
+                                                                    self.kmeans_loss,
+                                                                    self.kmeans_lambda,
+                                                                    self.batch_size, 
+                                                                    False, 
+                                                                    downsizing_factor = self.downsizing_factor)
         
         train_losses.append(loss)
         kl_losses.append(kl_loss)
+        km_losses.append(km_loss)
         mse_losses.append(mse_loss)
         fut_losses.append(fut_loss)
         scheduler.step(loss)
@@ -125,6 +127,7 @@ class vame(BehaviorModel):
         # plot Loss
         plt.plot(train_losses, label = "total loss")
         plt.plot(kl_losses, label = "kl loss")
+        plt.plot(km_losses, label = "kmeans loss")
         plt.plot(mse_losses, label = "mse loss")
         plt.plot(fut_losses, label = "fut loss")
         
@@ -519,7 +522,6 @@ def train_epoch(train_loader, epoch, model, optimizer, anneal_function, BETA, kl
         loss.backward()
         optimizer.step()
         
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm = 5)
 
         train_loss += loss.item()
         mse_loss += rec_loss.item()
@@ -528,11 +530,8 @@ def train_epoch(train_loader, epoch, model, optimizer, anneal_function, BETA, kl
         
         if idx > len(train_loader)//downsizing_factor:
           break
-
-        # if idx % 1000 == 0:
-        #     print('Epoch: %d.  loss: %.4f' %(epoch, loss.item()))
    
-    scheduler.step(loss) #be sure scheduler is called before optimizer in >1.1 pytorch
+    scheduler.step(loss)
 
     if future_decoder:
         print('Train loss: {:.3f}, MSE-Loss: {:.3f}, MSE-Future-Loss {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}'.format(train_loss / idx,
@@ -541,7 +540,7 @@ def train_epoch(train_loader, epoch, model, optimizer, anneal_function, BETA, kl
         print('Train loss: {:.3f}, MSE-Loss: {:.3f}, KL-Loss: {:.3f}, Kmeans-Loss: {:.3f}, weight: {:.2f}'.format(train_loss / idx,
               mse_loss /idx, BETA*kl_weight*kullback_loss/idx, kl_weight*kmeans_losses/idx, kl_weight))
 
-    return kl_weight, train_loss/idx, kl_weight*kmeans_losses/idx, kullback_loss/idx, mse_loss/idx, fut_loss/idx
+    return kl_weight, train_loss/idx, kl_weight*kmeans_losses/idx, BETA*kl_weight*kullback_loss/idx, mse_loss/idx, fut_loss/idx
   
 ## Data
 
@@ -566,7 +565,5 @@ class SEQUENCE_DATASET(Dataset):
         
         sequence = self.data[max(start, 0) : min(end, self.data_points), :]
         sequence = np.pad(sequence, ((padleft, padright),(0,0)), mode='reflect')
-        if np.shape(sequence)[0] != 300:
-          import pdb; pdb.set_trace()
             
         return torch.from_numpy(sequence.T)

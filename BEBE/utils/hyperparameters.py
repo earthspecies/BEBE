@@ -196,7 +196,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
   if model_type == 'vame':
     model_hyperparam_choices = {'batch_size' : [512], 
                                 'n_train_steps' : [10000],
-                                'beta' : [1], ## Scalar multiplied by KL loss
+                                'beta' : [0], ## Scalar multiplied by KL loss
                                 'zdims' : [20], ## Latent space dimensionality
                                 'learning_rate' : [0.001, 0.0003],
                                 'time_window_sec' : [3, 10],
