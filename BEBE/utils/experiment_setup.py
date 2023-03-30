@@ -14,8 +14,8 @@ def expand_config(config):
   
   # Fix random seed
   if 'seed' not in config:
-    warnings.warn("Random seed not specified, initializing randomly")
-    config['seed'] = None
+    warnings.warn("Random seed not specified, initializing with seed = 0")
+    config['seed'] = 0
   else:
     print(f"Training with random seed {config['seed']}")
   

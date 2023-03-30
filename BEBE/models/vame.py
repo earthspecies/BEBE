@@ -58,6 +58,7 @@ class vame(BehaviorModel):
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     
     self.kmeans = MiniBatchKMeans(n_clusters=self.n_clusters)
+    self.model = None
       
   def get_downsizing_factor(self):
     train_fps = self.config['train_data_fp']
@@ -75,8 +76,9 @@ class vame(BehaviorModel):
     
     if self.whiten:
       train_data = self.whitener.fit_transform(train_data)
-      
-    self.model = RNN_VAE(self.temporal_window_samples,self.zdims,np.shape(train_data)[1],self.prediction_decoder,self.prediction_steps, 256, 256, 256, 256, 0, 0, 0, False).to(device)
+    
+    if self.model is None:
+      self.model = RNN_VAE(self.temporal_window_samples,self.zdims,np.shape(train_data)[1],self.prediction_decoder,self.prediction_steps, 256, 256, 256, 256, 0, 0, 0, False).to(device)
     
     self.model.train()
 
@@ -141,7 +143,7 @@ class vame(BehaviorModel):
         
     
     print("Done with VAE optimization, fitting kmeans")
-    train_dataloader = DataLoader(train_dataset, batch_size=8*self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
+    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
     alpha = min(2.0 / (len(train_dataloader) + 1) , 1)
     max_no_improvement= 100
@@ -152,6 +154,7 @@ class vame(BehaviorModel):
     inertias = []
     ewa_inertias = []
     
+    self.model.eval()
     for t in tqdm.tqdm(range(100)):
       if converged:
         break
@@ -218,7 +221,7 @@ class vame(BehaviorModel):
       data = self.whitener.transform(data)
 
     dataset = SEQUENCE_DATASET(data, self.temporal_window_samples, False)
-    dataloader = DataLoader(dataset, batch_size=8*self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
+    dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
     predictions = []
 
     self.model.eval()
