@@ -46,6 +46,7 @@ class vame(BehaviorModel):
     self.kmeans_loss = self.model_config['zdims'] # Uses all singular values
     self.kmeans_lambda = self.model_config['kmeans_lambda']
     self.seed = self.config['seed']
+    self.prediction_downsample = self.model_config['prediction_downsample']
     
     torch.manual_seed(self.config['seed'])
     random.seed(self.config['seed'])
@@ -217,30 +218,35 @@ class vame(BehaviorModel):
       pickle.dump(self, f)
 
   def predict(self, data):
+    self.model.eval()
+    predictions = []
+    pred_batch_size = self.batch_size * self.prediction_downsample
+    
     if self.whiten:
       data = self.whitener.transform(data)
-
-    dataset = SEQUENCE_DATASET(data, self.temporal_window_samples, False)
-    dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
-    predictions = []
-
-    self.model.eval()
+      
+    l = np.shape(data)[0]
+      
+    data = np.pad(data, ((self.seq_len_half - 1, 0),(0,0)), mode = 'reflect')
+    start_idxs = np.arange(self.seq_len_half-1, np.shape(data)[0], pred_batch_size)
+    
     with torch.no_grad():
-      for x in dataloader:
-        x = x.permute(0,2,1)
-        x = x[:,:self.seq_len_half,:].type('torch.FloatTensor').to(device)
-        _, mu, _ = self.model.encode(x)
+      for idx in start_idxs:
+        data_sub = torch.from_numpy(data[idx-self.seq_len_half+1 : idx+pred_batch_size, :]).type('torch.FloatTensor').to(device)
+        data_sub_batched = data_sub.unfold(0, self.seq_len_half, self.prediction_downsample).permute(0,2,1)  # [Batch, Channels, Time]
+        _, mu, _ = self.model.encode(data_sub_batched)
         mu = mu.cpu().numpy()
         clusters = self.kmeans.predict(mu)
+        clusters = np.repeat(clusters, self.prediction_downsample)
+        
         predictions.append(clusters)
-    predictions = np.concatenate(predictions)
-    print(np.shape(predictions))
-
-    return predictions, None
-    
-    
       
-  
+    predictions = np.concatenate(predictions)
+    
+    if self.prediction_downsample>1:
+      predictions = np.pad(predictions, (0,pred_batch_size), mode='reflect')[:l]
+    
+    return predictions, None
 
 #########
 # Model
@@ -570,3 +576,4 @@ class SEQUENCE_DATASET(Dataset):
         sequence = np.pad(sequence, ((padleft, padright),(0,0)), mode='reflect')
             
         return torch.from_numpy(sequence.T)
+      

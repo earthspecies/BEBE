@@ -198,6 +198,10 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       batch_size = 256
     else:
       batch_size = 512
+    if dataset_name == 'pagano_bears':
+      prediction_downsample = 4
+    else:
+      prediction_downsample = 1
     model_hyperparam_choices = {'batch_size' : [batch_size], 
                                 'n_train_steps' : [10000],
                                 'beta' : [0], ## Scalar multiplied by KL loss
@@ -208,7 +212,8 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'scheduler' : [1],
                                 'scheduler_step_size' : [100],
                                 'scheduler_gamma' : [0.2],
-                                'kmeans_lambda' : [0.1]
+                                'kmeans_lambda' : [0.1],
+                                'prediction_downsample' : [prediction_downsample]
                                }
   
   if model_type == 'iic':

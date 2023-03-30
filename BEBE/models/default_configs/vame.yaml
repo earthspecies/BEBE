@@ -19,4 +19,6 @@ default_model_config:
   kmeans_lambda : 0.1 
   ## Scalar multiplied by kmeans loss
   whiten : true
+  ## Sometimes we don't want to predict every datapoint
+  prediction_downsample : 1
                            
