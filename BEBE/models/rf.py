@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 import os
 import tqdm
+import pandas as pd
 
 def vectorized_slope(y):
   # compute slope along axis = 1, up to a constant multiple which depends only on the length of the time series
@@ -35,27 +36,14 @@ class rf(BehaviorModel):
     self.n_jobs = self.model_config['n_jobs']
     self.n_estimators = self.model_config['n_estimators']
     
-    self.model = RandomForestClassifier(n_estimators=self.n_estimators, min_samples_split=self.min_samples_split, n_jobs=self.n_jobs, verbose=2, max_samples=self.max_samples)
+    self.model = RandomForestClassifier(n_estimators=self.n_estimators, min_samples_split=self.min_samples_split, n_jobs=self.n_jobs, verbose=2, max_samples=self.max_samples, random_state = self.config['seed'])
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
-    
-  def load_model_inputs(self, filepath, read_latents = False):
-    if read_latents:
-      raise NotImplementedError
-    else:
-      inputs = pd.read_csv(filepath, delimiter = ',', header = None).values
-      data = inputs[:, self.cols_included]
-      
-    return data
   
-  def load_labels(self, filepath, read_latents = False):
-    if read_latents:
-      raise NotImplementedError
-    else:
-      inputs = pd.read_csv(filepath, delimiter = ',', header = None).values
-      labels = inputs[:, self.label_idx].astype(int)
-      
+  def load_labels(self, filepath):
+    inputs = pd.read_csv(filepath, delimiter = ',', header = None).values
+    labels = inputs[:, self.label_idx].astype(int)
     return labels
   
   def prepare_model_inputs(self, data, labels = None):
@@ -103,10 +91,7 @@ class rf(BehaviorModel):
     
   def fit(self):
     ## get data. assume stored in memory for now
-    if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
-    else:
-      train_fps = self.config['train_data_fp']
+    train_fps = self.config['train_data_fp']
     
     train_data = []
     train_labels = []

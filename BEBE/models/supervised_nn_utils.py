@@ -13,7 +13,10 @@ import tqdm
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
+import random
 import pandas as pd
+from BEBE.models.preprocess import static_acc_filter
+
     
 class BEHAVIOR_DATASET(Dataset):
     def __init__(self, data, labels, train, temporal_window_samples, config, rescale_param = 0):
@@ -40,7 +43,7 @@ class BEHAVIOR_DATASET(Dataset):
         self.data_start_indices = np.array(self.data_start_indices)
         self.data_stds = np.std(np.concatenate(self.data, axis = 0), axis = 0, keepdims = True) / 8
         self.num_channels = np.shape(self.data_stds)[1]
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(config['seed'])
         self.train = train
         
     def __len__(self):        
@@ -102,6 +105,10 @@ class SupervisedBehaviorModel(BehaviorModel):
   def __init__(self, config):
     super(SupervisedBehaviorModel, self).__init__(config)
     
+    torch.manual_seed(self.config['seed'])
+    random.seed(self.config['seed'])
+    np.random.seed(self.config['seed'])
+    
     # Get cpu or gpu device for training.
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {self.device} device")
@@ -125,41 +132,40 @@ class SupervisedBehaviorModel(BehaviorModel):
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     self.n_classes = len(self.metadata['label_names']) 
-    self.n_features = len(self.cols_included)
+    self.n_features = self.get_n_features()
     
     # Specify in subclass
     self.model = None
     
   def _count_parameters(self):
     return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+  
+  def get_n_features(self):
+    # gets number of input channels; this varies depending on static acc filtering hyperparameter
+    train_fps = self.config['train_data_fp']
+    x = self.load_model_inputs(train_fps[0])
+    return np.shape(x)[1]
     
-  def load_model_inputs(self, filepath, read_latents = False):
-    if read_latents:
-      raise NotImplementedError("Supervised model is expected to read from raw data")
-    else:
-      x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
-      if self.normalize:
-        x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
-      return x
+  def load_model_inputs(self, filepath):
+    x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
+    x = static_acc_filter(x, self.config)
+
+    if self.normalize:
+      x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
+    return x
     
   def load_labels(self, filepath):
     labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)
     return labels 
     
   def fit(self):
-    ## get data. assume stored in memory for now
-    if self.read_latents:
-      train_fps = self.config['train_data_latents_fp']
-      val_fps = self.config['val_data_latents_fp']
-      test_fps = self.config['test_data_latents_fp']
-    else:
-      train_fps = self.config['train_data_fp']
-      val_fps = self.config['val_data_fp']
-      test_fps = self.config['test_data_fp']
+    train_fps = self.config['train_data_fp']
+    val_fps = self.config['val_data_fp']
+    test_fps = self.config['test_data_fp']
     
-    train_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in train_fps]
-    val_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in val_fps]
-    test_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in test_fps]
+    train_data = [self.load_model_inputs(fp) for fp in train_fps]
+    val_data = [self.load_model_inputs(fp) for fp in val_fps]
+    test_data = [self.load_model_inputs(fp) for fp in test_fps]
     
     train_labels = [self.load_labels(fp) for fp in train_fps]
     val_labels = [self.load_labels(fp) for fp in val_fps]
@@ -173,15 +179,19 @@ class SupervisedBehaviorModel(BehaviorModel):
       print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
-    val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples, self.config)
-    if self.sparse_annotations:
-      indices_to_keep = val_dataset.get_annotated_windows()
-      val_dataset = Subset(val_dataset, indices_to_keep) 
-      
-    num_examples_val = len(list(range(0, len(val_dataset), self.downsizing_factor)))
-    val_dataset = Subset(val_dataset, list(range(0, len(val_dataset), self.downsizing_factor)))
-    print("Number windowed val examples after subselecting: %d" % len(val_dataset))
-    val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
+    if len(val_data) > 0:
+      val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples, self.config)
+      if self.sparse_annotations:
+        indices_to_keep = val_dataset.get_annotated_windows()
+        val_dataset = Subset(val_dataset, indices_to_keep) 
+
+      num_examples_val = len(list(range(0, len(val_dataset), self.downsizing_factor)))
+      val_dataset = Subset(val_dataset, list(range(0, len(val_dataset), self.downsizing_factor)))
+      print("Number windowed val examples after subselecting: %d" % len(val_dataset))
+      val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = 0)
+      use_val = True
+    else:
+      use_val = False
     
     test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples, self.config)
     if self.sparse_annotations:
@@ -216,9 +226,10 @@ class SupervisedBehaviorModel(BehaviorModel):
         l, a = self.train_epoch(train_dataloader, loss_fn, optimizer)
         train_loss.append(l)
         train_acc.append(a)
-        l, a = self.test_epoch(val_dataloader, loss_fn_no_reduce, name = "Val", loss_denom = num_examples_val * self.temporal_window_samples)
-        val_loss.append(l)
-        val_acc.append(a)
+        if use_val:
+          l, a = self.test_epoch(val_dataloader, loss_fn_no_reduce, name = "Val", loss_denom = num_examples_val * self.temporal_window_samples)
+          val_loss.append(l)
+          val_acc.append(a)
         l, a = self.test_epoch(test_dataloader, loss_fn_no_reduce, name = "Test", loss_denom = num_examples_test* self.temporal_window_samples)
         test_loss.append(l)
         test_acc.append(a)

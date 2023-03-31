@@ -3,4 +3,4 @@ unsupervised : true
 default_model_config:
   max_iter : 100
   n_init : 1
-  subselect_proportion : 1.
+  downsample : 1

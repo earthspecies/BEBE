@@ -1,7 +1,12 @@
-experiment_name: iic_4head
+experiment_name: iic
 model: iic
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
+
+test_folds : 
+- 0
+seed : 0
+static_acc_cutoff_freq : 1.
   
 iic_config:
   downsizing_factor : 128
@@ -18,4 +23,4 @@ iic_config:
   conv_depth : 2
   ker_size : 7
   dilation : 3
-  n_heads : 4
+  n_heads : 1

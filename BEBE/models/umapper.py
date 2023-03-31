@@ -14,6 +14,7 @@ import umap
 from BEBE.models.model_superclass import BehaviorModel
 import pickle
 from skimage.transform import resize
+from BEBE.models.preprocess import load_wavelet_transformed_data
 
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
@@ -33,77 +34,41 @@ class umapper(BehaviorModel):
     min_dist = self.model_config['min_dist']
     self.num_clusters = self.config['num_clusters']
     
-    low_freq_cols_bool = [x in self.model_config['low_freq_cols'] for x in self.metadata['clip_column_names']] # which columns to not apply wavelet transform to
-    self.low_freq_cols = [i for i, x in enumerate(low_freq_cols_bool) if x]
-    
-    high_freq_cols_bool = [(x in self.config['input_vars'] and x not in self.model_config['low_freq_cols']) for x in self.metadata['clip_column_names']] # which columns to apply wavelet transform to
-    self.high_freq_cols = [i for i, x in enumerate(high_freq_cols_bool) if x]
+    # set up cache predictions because umap.transform is slow
+    self.data_fp_to_start_and_end = {'train': {}, 'val': {}, 'test': {}} 
+    self.yq_cached = {'train' : None, 'val' : None, 'test' : None}
     
     # initialize umap
     self.reducer = umap.UMAP(
         n_neighbors = n_neighbors,
         min_dist = min_dist,
         metric = 'symmetric_kl',
-        verbose = True
+        verbose = True,
+        random_state = self.config['seed']
     )
     
-  def load_model_inputs(self, filepath, read_latents = False, downsample = 1):
-    # perform wavelet transform during loading
-    # Perform morlet wavelet transform
-    t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
-    fs = 1/dt
-    freq = np.linspace(1, fs/2, self.n_wavelets)
-    widths = self.morlet_w*fs / (2*freq*np.pi)
-    
-    if read_latents:
-      raise NotImplementedError
-    else:
-      # We can distinguish low and high frequency channels. By default, everything is considered high frequency  
-      low_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.low_freq_cols]
-      high_freq_data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.high_freq_cols]
-    
-    axes = np.arange(0, np.shape(high_freq_data)[1])
-    transformed = []
-    for axis in axes:
-        sig = high_freq_data[:, axis]
-        sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize
-        if downsample > 1:
-            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
-        else:
-            transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
-        
-    axes = np.arange(0, np.shape(low_freq_data)[1])
-    for axis in axes:
-        sig = low_freq_data[:, axis]
-        if downsample > 1:
-            transformed.append(np.expand_dims(sig, 0)[:, ::downsample]) # do not transform low frequency data
-        else:
-            transformed.append(np.expand_dims(sig, 0))
-
-    transformed = np.concatenate(transformed, axis = 0)
-    transformed = np.transpose(transformed)
-    return transformed
+  def load_model_inputs(self, filepath, downsample = 1):
+    return load_wavelet_transformed_data(self, filepath, downsample)
     
   def fit(self):
-    ## get data. assume stored in memory for now
-    if self.read_latents:
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    train_fps = self.config['train_data_fp']
     
     # load as wavelets
-    dev_data = []
-    print("Loading inputs")
-    for fp in tqdm(dev_fps):
-        dev_data.append(self.load_model_inputs(fp, read_latents = self.read_latents, downsample = self.downsample))
-    dev_data = np.concatenate(dev_data, axis = 0)
+    train_data = []
     
-    # normalize and record normalizing constant
-    normalize_denom = np.sum(dev_data, axis = 1, keepdims = True)
-    dev_data = dev_data / (normalize_denom + 1e-6)
+    pointer = 0
+    print("Loading inputs")
+    for fp in tqdm(train_fps):
+        data = self.load_model_inputs(fp, downsample = self.downsample)
+        l = np.shape(data)[0]
+        train_data.append(data)
+        self.data_fp_to_start_and_end['train'][fp] = (pointer, pointer + l)
+        pointer += l
+        
+    train_data = np.concatenate(train_data, axis = 0)
     
     # fit umap
-    y = self.reducer.fit_transform(dev_data)
+    y = self.reducer.fit_transform(train_data)
     
     # learn how to rescale into useful image
     self.translation = np.amin(y, axis = 0)
@@ -112,6 +77,8 @@ class umapper(BehaviorModel):
     yq = (yq * self.scale_factor).astype(int) + self.image_border
     yq = np.maximum(yq, 0)
     yq = np.minimum(yq, self.image_size-1)
+    
+    self.yq_cached['train'] = yq
     
     # Turn into dense array format
     data = np.ones_like(yq[:, 0]) #every entry in the list yq contributes 1
@@ -192,15 +159,52 @@ class umapper(BehaviorModel):
     fp = os.path.join(self.config['output_dir'], 'UMAP_vis.png')
     plt.savefig(fp)
     
+    # cache val and test predictions
+    for split in ['val', 'test']:
+      pointer = 0
+      split_data = []
+      print(f"Caching predictions from {split}")
+      if len(self.config[f'{split}_data_fp']) == 0:
+          continue
+      for fp in tqdm(self.config[f'{split}_data_fp']):
+          data = self.load_model_inputs(fp, downsample = self.downsample)
+          l = np.shape(data)[0]
+          split_data.append(data)
+          self.data_fp_to_start_and_end[split][fp] = (pointer, pointer + l)
+          pointer += l
+
+      split_data = np.concatenate(split_data, axis = 0)
+
+      # transform
+      y = self.reducer.transform(split_data)
+
+      # learn how to rescale into useful image
+      yq = y - self.translation # translate
+      yq = (yq * self.scale_factor).astype(int) + self.image_border # rescale
+      yq = np.maximum(yq, 0) #crop
+      yq = np.minimum(yq, self.image_size-1)
+
+      self.yq_cached[split] = yq
+    
   def save(self):
     target_fp = os.path.join(self.config['final_model_dir'], "final_model.pickle")
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
+    
+  def predict_from_file(self, fp):
+    inputs = self.load_model_inputs(fp)
+    for split in ['train', 'val', 'test']:
+      if fp in self.data_fp_to_start_and_end[split]:
+        start, end = self.data_fp_to_start_and_end[split][fp]
+        yq = self.yq_cached[split][start:end, :]
+        predictions = self.label_image[yq[:,0], yq[:, 1]]
+        predictions = resize(predictions, (np.shape(inputs)[0],), order=0, mode='constant')
+        return predictions, None
+    predictions, _ = self.predict(inputs)
+    return predictions, None
   
   def predict(self, data):
     # normalize
-    normalize_denom = np.sum(data, axis = 1, keepdims = True)
-    data = data / (normalize_denom + 1e-6)
     data_downsampled = data[::self.downsample, :]
     
     # fit umap

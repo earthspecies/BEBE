@@ -2,9 +2,13 @@ dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
 experiment_name: hmm
 model: hmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
+test_folds : 
+- 0
+seed : 0
+static_acc_cutoff_freq : 1.
 
 hmm_config:
-  N_iters: 50
+  N_iters: 5
   lags: 0
   prior_wait_sec: 10.0
   sticky_prior_strength: 0.0

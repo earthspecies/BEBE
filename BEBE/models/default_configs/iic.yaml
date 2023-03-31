@@ -1,10 +1,9 @@
 unsupervised : true
   
 default_model_config:
-  downsizing_factor : 128
   lr : 0.0001
   weight_decay : 0
-  n_epochs : 100
+  n_train_steps : 10000
   hidden_size : 8
   temporal_window_samples : 512 
   # used for training only, to subselect

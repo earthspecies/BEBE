@@ -17,6 +17,7 @@ import math
 import pandas as pd
 from pathlib import Path
 from sys import float_info
+import random
 
 EPS = float_info.epsilon
 
@@ -31,10 +32,11 @@ class iic(BehaviorModel):
     super(iic, self).__init__(config)
     print(f"Using {device} device")
     
-    self.downsizing_factor = self.model_config['downsizing_factor']
+    
     self.lr = self.model_config['lr']
     self.weight_decay = self.model_config['weight_decay']
-    self.n_epochs = self.model_config['n_epochs']
+    self.n_epochs = 100
+    self.downsizing_factor = self.get_downsizing_factor()
     self.context_window_samples = self.model_config['context_window_samples']
     self.batch_size = self.model_config['batch_size']
     self.dropout = self.model_config['dropout']
@@ -48,12 +50,16 @@ class iic(BehaviorModel):
     self.hidden_size = self.model_config['hidden_size']
     self.n_heads = self.model_config['n_heads']
     
+    torch.manual_seed(self.config['seed'])
+    random.seed(self.config['seed'])
+    np.random.seed(self.config['seed'])
+    
     assert self.context_window_samples > 1, 'context window should be larger than 1'
     
     labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
     self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
     
-    self.n_features = len(self.cols_included)
+    self.n_features = self.get_n_features()
     self.encoder = Encoder(self.n_features,
                            self.conv_depth,
                            self.ker_size,
@@ -67,34 +73,44 @@ class iic(BehaviorModel):
     
     print('Encoder parameters:')
     print(_count_parameters(self.encoder))
+    
+  def get_n_features(self):
+    # gets number of input channels; this varies depending on static acc filtering hyperparameter
+    train_fps = self.config['train_data_fp']
+    x = self.load_model_inputs(train_fps[0])
+    return np.shape(x)[1]
+  
+  def get_downsizing_factor(self):
+    train_fps = self.config['train_data_fp']
+    train_data = [self.load_model_inputs(fp) for fp in train_fps]
+    train_data = np.concatenate(train_data, axis = 0)
+    data_len = np.shape(train_data)[0]    
+    downsizing_factor = int((self.n_epochs * data_len) / (self.model_config['n_train_steps'] * self.model_config['batch_size']))
+    return downsizing_factor
   
   def fit(self):
-    if self.read_latents:
-      raise NotImplementedError
-      dev_fps = self.config['dev_data_latents_fp']
-    else:
-      dev_fps = self.config['dev_data_fp']
+    train_fps = self.config['train_data_fp']
     
-    dev_data = [self.load_model_inputs(fp, read_latents = self.read_latents) for fp in dev_fps]
-    dev_dataset = BEHAVIOR_DATASET(dev_data, self.temporal_window_samples, True)
-    dev_dataloader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
+    train_data = [self.load_model_inputs(fp) for fp in train_fps]
+    train_dataset = BEHAVIOR_DATASET(train_data, self.temporal_window_samples, True)
+    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     loss_fn = IICLoss(self.context_window_samples).to(device)
         
     optimizer = torch.optim.Adam([{'params' : self.encoder.parameters(), 'weight_decay' : self.weight_decay}, {'params' : self.heads.parameters(), 'weight_decay' : self.weight_decay}], lr=self.lr, amsgrad = True)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.n_epochs, eta_min=self.lr / 100, last_epoch=- 1, verbose=False)
     
-    dev_loss = []
-    dev_loss_per_head = {i : [] for i in range(self.n_heads)}
-    dev_predictions_loss = []
+    train_loss = []
+    train_loss_per_head = {i : [] for i in range(self.n_heads)}
+    train_predictions_loss = []
     learning_rates = []
     
     epochs = self.n_epochs
     for t in range(epochs):
         print(f"Epoch {t}\n-------------------------------")
-        l, l_per_head = self.train_epoch(t, dev_dataloader, loss_fn, optimizer)
-        dev_loss.append(l / self.n_heads)
+        l, l_per_head = self.train_epoch(t, train_dataloader, loss_fn, optimizer)
+        train_loss.append(l / self.n_heads)
         for i in range(self.n_heads):
-          dev_loss_per_head[i].append(l_per_head[i])
+          train_loss_per_head[i].append(l_per_head[i])
        
         learning_rates.append(optimizer.param_groups[0]["lr"])
         scheduler.step()
@@ -109,15 +125,15 @@ class iic(BehaviorModel):
     # Loss
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     
-    ax.plot(dev_loss, label= 'average train loss', marker = '.')
-    for i in dev_loss_per_head:
-      ax.plot(dev_loss_per_head[i], label = 'loss for head '+str(i), marker = '.')
+    ax.plot(train_loss, label= 'average train loss', marker = '.')
+    for i in train_loss_per_head:
+      ax.plot(train_loss_per_head[i], label = 'loss for head '+str(i), marker = '.')
     
     ax.legend()
     ax.set_title("Cross Entropy Loss")
     ax.set_xlabel('Epoch')
     
-    major_tick_spacing = max(1, len(dev_loss) // 10)
+    major_tick_spacing = max(1, len(train_loss) // 10)
     ax.xaxis.set_major_locator(MultipleLocator(major_tick_spacing))
     ax.xaxis.set_minor_locator(MultipleLocator(1))
     ax.set_ylabel('Loss')

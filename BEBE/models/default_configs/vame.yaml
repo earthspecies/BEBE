@@ -2,7 +2,7 @@ unsupervised : true
   
 default_model_config:
   batch_size : 256
-  max_epochs : 500
+  n_train_steps : 20000
   beta: 1 
   ## Scalar multiplied by KL loss
   zdims: 30 
@@ -18,7 +18,7 @@ default_model_config:
   scheduler_gamma : 0.2
   kmeans_lambda : 0.1 
   ## Scalar multiplied by kmeans loss
-  downsizing_factor : 64 
-  ## Train more efficiently, account for autocorrelation
   whiten : true
+  ## Sometimes we don't want to predict every datapoint
+  prediction_downsample : 1
                            
