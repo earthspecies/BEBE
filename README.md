@@ -20,13 +20,19 @@ conda activate BEBE
 pip install -r requirements.txt
 ```
 
+Please note that the version of pytorch and the cudatoolkit that you can use may vary depending on your computational resources (e.g. whether you have a GPU and what kind). Therefore, to install PyTorch you should follow the instructions on their [website](https://pytorch.org/get-started/locally/), and potentially use a [previous version](https://pytorch.org/get-started/previous-versions/) if needed.
+
 ## Get data
 
-All raw and formatted datasets for BEBE will be made available soon.
+All raw and formatted datasets for BEBE will be made available on our [Zenodo repository]().
 
 ## Run a single experiment
 
-The directory `example_config` contains config files with the hyperparameters selected in our experiments. To run a single experiment using these hyperparameters, edit the output directory in a config file and run `python single_experiment.py --config /path/to/CONFIG_NAME.yaml`. Note that these config files specify that training is performed using folds 1, 2, 3, and 4, and testing is performed using fold 0. After training and evaluation, results and figures can be found at outputs directory specified in config file. 
+The directory `example_config` contains example config files. To create configs for other models included in our paper, follow the format of the example config files, and check the default configs in `BEBE/models/default_configs/` to see a list of parameters. If any parameters are not specified in your file, the `default_configs` will provide defaults values. 
+
+To run a single experiment using these hyperparameters, edit the output directory in a config file and run `python single_experiment.py --config /path/to/CONFIG_NAME.yaml`. Note that these config files specify that training is performed using folds 1, 2, 3, and 4, and testing is performed using fold 0. After training and evaluation, results and figures can be found at the output directory specified in config file. 
+
+To see the config files used for the experiments reported in the paper, please download the results on our [Zenodo repository]().
 
 ## Run multiple experiments
 
@@ -43,8 +49,8 @@ To evaluate model outputs without integrating model training into the BEBE codeb
 ## Implement a new model
 
 1. Inherit basic structure from `BehaviorModel` which can be found in `BEBE/models/model_superclass.py`.
-2. Include default model settings in a new `model_type.yaml` file, inside the directory `behavior_benchmarks/models/default_configs`.
-3. Include new model class inside `train_model.py`.
+2. Include default model settings in a new `model_type.yaml` file, inside the directory `BEBE/models/default_configs`.
+3. Include new model class inside `BEBE/training/train_model.py`.
 
 ## Process a new dataset
 

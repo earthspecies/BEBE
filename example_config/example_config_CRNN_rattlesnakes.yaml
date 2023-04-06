@@ -1,9 +1,13 @@
-experiment_name: CRNN
+dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
+experiment_name: example_CRNN
 model: CRNN
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
-  
-CRNN_config:
+test_folds : 
+- 0
+seed : 0
+static_acc_cutoff_freq : 0.  
+
+model_config:
   downsizing_factor : 16
   lr : 0.001
   weight_decay : 0.001

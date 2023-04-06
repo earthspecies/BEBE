@@ -1,4 +1,0 @@
-experiment_name: kmeans
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/vehkaoja_dogs
-model: kmeans
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/vehkaoja_dogs

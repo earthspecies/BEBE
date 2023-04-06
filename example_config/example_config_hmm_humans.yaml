@@ -1,5 +1,5 @@
 dataset_dir: /home/jupyter/behavior_data_local/data/formatted/HAR
-experiment_name: hmm
+experiment_name: example_hmm
 model: hmm
 output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/HAR
 test_folds : 
@@ -7,9 +7,17 @@ test_folds :
 seed : 0
 static_acc_cutoff_freq : 1.
 
-hmm_config:
+model_config:
+  time_bins: 2048
   N_iters: 5
-  lags: 0
-  prior_wait_sec: 10.0
-  sticky_prior_strength: 0.0
-  time_bins: 2500
+  covariance: diagonal
+  matrix_concentration: 1.1
+  mean_concentration: 0.1
+  cov_scale: 0.1
+  cov_df: 0.1
+  cov_concentration: 0.1
+  cov_scale: 0.1
+  wavelet_transform : true
+  morlet_w : 5.0
+  n_wavelets : 25
+  downsample : 1

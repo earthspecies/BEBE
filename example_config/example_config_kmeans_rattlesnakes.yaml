@@ -1,4 +1,0 @@
-experiment_name: kmeans
-model: kmeans
-output_parent_dir: /home/jupyter/behavior_benchmarks_outputs/rattlesnakes
-dataset_dir: /home/jupyter/behavior_data_local/data/formatted/desantis_rattlesnakes
