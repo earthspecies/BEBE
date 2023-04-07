@@ -51,6 +51,7 @@ To evaluate model outputs without integrating model training into the BEBE codeb
 1. Inherit basic structure from `BehaviorModel` which can be found in `BEBE/models/model_superclass.py`.
 2. Include default model settings in a new `model_type.yaml` file, inside the directory `BEBE/models/default_configs`.
 3. Include new model class inside `BEBE/training/train_model.py`.
+4. To perform hyperparameter optimization as described in the paper, add your model to `BEBE/utils/hyperparameters.py`.
 
 ## Process a new dataset
 
