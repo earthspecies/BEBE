@@ -2,7 +2,7 @@
 
 This repository contains code for model training and evaluation, presented in our forthcoming work:
 
-> B. Hoffman, M. Cusimano, V. Baglione, D. Canestrari, D. Chevallier, D. DeSantis, L. Jeantet, M. Ladds, T. Maekawa, V. Mata-Silva, V. Moreno-Gonzalez, A. Pagano, E. Trapote Villalaín, O. Vainio, A. Vehkaoja, K. Yoda, K. Zacarian, A. Friedlaender, and C. Rutz, "A benchmark for computational analysis of animal behavior, using animal-borne tags," 2023.
+> B. Hoffman, M. Cusimano, V. Baglione, D. Canestrari, D. Chevallier, D. L. DeSantis, L. Jeantet, M. Ladds, T. Maekawa, V. Mata-Silva, V. Moreno-González, A. Pagano, E. Trapote, O. Vainio, A. Vehkaoja, K. Yoda, K. Zacarian, A. Friedlaender, and C. Rutz, "A benchmark for computational analysis of animal behavior, using animal-borne tags," 2023.
 
 Please cite this paper if you use this code.
 
