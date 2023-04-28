@@ -24,7 +24,7 @@ Please note that the version of pytorch and the cudatoolkit that you can use may
 
 ## Get data
 
-All raw and formatted datasets for BEBE will be made available on our [Zenodo repository]().
+All raw and formatted datasets for BEBE will be made available on our [Zenodo repository](https://zenodo.org/record/7807281).
 
 ## Run a single experiment
 
