@@ -59,7 +59,7 @@ Example notebooks for processing a new dataset into the format used by BEBE can 
 
 ## Enquiries
 
-Please [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
+Please post an issue on Github or [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
 
 1. You have questions or issues with running this code.
 2. You are interested in including your data in a future expansion of BEBE.
