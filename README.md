@@ -2,7 +2,7 @@
 
 This repository contains code for model training and evaluation, presented in our forthcoming work:
 
-> B. Hoffman, M. Cusimano, V. Baglione, D. Canestrari, D. Chevallier, D. DeSantis, L. Jeantet, M. Ladds, T. Maekawa, V. Mata-Silva, V. Moreno-Gonzalez, A. Pagano, E. Trapote Villalaín, O. Vainio, A. Vehkaoja, K. Yoda, K. Zacarian, A. Friedlaender, and C. Rutz, "A benchmark for computational analysis of animal behavior, using animal-borne tags," 2023.
+> B. Hoffman, M. Cusimano, V. Baglione, D. Canestrari, D. Chevallier, D. L. DeSantis, L. Jeantet, M. Ladds, T. Maekawa, V. Mata-Silva, V. Moreno-González, A. Pagano, E. Trapote, O. Vainio, A. Vehkaoja, K. Yoda, K. Zacarian, A. Friedlaender, and C. Rutz, "A benchmark for computational analysis of animal behavior, using animal-borne tags," 2023.
 
 Please cite this paper if you use this code.
 
@@ -24,7 +24,7 @@ Please note that the version of pytorch and the cudatoolkit that you can use may
 
 ## Get data
 
-All raw and formatted datasets for BEBE will be made available on our [Zenodo repository]().
+All raw and formatted datasets for BEBE will be made available on our [Zenodo repository](https://zenodo.org/record/7807281).
 
 ## Run a single experiment
 
@@ -59,7 +59,7 @@ Example notebooks for processing a new dataset into the format used by BEBE can 
 
 ## Enquiries
 
-Please [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
+Please post an issue on Github or [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
 
 1. You have questions or issues with running this code.
 2. You are interested in including your data in a future expansion of BEBE.
