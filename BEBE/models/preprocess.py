@@ -78,16 +78,18 @@ def static_acc_filter(series, config):
     
     else: 
       n = 5 * np.round( sr / static_acc_cutoff_freq )
+      new_series = []
       for i in range(series.shape[1]):
         s = series[:, i, None]
         if channels_to_process[i]:
           dynamic_component = fir_nodelay_highpass(s, n, static_acc_cutoff_freq/(sr/2))
           static_component = s - dynamic_component
-          new_series.append(np.stack(static_component, dynamic_component), axis=-1)
+          new_series.append(np.concatenate((static_component, dynamic_component), axis=-1))
         else:
           new_series.append(s)
 
       new_series = np.concatenate(new_series, axis = -1)
+
       return new_series
 
 def fir_nodelay_highpass(s, n, fc):
