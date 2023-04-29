@@ -58,33 +58,57 @@ class whitener_standalone():
     whitened_data = self.whitener.transform(data)
     
     return whitened_data
-  
+
 def static_acc_filter(series, config):
-    # extract static component
-    # series: [time, channels]. The number of channels is equal to config['input_vars']
-    # low_cutoff_freq: float
+    """
+    Extract static component and dynamic component from accelerometer data, return all channels with static/dynamic separated
+    See obda.m available in the Animal Tags toolbox at animaltags.org
+    Input
+    -----
+      series: [time, channels]. The number of channels is equal to config['input_vars']
+      config: dict
+    """
     
     sr = config['metadata']['sr']
     channels_to_process = [('Acc' in x) for x in config['input_vars']]
-    filter_order = 10
     static_acc_cutoff_freq = config['static_acc_cutoff_freq']
-    
     
     if static_acc_cutoff_freq == 0:
       return series
     
     else: 
-      sos = signal.butter(filter_order, static_acc_cutoff_freq, 'low', fs=sr, output='sos')
-      new_series = []
-      for i in range(np.shape(series)[1]):
+      n = 5 * np.round( sr / static_acc_cutoff_freq )
+      for i in range(series.shape[1]):
+        s = series[:, i, None]
         if channels_to_process[i]:
-          s = series[:, i]
-          low_passed_s = signal.sosfilt(sos, s)
-          remaining_s = s - low_passed_s
-          both_s = np.stack([low_passed_s, remaining_s], axis = -1)
-          new_series.append(both_s)
+          dynamic_component = fir_nodelay_highpass(s, n, static_acc_cutoff_freq/(sr/2))
+          static_component = s - dynamic_component
+          new_series.append(np.stack(static_component, dynamic_component), axis=-1)
         else:
-          new_series.append(series[:, i:i+1])
+          new_series.append(s)
+
       new_series = np.concatenate(new_series, axis = -1)
       return new_series
-        
+
+def fir_nodelay_highpass(s, n, fc):
+    """
+    High-pass delay-free filtering using a linear-phase (symmetric) FIR filter followed by group delay correction 
+    See fir_nodelay.m available in the Animal Tags toolbox at animaltags.org
+    Input
+    -----
+      s: [time, channels]. The number of channels is equal to config['input_vars']
+      n: length of the symmetric FIR filter to use in units of input samples
+      fc: filter cut off frequency relative to 1=Nyquist
+    Returns
+    -------
+      y is the filtered signal with the same size as series (dynamic acceleration component)
+    """
+    n = int(np.floor(n/2)*2)
+    h = signal.firwin(n + 1, fc, window="hamming", pass_zero=False) #scipy uses numtaps whereas matlab fir1 uses filter order
+    noffs = int(np.floor(n/2))
+    pad0 = s[noffs-1:0:-1,:]
+    pad1 = s[-2:-noffs-2:-1,:]
+    padded_series = np.concatenate( [pad0, s, pad1] , axis=0)
+    y = signal.lfilter(h, 1.0, padded_series, axis=0)
+    y = y[(n-1):(s.shape[0]+n-1), :]
+    return y
