@@ -20,11 +20,11 @@ conda activate BEBE
 pip install -r requirements.txt
 ```
 
-Please note that the version of pytorch and the cudatoolkit that you can use may vary depending on your computational resources (e.g. whether you have a GPU and what kind). Therefore, to install PyTorch you should follow the instructions on their [website](https://pytorch.org/get-started/locally/), and potentially use a [previous version](https://pytorch.org/get-started/previous-versions/) if needed.
+Please note that the version of pytorch and the cudatoolkit that you can use may vary depending on your computational resources (e.g. whether you have a GPU and what kind). Therefore, to install PyTorch you should follow the instructions on their [website](https://pytorch.org/get-started/locally/), and potentially use a [previous version](https://pytorch.org/get-started/previous-versions/) if needed. To use your GPU with our HMM module (which uses jax and dynamax), please follow the instructions [here](https://github.com/google/jax#pip-installation-gpu-cuda-installed-via-pip-easier) to install jax for GPU.
 
 ## Get data
 
-All raw and formatted datasets for BEBE will be made available on our [Zenodo repository](https://zenodo.org/record/7807281).
+All raw and formatted datasets for BEBE are available on our [Zenodo repository](https://zenodo.org/record/7807281).
 
 ## Run a single experiment
 
@@ -32,7 +32,7 @@ The directory `example_config` contains example config files. To create configs 
 
 To run a single experiment using these hyperparameters, edit the output directory in a config file and run `python single_experiment.py --config /path/to/CONFIG_NAME.yaml`. Note that these config files specify that training is performed using folds 1, 2, 3, and 4, and testing is performed using fold 0. After training and evaluation, results and figures can be found at the output directory specified in config file. 
 
-To see the config files used for the experiments reported in the paper, please download the results on our [Zenodo repository]().
+To see the config files used for the experiments reported in the paper, please download the results on our [Zenodo repository](https://zenodo.org/record/7807281).
 
 ## Run multiple experiments
 
@@ -59,7 +59,7 @@ Example notebooks for processing a new dataset into the format used by BEBE can 
 
 ## Enquiries
 
-Please post an issue on Github or [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
+Please [post an issue](https://github.com/earthspecies/BEBE/issues) here on Github or [contact us](mailto:benjamin@earthspecies.org) in any of the following situations:
 
 1. You have questions or issues with running this code.
 2. You are interested in including your data in a future expansion of BEBE.
