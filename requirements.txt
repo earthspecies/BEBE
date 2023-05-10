@@ -21,3 +21,5 @@ opencv-python==4.6.0.66
 einops
 opt_einsum
 plumbum
+jax
+dynamax
