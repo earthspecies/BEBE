@@ -30,13 +30,12 @@ class kmeans(BehaviorModel):
       return load_wavelet_transformed_data(self, filepath, downsample)
     
     else:
+      data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
+      data = static_acc_filter(data, self.config)
       if downsample > 1:
-          data = pd.read_csv(filepath, delimiter = ',', header = None).values[::downsample, self.cols_included]
-      else:
-          data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
-      return static_acc_filter(data, self.config)
+          data = data[::downsample, :] #simply take every nth sample - kmeans looking at single points, not timeseries
+      return data
 
-    
   def fit(self):
     ## get data. assume stored in memory for now
     train_fps = self.config['train_data_fp']
