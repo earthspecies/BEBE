@@ -125,7 +125,11 @@ def get_model_hyperparam_choices(model_type, dataset_name):
   # For each model-specific parameter, possible values for the grid search are formatted as a list
   
   if model_type == 'rf':
-    model_hyperparam_choices = {'context_window_sec' : [0.5, 1, 2, 4, 8, 16],
+    if dataset_name == 'vehkaoja_dogs':
+      context_window_sec = [0.5, 1, 2, 4, 8]
+    else:
+      context_window_sec = [0.5, 1, 2, 4, 8, 16]
+    model_hyperparam_choices = {'context_window_sec' : context_window_sec,
                                 'n_jobs' : [24],
                                }
   
