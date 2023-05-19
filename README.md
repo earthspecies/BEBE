@@ -24,7 +24,7 @@ Please note that the version of pytorch and the cudatoolkit that you can use may
 
 ## Get data
 
-All raw and formatted datasets for BEBE are available on our [Zenodo repository](https://zenodo.org/record/7807281).
+All raw and formatted datasets for BEBE are available on our [Zenodo repository](https://zenodo.org/record/7947104).
 
 ## Run a single experiment
 
@@ -32,7 +32,7 @@ The directory `example_config` contains example config files. To create configs 
 
 To run a single experiment using these hyperparameters, edit the output directory in a config file and run `python single_experiment.py --config /path/to/CONFIG_NAME.yaml`. Note that these config files specify that training is performed using folds 1, 2, 3, and 4, and testing is performed using fold 0. After training and evaluation, results and figures can be found at the output directory specified in config file. 
 
-To see the config files used for the experiments reported in the paper, please download the results on our [Zenodo repository](https://zenodo.org/record/7807281).
+To see the config files used for the experiments reported in the paper, please download the results on our [Zenodo repository](https://zenodo.org/record/7947104).
 
 ## Run multiple experiments
 
