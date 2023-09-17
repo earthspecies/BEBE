@@ -353,6 +353,13 @@ class SupervisedBehaviorModel(BehaviorModel):
     pred_len = self.temporal_window_samples
     for i in range(0, np.shape(alldata)[0], pred_len):
       data = alldata[i:i+pred_len, :] # window to acommodate more hidden states
+      if np.shape(data)[0]<pred_len:
+        orig_len = np.shape(data)[0]
+        pad = pred_len-np.shape(data)[0]
+        data = np.pad(data, ((0,pad),(0,0)), mode = 'mean')
+      else:
+        pad = 0
+      
       with torch.no_grad():
         data = np.expand_dims(data, axis =0)
         data = torch.from_numpy(data).type('torch.FloatTensor').to(self.device)
@@ -360,7 +367,10 @@ class SupervisedBehaviorModel(BehaviorModel):
         preds = preds.cpu().detach().numpy()
         preds = np.squeeze(preds, axis = 0)
         preds = np.argmax(preds, axis = 0).astype(np.uint8)
+        if pad>0:
+          preds = preds[:orig_len]
         predslist.append(preds)
+      
     preds = np.concatenate(predslist)
     return preds, None  
 

@@ -27,6 +27,9 @@ def train_model(config):
     
   elif config['model'] == 'iic':
     from BEBE.models.iic import iic as m
+    
+  elif config['model'] == 'harnet':
+    from BEBE.models.harnet import harnet as m
 
   else:
     raise ValueError('model type not recognized')

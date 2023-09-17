@@ -9,7 +9,10 @@ from pathlib import Path
 def grid_search(model_type, 
                 dataset_dir, 
                 hyperparameter_selection_dir, 
-                resume
+                resume,
+                low_data_setting,
+                no_cutoff,
+                acc_and_depth_only
                ):
   # model_type (str) : specifies model type. For options see code
   # dataset_dir (str) : path to dataset
@@ -19,7 +22,7 @@ def grid_search(model_type,
   if not os.path.exists(hyperparameter_selection_dir):
     os.makedirs(hyperparameter_selection_dir)
     
-  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir)
+  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, acc_and_depth_only)
   
   for config_fp in configs_list:
     with open(config_fp, 'r') as f:
@@ -34,7 +37,7 @@ def grid_search(model_type,
       print(f"failed to execute with config {config_fp}")
   
   
-def make_configs(model_type, dataset_dir, hyperparameter_selection_dir):
+def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, acc_and_depth_only):
   # get dataset name
   metadata_fp = Path(dataset_dir, 'dataset_metadata.yaml')
   with open(metadata_fp, 'r') as f:
@@ -58,7 +61,7 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir):
   sweep_config['seed'] = [0]
   
   # Get static acc cutoff choices
-  sweep_config["static_acc_cutoff_freq"] = get_static_acc_cutoff_choices(model_type, dataset_name) 
+  sweep_config["static_acc_cutoff_freq"] = get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff) 
   
   summary = sweep_config.copy()
   
@@ -93,6 +96,15 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir):
 
   for i in sorted(sweep_config_cartesian.keys()):
       config = sweep_config_cartesian[i]
+      
+      if low_data_setting:
+        config['low_data_setting'] = True
+      else:
+        config['low_data_setting'] = False
+      
+      if acc_and_depth_only:
+        config['input_vars'] = get_acc_and_depth_only_vars(dataset_name)
+      
       target_filename = config['experiment_name'] + '.yaml'
       target_fp = os.path.join(hyperparameter_selection_dir, target_filename)
       config_fps.append(target_fp)                         
@@ -147,7 +159,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       gru_depth = 1
     
     model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
-                                'lr' : [0.01, 0.003],
+                                'lr' : [0.01, 0.003, 0.001],
                                 'weight_decay' : [0],
                                 'n_epochs' : [100],
                                 'hidden_size' : [64],
@@ -159,6 +171,24 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'dilation' : [1, 3, 5],
                                 'gru_depth' : [gru_depth],
                                 'gru_hidden_size' : [64]
+                               }
+    
+  if model_type == 'harnet':
+    if dataset_name == 'ladds_seals' or 'desantis_rattlesnakes':
+      window_samples = 150
+      harnet_version = 'harnet5'
+    else:
+      window_samples = 900
+      harnet_version = 'harnet30'
+    model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
+                                'lr' : [0.01, 0.003, .001],
+                                'weight_decay' : [0],
+                                'n_epochs' : [100],
+                                'temporal_window_samples' : [window_samples], 
+                                'batch_size' : [32],
+                                'sparse_annotations' : [True],
+                                'gru_hidden_size' : [64],
+                                'harnet_version' : [harnet_version]
                                }
   
   if model_type == 'kmeans':
@@ -269,11 +299,23 @@ def get_model_hyperparam_choices(model_type, dataset_name):
 
   return model_hyperparam_choices
       
-def get_static_acc_cutoff_choices(model_type, dataset_name):
+def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
   if model_type == "random":
+    return [0]
+  if model_type == "harnet":
     return [0]
   if dataset_name == "desantis_rattlesnakes": # this dataset was already filtered
     return [0]
+  if no_cutoff:
+    return [0]
   else:
     return [0, 0.1, 0.4, 1.6, 6.4]
-  
+
+def get_acc_and_depth_only_vars(dataset_name):
+  if dataset_name in ['baglione_crows', 'desantis_rattlesnakes', 'HAR', 'maekawa_gulls', 'pagano_bears']:
+    return ['AccX', 'AccY', 'AccZ']
+  if dataset_name in ['friedlaender_whales', 'jeantet_turtles', 'ladds_seals']:
+    return = ['AccX', 'AccY', 'AccZ', 'Depth']
+  if dataset_name in ['vehkaoja_dogs']:
+    return ['AccX_Back', 'AccY_Back', 'AccZ_Back']
+      

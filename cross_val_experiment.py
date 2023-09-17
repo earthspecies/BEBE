@@ -1,10 +1,9 @@
 # example usage:
-# python cross_val_experiment.py --experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments --experiment-name=HAR_CRNN --dataset-dir=/home/jupyter/behavior_data_local/data/formatted/HAR/ --model=CRNN --resume
+# python cross_val_experiment.py --experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments --experiment-name=harnet_turtles --dataset-dir=/home/jupyter/behavior_data_local/jeantet_turtles/ --model=harnet --resume
 
 import os
 import yaml
 import numpy as np
-from pathlib import Path
 import argparse
 from plumbum import local, FG
 from BEBE.utils.hyperparameters import grid_search
@@ -14,11 +13,11 @@ def main(args):
   experiment_dir_parent = args.experiment_dir_parent
   
   # hyperparameter selection on fold 0
-  hyperparameter_selection_dir = Path(experiment_dir_parent, f"{args.experiment_name}_hyperparameter_selection")
+  hyperparameter_selection_dir = os.path.join(experiment_dir_parent, f"{args.experiment_name}_hyperparameter_selection")
   if not os.path.exists(hyperparameter_selection_dir):
       os.makedirs(hyperparameter_selection_dir)
   
-  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume)
+  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.acc_and_depth_only)
   
   # choose hyperparameters based on f1 score
   best_experiment = None
@@ -32,7 +31,7 @@ def main(args):
           best_experiment = x.parent
   
   # Copy selected hyperparameters
-  selected_config_fp = str(Path(best_experiment, 'config.yaml'))
+  selected_config_fp = os.path.join(best_experiment, 'config.yaml')
   
   with open(selected_config_fp, 'r') as f:
       config = yaml.safe_load(f)
@@ -73,7 +72,10 @@ if __name__ == "__main__":
   parser.add_argument('--experiment-dir-parent', type=str, required = True, help = "parent of dir where you want to save results")
   parser.add_argument('--experiment-name', type=str, required=True, help="name of experiment")
   parser.add_argument('--dataset-dir', type=str, required=True, help="path to dir where formatted dataset is stored")
-  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random'])
+  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random', 'harnet'])
   parser.add_argument('--resume', action='store_true', help="skip experiments if test_eval file already exists")
+  parser.add_argument('--low-data-setting', action='store_true', help="use only one fold for training, to simulate setting with low data")
+  parser.add_argument('--no-cutoff', action='store_true', help="skip separating static and dynamic acc using low pass filter")
+  parser.add_argument('--acc-and-depth-only', action='store_true', help="only use 3 acc channels, plus 1 depth channel if applicable")
   args = parser.parse_args()
   main(args)

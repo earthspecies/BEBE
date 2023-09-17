@@ -60,15 +60,28 @@ def expand_config(config):
     val_folds = [1]
     train_folds = list(range(2, config['metadata']['n_folds']))
   else:
-    test_folds = config['test_folds']
-    if 'val_folds' in config:
-      val_folds = config['val_folds']
+    if 'low_data_setting' not in config:
+      # setting where we have fewer individuals in train set
+      config['low_data_setting'] = False
+      
+    if config['low_data_setting']:
+      test_folds = config['test_folds']
+      train_folds = [(test_folds[0] + config['metadata']['n_folds'] - 1) % config['metadata']['n_folds']]
+      val_folds = list(range(config['metadata']['n_folds']))
+      for fold in [test_folds, train_folds]:
+        for i in fold:
+          val_folds.remove(i)
+    
     else:
-      val_folds = []
-    train_folds = list(range(config['metadata']['n_folds']))
-    for fold in [test_folds, val_folds]:
-      for i in fold:
-        train_folds.remove(i)
+      test_folds = config['test_folds']
+      if 'val_folds' in config:
+        val_folds = config['val_folds']
+      else:
+        val_folds = []
+      train_folds = list(range(config['metadata']['n_folds']))
+      for fold in [test_folds, val_folds]:
+        for i in fold:
+          train_folds.remove(i)
   
   test_clip_ids = []
   for fold in test_folds:
