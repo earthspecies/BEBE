@@ -148,12 +148,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
   
   if model_type == 'CNN' or model_type == 'CRNN' or model_type == 'RNN':
-    if dataset_name == 'desantis_rattlesnakes':
-      window_samples = 64
-    elif dataset_name == 'ladds_seals':
-      window_samples = 128
-    else:
-      window_samples = 2048
+    
     
     if model_type == 'CNN':
       gru_depth = 0
@@ -162,8 +157,24 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       
     if model_type == 'RNN':
       conv_depth = 0
+      
+      # RNN used only as ablation of harnet, use same temporal window settings
+      if dataset_name == 'desantis_rattlesnakes':
+        window_samples = 150
+      elif dataset_name == 'ladds_seals':
+        window_samples = 150
+      else:
+        window_samples = 900
+      
     else:
       conv_depth = 2
+      
+      if dataset_name == 'desantis_rattlesnakes':
+        window_samples = 64
+      elif dataset_name == 'ladds_seals':
+        window_samples = 128
+      else:
+        window_samples = 2048
     
     model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
                                 'lr' : [0.01, 0.003, 0.001],
@@ -180,7 +191,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'gru_hidden_size' : [64]
                                }
     
-  if model_type == 'harnet' or 'harnet_unfrozen' or 'harnet_random':
+  if model_type == 'harnet' or model_type == 'harnet_unfrozen' or model_type == 'harnet_random':
     if dataset_name == 'ladds_seals' or 'desantis_rattlesnakes':
       window_samples = 150
       harnet_version = 'harnet5'
