@@ -192,7 +192,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                }
     
   if model_type == 'harnet' or model_type == 'harnet_unfrozen' or model_type == 'harnet_random':
-    if dataset_name == 'ladds_seals' or 'desantis_rattlesnakes':
+    if dataset_name == 'ladds_seals' or dataset_name == 'desantis_rattlesnakes':
       window_samples = 150
       harnet_version = 'harnet5'
     else:
