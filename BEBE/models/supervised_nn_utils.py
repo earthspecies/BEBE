@@ -15,7 +15,7 @@ from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
 import random
 import pandas as pd
-from BEBE.models.preprocess import static_acc_filter
+from BEBE.models.preprocess import static_acc_filter, normalize_acc_magnitude
 
     
 class BEHAVIOR_DATASET(Dataset):
@@ -151,7 +151,9 @@ class SupervisedBehaviorModel(BehaviorModel):
     x = static_acc_filter(x, self.config)
 
     if self.normalize:
-      x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
+      x = normalize_acc_magnitude(x, self.config)
+#       x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
+
     return x
     
   def load_labels(self, filepath):

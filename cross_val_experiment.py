@@ -8,6 +8,7 @@ import argparse
 from plumbum import local, FG
 from BEBE.utils.hyperparameters import grid_search
 from BEBE.evaluation.cross_val_evaluation import cross_val_evaluation
+from glob import glob
 
 def main(args):
   experiment_dir_parent = args.experiment_dir_parent
@@ -22,13 +23,13 @@ def main(args):
   # choose hyperparameters based on f1 score
   best_experiment = None
   best_f1 = -1
-  for x in hyperparameter_selection_dir.glob('**/test_eval.yaml'):
+  for x in glob(os.path.join(hyperparameter_selection_dir, '**/test_eval.yaml')):
       with open(x, 'r') as f:
           y = yaml.safe_load(f)
       mean_f1 = np.mean(y['individual_scores']['macro_f1s'])
       if mean_f1 > best_f1:
           best_f1 = mean_f1
-          best_experiment = x.parent
+          best_experiment = os.path.dirname(x)
   
   # Copy selected hyperparameters
   selected_config_fp = os.path.join(best_experiment, 'config.yaml')
@@ -72,7 +73,7 @@ if __name__ == "__main__":
   parser.add_argument('--experiment-dir-parent', type=str, required = True, help = "parent of dir where you want to save results")
   parser.add_argument('--experiment-name', type=str, required=True, help="name of experiment")
   parser.add_argument('--dataset-dir', type=str, required=True, help="path to dir where formatted dataset is stored")
-  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random', 'harnet'])
+  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'RNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random', 'harnet', 'harnet_unfrozen', 'harnet_random'])
   parser.add_argument('--resume', action='store_true', help="skip experiments if test_eval file already exists")
   parser.add_argument('--low-data-setting', action='store_true', help="use only one fold for training, to simulate setting with low data")
   parser.add_argument('--no-cutoff', action='store_true', help="skip separating static and dynamic acc using low pass filter")

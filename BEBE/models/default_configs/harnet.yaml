@@ -19,5 +19,7 @@ default_model_config:
   # dilation : 1
   # gru_depth : 1
   # gru_hidden_size : 32
-  normalize : False
+  normalize : True
   harnet_version : harnet30
+  freeze_encoder : True
+  load_pretrained_weights : True

@@ -45,8 +45,10 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
   dataset_name = metadata['dataset_name']
   
   # some model types reuse the same model code implementation
-  if model_type == 'CNN':
+  if model_type == 'CNN' or model_type == 'RNN':
     model_type_config = 'CRNN'
+  elif model_type == 'harnet_random' or model_type == 'harnet_unfrozen':
+    model_type_config = 'harnet'
   elif model_type == 'wavelet_kmeans':
     model_type_config = 'kmeans'
   else:
@@ -145,7 +147,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'n_jobs' : [24],
                                }
   
-  if model_type == 'CNN' or model_type == 'CRNN':
+  if model_type == 'CNN' or model_type == 'CRNN' or model_type == 'RNN':
     if dataset_name == 'desantis_rattlesnakes':
       window_samples = 64
     elif dataset_name == 'ladds_seals':
@@ -157,6 +159,11 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       gru_depth = 0
     else:
       gru_depth = 1
+      
+    if model_type == 'RNN':
+      conv_depth = 0
+    else:
+      conv_depth = 2
     
     model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
                                 'lr' : [0.01, 0.003, 0.001],
@@ -165,7 +172,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'hidden_size' : [64],
                                 'temporal_window_samples' : [window_samples], 
                                 'batch_size' : [32],
-                                'conv_depth' : [2],
+                                'conv_depth' : [conv_depth],
                                 'sparse_annotations' : [True],
                                 'ker_size' : [7],
                                 'dilation' : [1, 3, 5],
@@ -173,13 +180,24 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'gru_hidden_size' : [64]
                                }
     
-  if model_type == 'harnet':
+  if model_type == 'harnet' or 'harnet_unfrozen' or 'harnet_random':
     if dataset_name == 'ladds_seals' or 'desantis_rattlesnakes':
       window_samples = 150
       harnet_version = 'harnet5'
     else:
       window_samples = 900
       harnet_version = 'harnet30'
+    
+    if model_type == 'harnet_unfrozen' or model_type == 'harnet_random':
+      freeze_encoder = False
+    else:
+      freeze_encoder = True
+      
+    if model_type == 'harnet' or model_type == 'harnet_unfrozen':
+      load_pretrained_weights = True
+    else:
+      load_pretrained_weights = False      
+      
     model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
                                 'lr' : [0.01, 0.003, .001],
                                 'weight_decay' : [0],
@@ -188,7 +206,9 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'batch_size' : [32],
                                 'sparse_annotations' : [True],
                                 'gru_hidden_size' : [64],
-                                'harnet_version' : [harnet_version]
+                                'harnet_version' : [harnet_version],
+                                'freeze_encoder' : [freeze_encoder],
+                                'load_pretrained_weights' : [load_pretrained_weights]
                                }
   
   if model_type == 'kmeans':
@@ -315,7 +335,7 @@ def get_acc_and_depth_only_vars(dataset_name):
   if dataset_name in ['baglione_crows', 'desantis_rattlesnakes', 'HAR', 'maekawa_gulls', 'pagano_bears']:
     return ['AccX', 'AccY', 'AccZ']
   if dataset_name in ['friedlaender_whales', 'jeantet_turtles', 'ladds_seals']:
-    return = ['AccX', 'AccY', 'AccZ', 'Depth']
+    return ['AccX', 'AccY', 'AccZ', 'Depth']
   if dataset_name in ['vehkaoja_dogs']:
     return ['AccX_Back', 'AccY_Back', 'AccZ_Back']
       

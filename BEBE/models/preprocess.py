@@ -114,3 +114,19 @@ def fir_nodelay_highpass(s, n, fc):
     y = signal.lfilter(h, 1.0, padded_series, axis=0)
     y = y[(n-1):(s.shape[0]+n-1), :]
     return y
+  
+def normalize_acc_magnitude(series, config):
+  """
+  On the fly normalize acc channels so mean field strength = 1.
+  Assumes only one set of 3 Acc channels
+  """
+  channels_to_process = [('Acc' in x) for x in config['input_vars']]
+  
+  series_sub = series[:,channels_to_process]
+  field_strength = np.mean(np.sqrt(series_sub[:,0] ** 2 + series_sub[:,1] ** 2 + series_sub[:,2] ** 2))
+  
+  for i in channels_to_process:
+    series[:,i] = series[:,i] / (field_strength + 1e-6)
+    
+  return series
+  
