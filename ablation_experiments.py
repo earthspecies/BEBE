@@ -26,7 +26,7 @@ def main():
         for low_data_setting in low_data:
             for dataset_name in dataset_names:
                 if low_data_setting:
-                    experiment_name = f'{dataset_name}_{model_type}_acc_and_depth_only'
+                    experiment_name = f'{dataset_name}_{model_type}_low_data_acc_and_depth_only'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
@@ -41,7 +41,7 @@ def main():
                     
                     
                 else:
-                    experiment_name = f'{dataset_name}_{model_type}_low_data_acc_and_depth_only'
+                    experiment_name = f'{dataset_name}_{model_type}_acc_and_depth_only'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
@@ -55,7 +55,7 @@ def main():
     # Low data ablations (with all data channels)
     
     model_types = ['CRNN'] # 'rf']
-    low_data = [True, False]
+    low_data = [True] # false is already done in general experiments
     dataset_names = ['baglione_crows',
                      'jeantet_turtles',
                      'pagano_bears',
@@ -71,7 +71,7 @@ def main():
         for low_data_setting in low_data:
             for dataset_name in dataset_names:
                 if low_data_setting:
-                    experiment_name = f'{dataset_name}_{model_type}'
+                    experiment_name = f'{dataset_name}_{model_type}_low_data'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
@@ -85,7 +85,7 @@ def main():
                     
                     
                 else:
-                    experiment_name = f'{dataset_name}_{model_type}_low_data'
+                    experiment_name = f'{dataset_name}_{model_type}'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
