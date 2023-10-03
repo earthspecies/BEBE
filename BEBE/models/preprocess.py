@@ -118,15 +118,23 @@ def fir_nodelay_highpass(s, n, fc):
 def normalize_acc_magnitude(series, config):
   """
   On the fly normalize acc channels so mean field strength = 1.
-  Assumes only one set of 3 Acc channels
+  Assumes triaxial acc sensor channels are not shuffled, if there are > 1 triaxial acc sensor
   """
+  
+  # check we have correct number of acc channels
   channels_to_process = [('Acc' in x) for x in config['input_vars']]
+  assert sum(channels_to_process) % 3 == 0
   
-  series_sub = series[:,channels_to_process]
-  field_strength = np.mean(np.sqrt(series_sub[:,0] ** 2 + series_sub[:,1] ** 2 + series_sub[:,2] ** 2))
-  
-  for i in channels_to_process:
-    series[:,i] = series[:,i] / (field_strength + 1e-6)
+  # go through groups successively, and normalize
+  acc_group_idxs = []
+  for i, x in enumerate(config['input_vars']):
+    if 'Acc' in x:
+      acc_group_idxs.append(i)
+    if len(acc_group_idxs) == 3:
+      series_sub = series[:,acc_group_idxs]
+      field_strength = np.mean(np.sqrt(series_sub[:,0] ** 2 + series_sub[:,1] ** 2 + series_sub[:,2] ** 2))
+      series[:,acc_group_idxs] = series[:,acc_group_idxs] / (field_strength + 1e-6)
+      acc_group_idxs = []
     
   return series
   

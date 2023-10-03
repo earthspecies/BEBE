@@ -21,7 +21,7 @@ def grid_search(model_type,
   
   if not os.path.exists(hyperparameter_selection_dir):
     os.makedirs(hyperparameter_selection_dir)
-    
+
   configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, acc_and_depth_only)
   
   for config_fp in configs_list:
@@ -348,5 +348,5 @@ def get_acc_and_depth_only_vars(dataset_name):
   if dataset_name in ['friedlaender_whales', 'jeantet_turtles', 'ladds_seals']:
     return ['AccX', 'AccY', 'AccZ', 'Depth']
   if dataset_name in ['vehkaoja_dogs']:
-    return ['AccX_Back', 'AccY_Back', 'AccZ_Back']
+    return ['AccX_Back', 'AccY_Back', 'AccZ_Back', 'AccX_Neck', 'AccY_Neck', 'AccZ_Neck']
       

@@ -152,7 +152,6 @@ class SupervisedBehaviorModel(BehaviorModel):
 
     if self.normalize:
       x = normalize_acc_magnitude(x, self.config)
-#       x = (x - np.mean(x, axis = 0, keepdims = True)) / (np.std(x, axis = 0, keepdims = True) + 1e-6)
 
     return x
     
@@ -348,9 +347,8 @@ class SupervisedBehaviorModel(BehaviorModel):
     with open(target_fp, 'wb') as f:
       pickle.dump(self, f)
   
-  def predict(self, data):
+  def predict(self, alldata):
     self.model.eval()
-    alldata= data    
     predslist = []
     pred_len = self.temporal_window_samples
     for i in range(0, np.shape(alldata)[0], pred_len):
