@@ -253,7 +253,7 @@ class ClassicBehaviorModel(BehaviorModel):
     
     ## General Training Parameters
     self.downsizing_factor = self.model_config['downsizing_factor']
-    self.temporal_window_samples = self.model_config['temporal_window_samples']
+    self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.sparse_annotations = self.model_config['sparse_annotations']
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
