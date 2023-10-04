@@ -8,7 +8,7 @@ from BEBE.models.supervised_classic_utils import ClassicBehaviorModel
 
 class RandomForest(ClassicBehaviorModel):
   def __init__(self, config):
-    super(self).__init__(config)
+    super().__init__(config)
     # TODO What is this n_samples_window vs. temporal_window_samples in supervised_classic_utils
     self.n_samples_window = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.min_samples_split = self.model_config['min_samples_split']
@@ -19,7 +19,7 @@ class RandomForest(ClassicBehaviorModel):
 
 class DecisionTree(ClassicBehaviorModel):
   def __init__(self, config):
-    super(self).__init__(config)
+    super().__init__(config)
     self.n_samples_window = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.min_samples_split = self.model_config['min_samples_split']
     # TODO: Pull relevant parameters from self.model_config that we want to use in hyperparameter search
@@ -28,7 +28,7 @@ class DecisionTree(ClassicBehaviorModel):
 
 class SupportVectorMachine(ClassicBehaviorModel):
   def __init__(self, config):
-    super(self).__init__(config)
+    super().__init__(config)
     self.n_samples_window = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.min_samples_split = self.model_config['min_samples_split']
     # TODO: Pull relevant parameters from self.model_config that we want to use in hyperparameter search
