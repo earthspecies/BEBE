@@ -34,17 +34,21 @@ def nathan_basic_features(multi_channel_data, epsilon = 1e-12):
     #  kurtosis
     features.append(torch.mean(torch.pow(zscores, 4.0), dim=0, keepdim=True) - 3.0 )
     #  maximum value
-    features.append(torch.max(multi_channel_data, dim=0, keepdim=True).values)
+    mx = torch.max(multi_channel_data, dim=0, keepdim=True).values
+    features.append(mx)
     #  minimum value
-    features.append(torch.min(multi_channel_data, dim=0, keepdim=True).values)
+    mn = torch.min(multi_channel_data, dim=0, keepdim=True).values
+    features.append(mn)
     #  autocorrelation for a displacement of one measurement
     numerator = (multi_channel_data[1:, :] - mu) * (multi_channel_data[:-1, :] - mu)
     numerator = numerator.mean(dim=0, keepdim=True)
-    features.append( numerator / (std**2 + epsilon))
+    ac = numerator / (std**2 + epsilon)
+    features.append(ac)
     #  trend: linear regression through the data
     x = torch.arange(0, multi_channel_data.shape[0], dtype=torch.float32)
-    features.append(torch.sum((x[:, None] - x.mean()) * (multi_channel_data - mu), dim = 0, keepdim=True))
-    return torch.cat([f.squeeze() for f in features])
+    trend = torch.sum((x[:, None] - x.mean()) * (multi_channel_data - mu), dim = 0, keepdim=True)
+    features.append(trend)
+    return torch.cat([f.squeeze(dim=0) for f in features])
 
 def triaxial_correlation_features(triaxial_data):
     """ Correlations from feature set in Nathan et al., 2012 """
@@ -56,8 +60,9 @@ def triaxial_correlation_features(triaxial_data):
        b = triaxial_data[:, b_idx] - mu[b_idx]
        numerator = torch.sum(a * b, dim = 0)
        denominator = torch.sqrt(torch.sum(b**2, dim = 0) * torch.sum(a**2, dim=0))
-       features.append(numerator/(denominator + 1e-12))    
-    return torch.Tensor(features)
+       features.append(numerator/(denominator + 1e-12))
+    corr = torch.Tensor(features)
+    return corr
 
 def nathan_raw_features(triaxial_acc_data, epsilon = 1e-12):
     """
@@ -82,13 +87,15 @@ def nathan_raw_features(triaxial_acc_data, epsilon = 1e-12):
     # Circular variance of azimuth for q axis = (φ=arctan[y/x])
     psi = torch.atan(triaxial_acc_data[:, 1] / (triaxial_acc_data[:, 2] + epsilon))
     cvp = circular_variance(psi)
-    return torch.cat([features_basic, features_correlation, torch.Tensor([cvt, cvp])])
+    cvs = torch.Tensor([cvt, cvp])
+    return torch.cat([features_basic, features_correlation, cvs])
 
 def mean_obda(dynamic_accleration):
     """ Compute mean overall dynamic body accleration over the window
         https://github.com/animaltags/tagtools_matlab/blob/main/processing/odba.m
     """
-    return torch.mean(torch.sum(torch.abs(dynamic_accleration), dim=-1))[None]
+    obda = torch.mean(torch.sum(torch.abs(dynamic_accleration), dim=-1))[None]
+    return obda
 
 def split_into_triaxial(data_channels, n=3):
     """ If there are >n channels, group into sets of n channels. Assumes triaxial channels are listed one after another. """
@@ -127,7 +134,7 @@ class Features(Dataset):
 
         # Feature set setup
         self.feature_set = config['model_config']['feature_set']
-        self.dynamic_accleration_only = config.get('dynamic_acc_only', False)
+        self.dynamic_accleration_only = config['metadata'].get('dynamic_acc_only', False)
         if self.feature_set == 'nathan2012':
             print("Using feature set from nathan et al. 2012")
             assert (config['static_acc_cutoff_freq'] > 0) or self.dynamic_accleration_only, "The Nathan et al 2012 feature set requires OBDA."
@@ -249,11 +256,12 @@ class ClassicBehaviorModel(BehaviorModel):
     # Get cpu or gpu device for training.
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {self.device} device")
-    self.num_workers = config.get('n_workers', 0) #TODO: is this in the config?
+    self.num_workers = self.model_config.get('num_workers', 0)
     
     ## General Training Parameters
     self.downsizing_factor = self.model_config['downsizing_factor']
-    self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
+    # min val of 6 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). TODO: should we truncate or pad at the edges?
+    self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 6)
     self.sparse_annotations = self.model_config['sparse_annotations']
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
