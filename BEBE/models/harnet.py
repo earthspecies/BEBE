@@ -39,11 +39,12 @@ class Classifier(nn.Module):
         }
         self.conv = MidGetter(harnet, return_layers=return_layers, keep_output=True)
         
-        n_harnet_groups = n_features // 3
+        self.n_harnet_groups = n_features // 3
+        self.n_extra_channels = n_features % 3
         
         self.head = nn.Linear(128, n_classes).to(device)
         
-        n_channels_fusion = 128*n_harnet_groups + (n_features % 3)
+        n_channels_fusion = 128*self.n_harnet_groups + self.n_extra_channels
         self.gru = nn.GRU(n_channels_fusion, 64, num_layers = 1, bidirectional = True, batch_first = True)
         
         
@@ -51,14 +52,14 @@ class Classifier(nn.Module):
         # X is [batch, seq_len, channels]
         
         seq_len = x.size()[-2]
-        n_channels = x.size()[-1]
         
         harnet_outputs = []
         
         with torch.set_grad_enabled(self.freeze_encoder):
         
-          for channel_group in range(0, n_channels, 3):
+          for channel_group in range(0, self.n_harnet_groups):
             # group triples of channels, assumes acc channels appear first
+            channel_group = channel_group * 3
             x_channel_group = x[:,:,channel_group:channel_group+3]
 
 
@@ -72,8 +73,8 @@ class Classifier(nn.Module):
         
           harnet_outputs = torch.cat(harnet_outputs, dim = -1)
         
-          if (n_channels % 3) > 0:
-            x_extra = x[:,:,channel_group:]
+          if self.n_extra_channels > 0:
+            x_extra = x[:,:,self.n_harnet_groups*3:]
             x = torch.cat([harnet_outputs, x_extra], dim = -1)
             
           else:
