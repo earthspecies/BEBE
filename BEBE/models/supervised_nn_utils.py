@@ -96,12 +96,9 @@ class BEHAVIOR_DATASET(Dataset):
             for c_idx in range(self.num_classes):
                 if self.label_names[c_idx] == 'unknown': continue
                 xs_indiv_class.append( np.where( b_indiv * (all_labels == c_idx) )[0] )
-            class_lebns = [len(xic) for xic in xs_indiv_class]
-            print("Class lens: ", class_lebns)
-            smallest_class_per_indiv = min(class_lebns)
+            smallest_class_per_indiv = min([len(xic) for xic in xs_indiv_class])
             mask_indiv_class = []
             for xic in xs_indiv_class:
-                print("Removing ", xic.shape[0] - smallest_class_per_indiv, " from this class")
                 indices_to_mask = self.rng.choice(xic, size=xic.shape[0]-smallest_class_per_indiv, replace=False)
                 mask_indiv_class.append(np.sort(indices_to_mask))
             indices_of_datapoints_to_mask.append(np.concatenate(mask_indiv_class))
