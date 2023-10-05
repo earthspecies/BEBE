@@ -18,7 +18,7 @@ def main(args):
   if not os.path.exists(hyperparameter_selection_dir):
       os.makedirs(hyperparameter_selection_dir)
   
-  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.acc_and_depth_only)
+  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.acc_and_depth_only, args.balance_classes)
   
   # choose hyperparameters based on f1 score
   best_experiment = None
@@ -78,5 +78,6 @@ if __name__ == "__main__":
   parser.add_argument('--low-data-setting', action='store_true', help="use only one fold for training, to simulate setting with low data")
   parser.add_argument('--no-cutoff', action='store_true', help="skip separating static and dynamic acc using low pass filter")
   parser.add_argument('--acc-and-depth-only', action='store_true', help="only use 3 acc channels, plus 1 depth channel if applicable")
+  parser.add_argument('--balance-classes', action='store_true', help="make the size of all classes in the training set equal to the size of the smallest class")
   args = parser.parse_args()
   main(args)

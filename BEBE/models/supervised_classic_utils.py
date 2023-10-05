@@ -103,17 +103,18 @@ def split_into_triaxial(data_channels, n=3):
 
 class Features(Dataset):
     
-    def __init__(self, data, labels, train, temporal_window_samples, config):
+    def __init__(self, data, labels, individuals, train, temporal_window_samples, config):
         # Take features over a window 
         self.temporal_window_samples = temporal_window_samples 
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
         if train:
             self.labels = labels # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
+        self.individuals = individuals # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
         
-        label_names = config['metadata']['label_names']
-        self.num_classes = len(label_names)
-        self.unknown_idx = label_names.index('unknown')
+        self.label_names = config['metadata']['label_names']
+        self.num_classes = len(self.label_names)
+        self.unknown_idx = self.label_names.index('unknown')
         self.data_points = sum([np.shape(x)[0] for x in self.data])
         print('Initialize dataloader. Datapoints %d' %self.data_points)
         self.input_vars = config['input_vars']
@@ -163,6 +164,26 @@ class Features(Dataset):
             indexes_within_x_with_known_annotation = np.where(self.labels[clip_number] != self.unknown_idx)[0]
             indices_of_annotated_windows.append(indexes_within_x_with_known_annotation + start_idx) 
         return np.concatenate(indices_of_annotated_windows)
+
+    def balance_classes_by_individual(self):
+        """ Returns a list of indexes which have annotations and which make the number of datapoints in each class equivalent to the smallest """
+        all_individuals = np.concatenate(self.individuals)
+        individual_idxs = np.unique(all_individuals)
+        all_labels = np.concatenate(self.labels)
+        indicies_of_annotated_and_balanced_windows = []
+        for individual_idx in individual_idxs:
+            b_indiv = (all_individuals == individual_idx)
+            xs_indiv_class = []
+            for c_idx in range(self.num_classes):
+                if self.label_names[c_idx] == 'unknown': continue
+                xs_indiv_class.append( np.where( b_indiv * (all_labels == c_idx) )[0] )
+            smallest_class_per_indiv = min([len(xic) for xic in xs_indiv_class])
+            balanced_xs_indiv_class = []
+            for xic in xs_indiv_class:
+                subsampled_idxs = self.rng.choice(xic, size=smallest_class_per_indiv, replace=False)
+                balanced_xs_indiv_class.append(np.sort(subsampled_idxs))
+            indicies_of_annotated_and_balanced_windows.append(np.concatenate(balanced_xs_indiv_class))
+        return np.concatenate(indicies_of_annotated_and_balanced_windows)
 
     def compute_features(self, data_item):
         features = []
@@ -262,7 +283,6 @@ class ClassicBehaviorModel(BehaviorModel):
     self.downsizing_factor = self.model_config['downsizing_factor']
     # min val of 6 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). TODO: should we truncate or pad at the edges?
     self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 6)
-    self.sparse_annotations = self.model_config['sparse_annotations']
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
 
@@ -277,11 +297,12 @@ class ClassicBehaviorModel(BehaviorModel):
     
     # Dataset Parameters
     self.unknown_label = config['metadata']['label_names'].index('unknown')
-    labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
-    self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
+    self.label_idx = [i for i, x in enumerate(self.metadata['clip_column_names']) if x == 'label'][0]
+    self.individual_idx = [i for i, x in enumerate(self.metadata['clip_column_names']) if x == 'individual_id'][0]
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = self.get_n_features()
-    
+    self.balance_classes = config['balance_classes']
+
     # Specify in subclass
     self.model = None
 
@@ -289,7 +310,7 @@ class ClassicBehaviorModel(BehaviorModel):
     # gets number of features after processing input data channels
     train_fps = self.config['train_data_fp']
     x = self.load_model_inputs(train_fps[0])
-    dataset = Features([x], None, False, self.temporal_window_samples, self.config)
+    dataset = Features([x], None, None, False, self.temporal_window_samples, self.config)
     return dataset[0].shape[0]
     
   def load_model_inputs(self, filepath):
@@ -305,18 +326,26 @@ class ClassicBehaviorModel(BehaviorModel):
   def load_labels(self, filepath):
     labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)
     return labels 
-    
+
+  def load_individuals(self, filepath):
+    individuals = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.individual_idx].astype(int)
+    return individuals 
+
   def fit(self):
     # Load data
     train_fps = self.config['train_data_fp']
     train_data = [self.load_model_inputs(fp) for fp in train_fps]
     train_labels = [self.load_labels(fp) for fp in train_fps]
+    train_individuals = [self.load_individuals(fp) for fp in train_fps]
     # Create dataloader
-    train_dataset = Features(train_data, train_labels, True, self.temporal_window_samples, self.config)
-    # Always use self.sparse_annotations == True because classic models only use labeled points
-    indices_to_keep = train_dataset.get_annotated_windows()
-    if self.downsizing_factor > 1:
-        indices_to_keep = indices_to_keep[::self.downsizing_factor]
+    train_dataset = Features(train_data, train_labels, train_individuals, True, self.temporal_window_samples, self.config)
+    # Classic models only use labeled points
+    if self.balance_classes:
+        indices_to_keep = train_dataset.balance_classes_by_individual()
+    else:
+        indices_to_keep = train_dataset.get_annotated_windows()
+        if self.downsizing_factor > 1:
+            indices_to_keep = indices_to_keep[::self.downsizing_factor]
     train_dataset = Subset(train_dataset, indices_to_keep)  
     print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=False, num_workers = self.num_workers)
@@ -332,7 +361,7 @@ class ClassicBehaviorModel(BehaviorModel):
       pickle.dump(self, f)
   
   def predict(self, data):
-    dataset = Features([data], None, False, self.temporal_window_samples, self.config)
+    dataset = Features([data], None, None, False, self.temporal_window_samples, self.config)
     dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers=self.num_workers)
     X = torch.cat([X for X in dataloader], dim=0).numpy()
     return self.model.predict(X), None

@@ -4,7 +4,6 @@ default_model_config:
   context_window_sec : 1
   min_samples_split : 2
   class_weight : balanced
-  sparse_annotations: True
   normalize: False
   wavelet_transform: False
   feature_set: nathan2012
