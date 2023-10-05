@@ -135,7 +135,7 @@ class Features(Dataset):
 
         # Feature set setup
         self.feature_set = config['model_config']['feature_set']
-        self.dynamic_accleration_only = config['metadata'].get('dynamic_acc_only', False)
+        self.dynamic_accleration_only = config['metadata'].get('dynamic_acc_only', False) # for rattlesnakes
         if self.feature_set == 'nathan2012':
             print("Using feature set from nathan et al. 2012")
             assert (config['static_acc_cutoff_freq'] > 0) or self.dynamic_accleration_only, "The Nathan et al 2012 feature set requires OBDA."
