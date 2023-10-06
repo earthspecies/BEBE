@@ -12,7 +12,7 @@ def grid_search(model_type,
                 resume,
                 low_data_setting,
                 no_cutoff,
-                acc_and_depth_only,
+                nogyr,
                 balance_classes
                ):
   # model_type (str) : specifies model type. For options see code
@@ -23,7 +23,7 @@ def grid_search(model_type,
   if not os.path.exists(hyperparameter_selection_dir):
     os.makedirs(hyperparameter_selection_dir)
 
-  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, acc_and_depth_only)
+  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr)
   
   for config_fp in configs_list:
     with open(config_fp, 'r') as f:
@@ -38,7 +38,8 @@ def grid_search(model_type,
       print(f"failed to execute with config {config_fp}")
   
   
-def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, acc_and_depth_only, balance_classes):
+
+def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr, balance_classes):
   # get dataset name
   metadata_fp = Path(dataset_dir, 'dataset_metadata.yaml')
   with open(metadata_fp, 'r') as f:
@@ -100,11 +101,12 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
   for i in sorted(sweep_config_cartesian.keys()):
       config = sweep_config_cartesian[i]
       
+
       config['low_data_setting'] = low_data_setting
       config['balance_classes'] = balance_classes
 
-      if acc_and_depth_only:
-        config['input_vars'] = get_acc_and_depth_only_vars(dataset_name)
+      if nogyr:
+        config['input_vars'] = get_nogyr_vars(dataset_name)
       
       target_filename = config['experiment_name'] + '.yaml'
       target_fp = os.path.join(hyperparameter_selection_dir, target_filename)
@@ -341,10 +343,14 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
   else:
     return [0, 0.1, 0.4, 1.6, 6.4]
 
-def get_acc_and_depth_only_vars(dataset_name):
-  if dataset_name in ['baglione_crows', 'desantis_rattlesnakes', 'HAR', 'maekawa_gulls', 'pagano_bears']:
+def get_nogyr_vars(dataset_name):
+  if dataset_name in ['baglione_crows', 'desantis_rattlesnakes', 'HAR', 'maekawa_gulls']:
     return ['AccX', 'AccY', 'AccZ']
-  if dataset_name in ['friedlaender_whales', 'jeantet_turtles', 'ladds_seals']:
+  if dataset_name in ['friedlaender_whales']:
+    return ['AccX', 'AccY', 'AccZ', 'Depth', 'Speed']
+  if dataset_name in ['pagano_bears']:
+    return ['AccX', 'AccY', 'AccZ', 'Wetdry']
+  if dataset_name in ['jeantet_turtles', 'ladds_seals']:
     return ['AccX', 'AccY', 'AccZ', 'Depth']
   if dataset_name in ['vehkaoja_dogs']:
     return ['AccX_Back', 'AccY_Back', 'AccZ_Back', 'AccX_Neck', 'AccY_Neck', 'AccZ_Neck']
