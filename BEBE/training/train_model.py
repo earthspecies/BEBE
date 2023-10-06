@@ -20,8 +20,14 @@ def train_model(config):
     from BEBE.models.umapper import umapper as m
     
   elif config['model'] == 'rf':
-    from BEBE.models.rf import rf as m
-    
+    from BEBE.models.classic import RandomForest as m
+
+  elif config['model'] == 'dt':
+    from BEBE.models.classic import DecisionTree as m
+
+  elif config['model'] == 'svm':
+    from BEBE.models.classic import SupportVectorMachine as m
+
   elif config['model'] == 'random':
     from BEBE.models.random import random as m
     

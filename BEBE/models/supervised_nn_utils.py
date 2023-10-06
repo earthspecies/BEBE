@@ -17,18 +17,28 @@ import random
 import pandas as pd
 from BEBE.models.preprocess import static_acc_filter, normalize_acc_magnitude
 
+def split_to_sizes(y_array, x_list, z_list=[]):
+    """ If y_array = np.concatenate(x_list), split y_array to re-create x_list (i.e. with arrays of the same size in x_list) """
+    if len(x_list) == 0:
+        return z_list
+    x_shape = x_list[0].shape[0]
+    y1 = y_array[:x_shape]
+    y2 = y_array[x_shape:]
+    z_list.append(y1)
+    return split_to_sizes(y2, x_list[1:], z_list)
     
 class BEHAVIOR_DATASET(Dataset):
-    def __init__(self, data, labels, train, temporal_window_samples, config, rescale_param = 0):
+    def __init__(self, data, labels, individuals, train, temporal_window_samples, config, rescale_param = 0):
         self.temporal_window = temporal_window_samples
         self.rescale_param = rescale_param
         
         self.data = data # list of np arrays, each of shape [*, n_features] where * is the number of samples and varies between arrays
         self.labels = labels # list of np arrays, each of shape [*,] where * is the number of samples and varies between arrays
-        
-        label_names = config['metadata']['label_names']
-        self.num_classes = len(label_names)
-        self.unknown_idx = label_names.index('unknown')
+        self.individuals = individuals
+
+        self.label_names = config['metadata']['label_names']
+        self.num_classes = len(self.label_names)
+        self.unknown_idx = self.label_names.index('unknown')
         self.data_points = sum([np.shape(x)[0] for x in self.data])
         print('Initialize dataloader. Datapoints %d' %self.data_points)
             
@@ -73,6 +83,27 @@ class BEHAVIOR_DATASET(Dataset):
           if np.any(labels_item[start:end] != 0):
             indices_of_annotated_windows.append(index)
         return indices_of_annotated_windows
+
+    def mask_labels_to_balance_classes_by_individual(self):
+        """ Sets indexes to the 'unknown' label to make the number of datapoints in each class equivalent to the smallest """
+        all_individuals = np.concatenate(self.individuals)
+        individual_idxs = np.unique(all_individuals)
+        all_labels = np.concatenate(self.labels)
+        indices_of_datapoints_to_mask = []
+        for individual_idx in individual_idxs:
+            b_indiv = (all_individuals == individual_idx)
+            xs_indiv_class = []
+            for c_idx in range(self.num_classes):
+                if self.label_names[c_idx] == 'unknown': continue
+                xs_indiv_class.append( np.where( b_indiv * (all_labels == c_idx) )[0] )
+            smallest_class_per_indiv = min([len(xic) for xic in xs_indiv_class])
+            mask_indiv_class = []
+            for xic in xs_indiv_class:
+                indices_to_mask = self.rng.choice(xic, size=xic.shape[0]-smallest_class_per_indiv, replace=False)
+                mask_indiv_class.append(np.sort(indices_to_mask))
+            indices_of_datapoints_to_mask.append(np.concatenate(mask_indiv_class))
+        all_labels[np.concatenate(indices_of_datapoints_to_mask)] = self.unknown_idx
+        self.labels = split_to_sizes(all_labels, self.labels)
 
     def __getitem__(self, index):
         clip_number = np.where(index >= self.data_start_indices)[0][-1] #which clip do I draw from?
@@ -129,10 +160,11 @@ class SupervisedBehaviorModel(BehaviorModel):
     
     # Dataset Parameters
     self.unknown_label = config['metadata']['label_names'].index('unknown')
-    labels_bool = [x == 'label' for x in self.metadata['clip_column_names']]
-    self.label_idx = [i for i, x in enumerate(labels_bool) if x][0] # int
+    self.label_idx = [i for i, x in enumerate(self.metadata['clip_column_names']) if x == 'label'][0]
+    self.individual_idx = [i for i, x in enumerate(self.metadata['clip_column_names']) if x == 'individual_id'][0]
     self.n_classes = len(self.metadata['label_names']) 
     self.n_features = self.get_n_features()
+    self.balance_classes = config['balance_classes']
     
     # Specify in subclass
     self.model = None
@@ -158,7 +190,11 @@ class SupervisedBehaviorModel(BehaviorModel):
   def load_labels(self, filepath):
     labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)
     return labels 
-    
+
+  def load_individuals(self, filepath):
+    individuals = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.individual_idx].astype(int)
+    return individuals 
+
   def fit(self):
     train_fps = self.config['train_data_fp']
     val_fps = self.config['val_data_fp']
@@ -171,17 +207,25 @@ class SupervisedBehaviorModel(BehaviorModel):
     train_labels = [self.load_labels(fp) for fp in train_fps]
     val_labels = [self.load_labels(fp) for fp in val_fps]
     test_labels = [self.load_labels(fp) for fp in test_fps]
+
+    train_individuals = [self.load_individuals(fp) for fp in train_fps]
     
-    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, True, self.temporal_window_samples, self.config, rescale_param = self.rescale_param)
+    train_dataset = BEHAVIOR_DATASET(train_data, train_labels, train_individuals, True, self.temporal_window_samples, self.config, rescale_param = self.rescale_param)
     proportions = train_dataset.get_class_proportions() # Record class proportions for loss function
-    if self.sparse_annotations:
+    if self.balance_classes:
+      train_dataset.mask_labels_to_balance_classes_by_individual()
+      indices_to_keep = train_dataset.get_annotated_windows()
+      train_dataset = Subset(train_dataset, indices_to_keep)
+      proportions = train_dataset.dataset.get_class_proportions()
+      print("Number windowed train examples after subselecting: %d" % len(train_dataset))
+    elif self.sparse_annotations:
       indices_to_keep = train_dataset.get_annotated_windows()
       train_dataset = Subset(train_dataset, indices_to_keep)  
       print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=True, num_workers = 0)
     
     if len(val_data) > 0:
-      val_dataset = BEHAVIOR_DATASET(val_data, val_labels, False, self.temporal_window_samples, self.config)
+      val_dataset = BEHAVIOR_DATASET(val_data, val_labels, None, False, self.temporal_window_samples, self.config)
       if self.sparse_annotations:
         indices_to_keep = val_dataset.get_annotated_windows()
         val_dataset = Subset(val_dataset, indices_to_keep) 
@@ -194,7 +238,7 @@ class SupervisedBehaviorModel(BehaviorModel):
     else:
       use_val = False
     
-    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, False, self.temporal_window_samples, self.config)
+    test_dataset = BEHAVIOR_DATASET(test_data, test_labels, None, False, self.temporal_window_samples, self.config)
     if self.sparse_annotations:
       indices_to_keep = test_dataset.get_annotated_windows()
       test_dataset = Subset(test_dataset, indices_to_keep)

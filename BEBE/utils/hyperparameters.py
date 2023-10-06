@@ -12,7 +12,8 @@ def grid_search(model_type,
                 resume,
                 low_data_setting,
                 no_cutoff,
-                nogyr
+                nogyr,
+                balance_classes
                ):
   # model_type (str) : specifies model type. For options see code
   # dataset_dir (str) : path to dataset
@@ -37,7 +38,8 @@ def grid_search(model_type,
       print(f"failed to execute with config {config_fp}")
   
   
-def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr):
+
+def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr, balance_classes):
   # get dataset name
   metadata_fp = Path(dataset_dir, 'dataset_metadata.yaml')
   with open(metadata_fp, 'r') as f:
@@ -99,11 +101,10 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
   for i in sorted(sweep_config_cartesian.keys()):
       config = sweep_config_cartesian[i]
       
-      if low_data_setting:
-        config['low_data_setting'] = True
-      else:
-        config['low_data_setting'] = False
-      
+
+      config['low_data_setting'] = low_data_setting
+      config['balance_classes'] = balance_classes
+
       if nogyr:
         config['input_vars'] = get_nogyr_vars(dataset_name)
       
