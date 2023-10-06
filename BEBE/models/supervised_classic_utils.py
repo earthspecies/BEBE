@@ -128,12 +128,12 @@ class Features(Dataset):
           
         assert counter == self.data_points
         self.data_start_indices = np.array(self.data_start_indices)
-        self.data_stds = np.std(np.concatenate(self.data, axis = 0), axis = 0, keepdims = True) / 8
         self.num_channels = np.shape(self.data_stds)[1]
         self.rng = np.random.default_rng(config['seed'])
         self.train = train
 
         # Feature set setup
+        assert np.where([('Acc' in _) for _ in self.input_vars])[0][0] == 0, "Requires Acc channels to come first" #TODO: Make this assert more comprehsnvie
         self.feature_set = config['model_config']['feature_set']
         self.dynamic_accleration_only = config['metadata'].get('dynamic_acc_only', False) # for rattlesnakes
         if self.feature_set == 'nathan2012':
@@ -209,18 +209,19 @@ class Features(Dataset):
             other_channel_idxs = [i for i in range(data_item.shape[1]) if i not in list(all_acc_channel_idxs)]
             # Obtain gyroscope channels, if any
             has_gyroscope = any([('Gyr' in _) for _ in self.input_vars])
-            if has_gyroscope:
-                previous_index = 0; gyr_channels_idxs = []
-                for input_var in self.input_vars:
-                    if 'Acc' in input_var:
-                        # Account for static and dynamic channel
-                        previous_index += 2
-                    elif 'Gyr' in input_var:
-                        gyr_channels_idxs.append(previous_index)
-                        previous_index += 1
-                    else:
-                        previous_index += 1
-                gyr_triaxial = split_into_triaxial(data_item[:,gyr_channels_idxs])
+            if not self.dynamic_accleration_only:
+                if has_gyroscope:
+                    previous_index = 0; gyr_channels_idxs = []
+                    for input_var in self.input_vars:
+                        if 'Acc' in input_var:
+                            # Account for static and dynamic channel
+                            previous_index += 2
+                        elif 'Gyr' in input_var:
+                            gyr_channels_idxs.append(previous_index)
+                            previous_index += 1
+                        else:
+                            previous_index += 1
+                    gyr_triaxial = split_into_triaxial(data_item[:,gyr_channels_idxs])
 
             ## Obtain acclerometer features
             for tia_channels in acc_triaxial_raw:
@@ -251,7 +252,7 @@ class Features(Dataset):
         if self.train:
             labels_item = self.labels[clip_number][middle] 
         if self.feature_set == 'nathan2012':
-          # Simply use a truncated window at the edges. TODO: should we pad instead?
+          # Simply use a truncated window at the edges. TODO: Fix according to code review
           start = max(0, middle - self.temporal_window_samples//2)
           end = min(data_item.shape[0] - 1, middle + self.temporal_window_samples//2)
           windowed_data = data_item[start:end, :]
@@ -274,14 +275,12 @@ class ClassicBehaviorModel(BehaviorModel):
     random.seed(self.config['seed'])
     np.random.seed(self.config['seed'])
     
-    # Get cpu or gpu device for training.
-    self.device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using {self.device} device")
     self.num_workers = self.model_config.get('num_workers', 0)
     
     ## General Training Parameters
     self.downsizing_factor = self.model_config['downsizing_factor']
-    # min val of 6 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). TODO: should we truncate or pad at the edges?
+    # min val of 6 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). 
+    # TODO: fix according to code review
     self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 6)
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
@@ -348,7 +347,7 @@ class ClassicBehaviorModel(BehaviorModel):
             indices_to_keep = indices_to_keep[::self.downsizing_factor]
     train_dataset = Subset(train_dataset, indices_to_keep)  
     print("Number windowed train examples after subselecting: %d" % len(train_dataset))
-    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, drop_last=False, num_workers = self.num_workers)
+    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = self.num_workers)
     # Load in all data for fitting     
     X, y = zip(*[(X, y) for X, y in train_dataloader])
     X = torch.cat(X, dim=0).numpy(); y = torch.cat(y).numpy()
