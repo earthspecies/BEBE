@@ -26,13 +26,13 @@ def main():
         for low_data_setting in low_data:
             for dataset_name in dataset_names:
                 if low_data_setting:
-                    experiment_name = f'{dataset_name}_{model_type}_low_data_acc_and_depth_only'
+                    experiment_name = f'{dataset_name}_{model_type}_low_data_nogyr'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
                                     f'--dataset-dir=/home/jupyter/behavior_data_local/{dataset_name}',
                                     f'--model={model_type}',
-                                    '--acc-and-depth-only',
+                                    '--nogyr',
                                     '--no-cutoff',
                                     '--resume',
                                     '--low-data-setting'
@@ -41,13 +41,13 @@ def main():
                     
                     
                 else:
-                    experiment_name = f'{dataset_name}_{model_type}_acc_and_depth_only'
+                    experiment_name = f'{dataset_name}_{model_type}_nogyr'
                     local['python']['cross_val_experiment.py',
                                     '--experiment-dir-parent=/home/jupyter/behavior_benchmarks_experiments',
                                     f'--experiment-name={experiment_name}',
                                     f'--dataset-dir=/home/jupyter/behavior_data_local/{dataset_name}',
                                     f'--model={model_type}',
-                                    '--acc-and-depth-only',
+                                    '--nogyr',
                                     '--no-cutoff',
                                     '--resume'
                                    ] & FG
