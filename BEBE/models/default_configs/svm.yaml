@@ -14,5 +14,4 @@ default_model_config:
   n_wavelets: 25
   downsample: 0
   downsizing_factor: 1
-  batch_size: 1000
-  num_workers: 4
+  batch_size: 100
