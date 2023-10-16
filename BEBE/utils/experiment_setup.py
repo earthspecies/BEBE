@@ -65,8 +65,8 @@ def expand_config(config):
       config['low_data_setting'] = False
       
     if config['low_data_setting']:
-      assert len(test_folds) == 1
       test_folds = config['test_folds']
+      assert len(test_folds) == 1
       train_folds = [(test_folds[0] + config['metadata']['n_folds'] - 1) % config['metadata']['n_folds']]
       val_folds = list(range(config['metadata']['n_folds']))
       for fold in [test_folds, train_folds]:

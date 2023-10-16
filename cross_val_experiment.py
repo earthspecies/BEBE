@@ -18,11 +18,7 @@ def main(args):
   if not os.path.exists(hyperparameter_selection_dir):
       os.makedirs(hyperparameter_selection_dir)
   
-<<<<<<< HEAD
-  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.nogyr)
-=======
-  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.acc_and_depth_only, args.balance_classes)
->>>>>>> 121698d6a096debea2253192016e641200dc3c70
+  grid_search(args.model, args.dataset_dir, str(hyperparameter_selection_dir), args.resume, args.low_data_setting, args.no_cutoff, args.nogyr, args.balance_classes)
   
   # choose hyperparameters based on f1 score
   best_experiment = None
@@ -81,11 +77,7 @@ if __name__ == "__main__":
   parser.add_argument('--resume', action='store_true', help="skip experiments if test_eval file already exists")
   parser.add_argument('--low-data-setting', action='store_true', help="use only one fold for training, to simulate setting with low data")
   parser.add_argument('--no-cutoff', action='store_true', help="skip separating static and dynamic acc using low pass filter")
-<<<<<<< HEAD
   parser.add_argument('--nogyr', action='store_true', help="omit gyr channels")
-=======
-  parser.add_argument('--acc-and-depth-only', action='store_true', help="only use 3 acc channels, plus 1 depth channel if applicable")
   parser.add_argument('--balance-classes', action='store_true', help="make the size of all classes in the training set equal to the size of the smallest class")
->>>>>>> 121698d6a096debea2253192016e641200dc3c70
   args = parser.parse_args()
   main(args)

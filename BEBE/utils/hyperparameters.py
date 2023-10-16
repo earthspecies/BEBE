@@ -23,7 +23,7 @@ def grid_search(model_type,
   if not os.path.exists(hyperparameter_selection_dir):
     os.makedirs(hyperparameter_selection_dir)
 
-  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr)
+  configs_list = make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data_setting, no_cutoff, nogyr, balance_classes)
   
   for config_fp in configs_list:
     with open(config_fp, 'r') as f:
