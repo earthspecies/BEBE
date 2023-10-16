@@ -53,6 +53,12 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
     model_type_config = 'harnet'
   elif model_type == 'wavelet_kmeans':
     model_type_config = 'kmeans'
+  elif model_type == 'wavelet_rf':
+    model_type_config = 'rf'
+  elif model_type == 'wavelet_dt':
+    model_type_config = 'dt'
+  elif model_type_config == 'wavelet_svm':
+    model_type_config = 'svm'
   else:
     model_type_config = model_type
   
@@ -139,15 +145,34 @@ def get_model_hyperparam_choices(model_type, dataset_name):
   # Specify model-specific parameters
   # For each model-specific parameter, possible values for the grid search are formatted as a list
   
-  if model_type == 'rf':
+  if model_type == 'rf' or model_type == 'dt' or model_type == 'svm':
+    # Nathan et al. 2012 features with classic ML models
     if dataset_name == 'vehkaoja_dogs':
       context_window_sec = [0.5, 1, 2, 4, 8]
     else:
       context_window_sec = [0.5, 1, 2, 4, 8, 16]
     model_hyperparam_choices = {'context_window_sec' : context_window_sec,
-                                'n_jobs' : [24],
+                                'class_weight': ['balanced'],
+                                'feature_set': ['nathan2012']
                                }
-  
+
+    if model_type == 'rf':
+      model_hyperparam_choices['n_jobs'] = [24]
+
+  if model_type == 'wavelet_rf' or model_type == 'wavelet_dt' or model_type == 'wavelet_svm':
+    # Wavelet features with classic ML models
+    model_hyperparam_choices = {'context_window_sec' : [8],
+                                'class_weight': ['balanced'],
+                                'feature_set': ['wavelet'],
+                                'wavelet_transform' : [True],
+                                'whiten' : [False],
+                                'morlet_w' : [1., 5., 10., 15.],
+                                'n_wavelets' : [25]                               
+                               }
+
+    if model_type == 'wavelet_rf':
+      model_hyperparam_choices['n_jobs'] = [24]
+
   if model_type == 'CNN' or model_type == 'CRNN' or model_type == 'RNN':
     
     
