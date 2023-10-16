@@ -252,9 +252,9 @@ class Features(Dataset):
         if self.train:
             labels_item = self.labels[clip_number][middle] 
         if self.feature_set == 'nathan2012':
-          # Simply use a truncated window at the edges. TODO: Fix according to code review
+          # Simply use a truncated window at the edges.
           start = max(0, middle - self.temporal_window_samples//2)
-          end = min(data_item.shape[0] - 1, middle + self.temporal_window_samples//2)
+          end = min(data_item.shape[0], middle + self.temporal_window_samples//2 + 1)
           windowed_data = data_item[start:end, :]
           features_item = self.compute_features(torch.Tensor(windowed_data))
         elif self.feature_set == 'wavelet':
@@ -279,9 +279,8 @@ class ClassicBehaviorModel(BehaviorModel):
     
     ## General Training Parameters
     self.downsizing_factor = self.model_config['downsizing_factor']
-    # min val of 6 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). 
-    # TODO: fix according to code review
-    self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 6)
+    # min val of 3 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). 
+    self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
 
