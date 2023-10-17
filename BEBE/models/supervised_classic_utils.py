@@ -3,6 +3,8 @@ import os
 import pickle
 import random
 import pandas as pd
+import multiprocessing as mp
+from time import time
 
 import torch
 import numpy as np
@@ -128,7 +130,7 @@ class Features(Dataset):
           
         assert counter == self.data_points
         self.data_start_indices = np.array(self.data_start_indices)
-        self.num_channels = np.shape(self.data_stds)[1]
+        self.num_channels = self.data[0].shape[1]
         self.rng = np.random.default_rng(config['seed'])
         self.train = train
 
@@ -275,11 +277,12 @@ class ClassicBehaviorModel(BehaviorModel):
     random.seed(self.config['seed'])
     np.random.seed(self.config['seed'])
     
-    self.num_workers = self.model_config.get('num_workers', 0)
+    self.max_num_workers = mp.cpu_count() #self.model_config.get('num_workers', 0)
     
     ## General Training Parameters
     self.downsizing_factor = self.model_config['downsizing_factor']
     # min val of 3 for temporal_window_samples prevents overly short windows at the edges (e.g., would lead to nan in std feature). 
+    # only for nathan2012 features. TODO: refactor slightly to account for this
     self.temporal_window_samples = max(int(np.ceil(self.model_config['context_window_sec'] * self.metadata['sr'])), 3)
     self.normalize = self.model_config['normalize']
     self.batch_size = self.model_config['batch_size']
@@ -306,6 +309,7 @@ class ClassicBehaviorModel(BehaviorModel):
 
   def get_n_features(self):
     # gets number of features after processing input data channels
+    print("Getting n_features!")
     train_fps = self.config['train_data_fp']
     x = self.load_model_inputs(train_fps[0])
     dataset = Features([x], None, None, False, self.temporal_window_samples, self.config)
@@ -329,6 +333,24 @@ class ClassicBehaviorModel(BehaviorModel):
     individuals = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.individual_idx].astype(int)
     return individuals 
 
+  def best_num_workers(self, dataset):
+    print("Finding best num_workers")
+    num_workers_vs_time = []
+    for num_workers in range(0, self.max_num_workers + 1, 2):
+        loader = DataLoader(dataset,shuffle=False,num_workers=num_workers, drop_last=False, batch_size=self.batch_size)
+        start = time()
+        for i, data in enumerate(loader):
+            if i == 100: 
+                break
+            else:
+                pass 
+        end = time()
+        num_workers_vs_time.append((num_workers, end - start))
+        print(f"Loading takes {(end-start):.3f} second, num_workers={num_workers}")
+    num_workers = min(num_workers_vs_time, key=lambda t: t[1])[0]
+    print(f"Choose num_workers={num_workers}")
+    return num_workers
+
   def fit(self):
     # Load data
     train_fps = self.config['train_data_fp']
@@ -346,7 +368,8 @@ class ClassicBehaviorModel(BehaviorModel):
             indices_to_keep = indices_to_keep[::self.downsizing_factor]
     train_dataset = Subset(train_dataset, indices_to_keep)  
     print("Number windowed train examples after subselecting: %d" % len(train_dataset))
-    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = self.num_workers)
+    fastest_num_workers = self.best_num_workers(train_dataset)
+    train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = fastest_num_workers)
     # Load in all data for fitting     
     X, y = zip(*[(X, y) for X, y in train_dataloader])
     X = torch.cat(X, dim=0).numpy(); y = torch.cat(y).numpy()
@@ -360,6 +383,6 @@ class ClassicBehaviorModel(BehaviorModel):
   
   def predict(self, data):
     dataset = Features([data], None, None, False, self.temporal_window_samples, self.config)
-    dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers=self.num_workers)
+    dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers=self.max_num_workers)
     X = torch.cat([X for X in dataloader], dim=0).numpy()
     return self.model.predict(X), None
