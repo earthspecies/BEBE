@@ -5,6 +5,7 @@ import random
 import pandas as pd
 import multiprocessing as mp
 from time import time
+from copy import deepcopy
 
 import torch
 import numpy as np
@@ -370,8 +371,9 @@ class ClassicBehaviorModel(BehaviorModel):
     print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     fastest_num_workers = self.best_num_workers(train_dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers = fastest_num_workers)
-    # Load in all data for fitting     
-    X, y = zip(*[(X, y) for X, y in train_dataloader])
+    # Load in all data for fitting
+    # deepcopy: https://github.com/pytorch/pytorch/issues/11201
+    X, y = zip(*[(deepcopy(X), deepcopy(y)) for X, y in train_dataloader])
     X = torch.cat(X, dim=0).numpy(); y = torch.cat(y).numpy()
     # Fit model
     self.model.fit(X, y)
@@ -384,5 +386,5 @@ class ClassicBehaviorModel(BehaviorModel):
   def predict(self, data):
     dataset = Features([data], None, None, False, self.temporal_window_samples, self.config)
     dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, drop_last=False, num_workers=self.max_num_workers)
-    X = torch.cat([X for X in dataloader], dim=0).numpy()
+    X = torch.cat([deepcopy(X) for X in dataloader], dim=0).numpy()
     return self.model.predict(X), None
