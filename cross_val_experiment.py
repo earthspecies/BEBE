@@ -73,7 +73,7 @@ if __name__ == "__main__":
   parser.add_argument('--experiment-dir-parent', type=str, required = True, help = "parent of dir where you want to save results")
   parser.add_argument('--experiment-name', type=str, required=True, help="name of experiment")
   parser.add_argument('--dataset-dir', type=str, required=True, help="path to dir where formatted dataset is stored")
-  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'RNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random', 'harnet', 'harnet_unfrozen', 'harnet_random', 'dt', 'svm'])
+  parser.add_argument('--model', type=str, required=True, help="name of model type being tested", choices = ['rf', 'CNN', 'CRNN', 'RNN', 'kmeans', 'wavelet_kmeans', 'gmm', 'hmm', 'umapper', 'vame', 'iic', 'random', 'harnet', 'harnet_unfrozen', 'harnet_random', 'dt', 'svm', 'wavelet_rf', 'wavelet_dt', 'wavelet_svm'])
   parser.add_argument('--resume', action='store_true', help="skip experiments if test_eval file already exists")
   parser.add_argument('--low-data-setting', action='store_true', help="use only one fold for training, to simulate setting with low data")
   parser.add_argument('--no-cutoff', action='store_true', help="skip separating static and dynamic acc using low pass filter")
