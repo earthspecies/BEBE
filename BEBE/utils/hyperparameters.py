@@ -57,7 +57,7 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
     model_type_config = 'rf'
   elif model_type == 'wavelet_dt':
     model_type_config = 'dt'
-  elif model_type_config == 'wavelet_svm':
+  elif model_type == 'wavelet_svm':
     model_type_config = 'svm'
   else:
     model_type_config = model_type
