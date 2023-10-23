@@ -20,3 +20,6 @@ default_model_config:
   gru_depth : 1
   gru_hidden_size : 32
   normalize : False
+  wavelet_transform : False
+  morlet_w : 1.0
+  n_wavelets : 25

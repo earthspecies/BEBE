@@ -15,7 +15,7 @@ from matplotlib.ticker import MultipleLocator
 from BEBE.models.model_superclass import BehaviorModel
 import random
 import pandas as pd
-from BEBE.models.preprocess import static_acc_filter, normalize_acc_magnitude
+from BEBE.models.preprocess import static_acc_filter, normalize_acc_magnitude, load_wavelet_transformed_data
 
 def split_to_sizes(y_array, x_list, z_list=[]):
     """ If y_array = np.concatenate(x_list), split y_array to re-create x_list (i.e. with arrays of the same size in x_list) """
@@ -158,6 +158,12 @@ class SupervisedBehaviorModel(BehaviorModel):
     self.sparse_annotations = self.model_config['sparse_annotations']
     self.normalize = self.model_config['normalize']
     
+    # Optional Wavelet Parameters
+    if 'wavelet_transform' in self.model_config:
+      self.wavelet_transform = self.model_config['wavelet_transform']
+      self.morlet_w = self.model_config['morlet_w']
+      self.n_wavelets = self.model_config['n_wavelets']
+    
     # Dataset Parameters
     self.unknown_label = config['metadata']['label_names'].index('unknown')
     self.label_idx = [i for i, x in enumerate(self.metadata['clip_column_names']) if x == 'label'][0]
@@ -179,13 +185,19 @@ class SupervisedBehaviorModel(BehaviorModel):
     return np.shape(x)[1]
     
   def load_model_inputs(self, filepath):
-    x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
-    x = static_acc_filter(x, self.config)
+    
+    if self.wavelet_transform:
+      # special case where we use wavelet features
+      return load_wavelet_transformed_data(self, filepath, 1)
+    
+    else:
+      x = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included] #[n_samples, n_features]
+      x = static_acc_filter(x, self.config)
 
-    if self.normalize:
-      x = normalize_acc_magnitude(x, self.config)
+      if self.normalize:
+        x = normalize_acc_magnitude(x, self.config)
 
-    return x
+      return x
     
   def load_labels(self, filepath):
     labels = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.label_idx].astype(int)
