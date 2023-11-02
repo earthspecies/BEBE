@@ -47,7 +47,7 @@ def make_configs(model_type, dataset_dir, hyperparameter_selection_dir, low_data
   dataset_name = metadata['dataset_name']
   
   # some model types reuse the same model code implementation
-  if model_type == 'CNN' or model_type == 'RNN':
+  if model_type == 'CNN' or model_type == 'RNN' or model_type == 'wavelet_RNN':
     model_type_config = 'CRNN'
   elif model_type == 'harnet_random' or model_type == 'harnet_unfrozen':
     model_type_config = 'harnet'
@@ -173,7 +173,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
     if model_type == 'wavelet_rf':
       model_hyperparam_choices['n_jobs'] = [24]
 
-  if model_type == 'CNN' or model_type == 'CRNN' or model_type == 'RNN':
+  if model_type == 'CNN' or model_type == 'CRNN' or model_type == 'RNN' or model_type == 'wavelet_RNN':
     
     
     if model_type == 'CNN':
@@ -181,10 +181,11 @@ def get_model_hyperparam_choices(model_type, dataset_name):
     else:
       gru_depth = 1
       
-    if model_type == 'RNN':
+    if model_type == 'RNN' or model_type == 'wavelet_RNN':
       conv_depth = 0
+      dilation = [1]
       
-      # RNN used only as ablation of harnet, use same temporal window settings
+      # RNN and wavelet_RNN used only as ablation of harnet, use same temporal window settings
       if dataset_name == 'desantis_rattlesnakes':
         window_samples = 150
       elif dataset_name == 'ladds_seals':
@@ -194,6 +195,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
       
     else:
       conv_depth = 2
+      dilation = [1,3,5]
       
       if dataset_name == 'desantis_rattlesnakes':
         window_samples = 64
@@ -201,6 +203,15 @@ def get_model_hyperparam_choices(model_type, dataset_name):
         window_samples = 128
       else:
         window_samples = 2048
+        
+    if model_type == 'wavelet_RNN':
+      wavelet_transform = True
+      n_wavelets = 25
+      morlet_w = [1., 5., 10., 15.]
+    else:
+      wavelet_transform = False
+      n_wavelets = 25
+      morlet_w = [1.]
     
     model_hyperparam_choices = {'downsizing_factor' : [window_samples // 2],
                                 'lr' : [0.01, 0.003, 0.001],
@@ -212,9 +223,12 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'conv_depth' : [conv_depth],
                                 'sparse_annotations' : [True],
                                 'ker_size' : [7],
-                                'dilation' : [1, 3, 5],
+                                'dilation' : dilation,
                                 'gru_depth' : [gru_depth],
-                                'gru_hidden_size' : [64]
+                                'gru_hidden_size' : [64],
+                                'wavelet_transform' : [wavelet_transform],
+                                'n_wavelets' : [n_wavelets],
+                                'morlet_w' : morlet_w
                                }
     
   if model_type == 'harnet' or model_type == 'harnet_unfrozen' or model_type == 'harnet_random':
@@ -361,6 +375,15 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
     return [0]
   if model_type == "harnet":
     return [0]
+  if model_type == "rf": # Use best cutoff parameter determined by full-dataset hyperparameter sweep
+    if dataset_name in ["desantis_rattlesnakes"]:
+      return [0]
+    if dataset_name in ["vehkaoja_dogs"]:
+      return [0.1]
+    if dataset_name in ["ladds_seals"]:
+      return [6.4]
+    else:
+      return [1.6]
   if dataset_name == "desantis_rattlesnakes": # this dataset was already filtered
     return [0]
   if no_cutoff:
