@@ -163,6 +163,8 @@ class SupervisedBehaviorModel(BehaviorModel):
       self.wavelet_transform = self.model_config['wavelet_transform']
       self.morlet_w = self.model_config['morlet_w']
       self.n_wavelets = self.model_config['n_wavelets']
+    else:
+      self.wavelet_transform = False
     
     # Dataset Parameters
     self.unknown_label = config['metadata']['label_names'].index('unknown')
@@ -229,6 +231,7 @@ class SupervisedBehaviorModel(BehaviorModel):
       indices_to_keep = train_dataset.get_annotated_windows()
       train_dataset = Subset(train_dataset, indices_to_keep)
       proportions = train_dataset.dataset.get_class_proportions()
+      import pdb; pdb.set_trace()
       print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     elif self.sparse_annotations:
       indices_to_keep = train_dataset.get_annotated_windows()
