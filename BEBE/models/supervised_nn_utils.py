@@ -231,7 +231,6 @@ class SupervisedBehaviorModel(BehaviorModel):
       indices_to_keep = train_dataset.get_annotated_windows()
       train_dataset = Subset(train_dataset, indices_to_keep)
       proportions = train_dataset.dataset.get_class_proportions()
-      import pdb; pdb.set_trace()
       print("Number windowed train examples after subselecting: %d" % len(train_dataset))
     elif self.sparse_annotations:
       indices_to_keep = train_dataset.get_annotated_windows()
