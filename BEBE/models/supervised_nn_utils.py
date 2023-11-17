@@ -163,6 +163,8 @@ class SupervisedBehaviorModel(BehaviorModel):
       self.wavelet_transform = self.model_config['wavelet_transform']
       self.morlet_w = self.model_config['morlet_w']
       self.n_wavelets = self.model_config['n_wavelets']
+    else:
+      self.wavelet_transform = False
     
     # Dataset Parameters
     self.unknown_label = config['metadata']['label_names'].index('unknown')
