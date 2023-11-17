@@ -55,7 +55,7 @@ def main():
     # Harnet ablations: wavelets, where we do use cutoff frequency as a hyperparam
                     
     model_types = ['wavelet_RNN']
-    low_data = [True, False]
+    low_data = [True] # False: hyperparam selection takes too long
     dataset_names = ['baglione_crows',
                      'jeantet_turtles',
                      'pagano_bears',
@@ -97,7 +97,7 @@ def main():
                     
     # Low data ablations (with all data channels)
     
-    model_types = ['CRNN', 'rf']
+    model_types = ['CRNN', 'rf'] 
     low_data = [True] # false is already done in general experiments
     dataset_names = ['baglione_crows',
                      'jeantet_turtles',
