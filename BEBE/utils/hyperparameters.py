@@ -375,7 +375,7 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
     return [0]
   if model_type == "harnet":
     return [0]
-  if model_type == "rf": # Use best cutoff parameter determined by full-dataset hyperparameter sweep
+  if model_type == "rf" and no_cutoff: # Use best cutoff parameter determined by full-dataset hyperparameter sweep
     print("Using static acc cutoff determined by previous hyperparameter sweep")
     if dataset_name in ["desantis_rattlesnakes"]:
       return [0]
@@ -385,7 +385,7 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
       return [6.4]
     else:
       return [1.6]
-  if model_type == "CRNN": # Use best cutoff parameter determined by full-dataset hyperparameter sweep
+  if model_type == "CRNN" and no_cutoff: # Use best cutoff parameter determined by full-dataset hyperparameter sweep
     print("Using static acc cutoff determined by previous hyperparameter sweep")
     if dataset_name in ["jeantet_turtles"]:
       return [0.4]
