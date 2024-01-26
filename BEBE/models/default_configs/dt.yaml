@@ -12,3 +12,6 @@ default_model_config:
   downsample: 0
   downsizing_factor: 1
   batch_size: 100
+  C_min: null
+  C_max: 100
+  

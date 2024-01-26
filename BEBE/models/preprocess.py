@@ -3,15 +3,43 @@ import numpy as np
 import scipy.signal as signal
 import pandas as pd
 
+def compute_wavelets(x, actual_sr, n_wavelets, C_min, C_max, morlet_w):
+
+    ## Computation following Sakamoto
+
+    # Morlet wavlet by scipy: exp(1j*w*x/s) * exp(-0.5*(x/s)**2) * pi**(-0.25) * sqrt(1/s)
+    # note this differs from the one in Sakamoto by a factor of sqrt(1/s)
+    # This changes the amplitude of the wavelet (in each frequency band), but not the frequency
+
+    # Sakamoto computes convolution with morlet_w = 10 and s = k*lambda
+    # where
+    # k = (morlet_w + np.sqrt(2 + morlet_w**2)) / (4 * np.pi)
+    # Sakamoto additionally multiplies by some normalizing factors Ce/(k*lambda), which depend only on lambda (i.e. s)
+    # Therefore, up to per-frequency-band rescaling, the computation to match Sakamoto is:
+    
+    if C_min is None:
+        C_min = 2 / actual_sr # set max freq to nyquist
+
+    Lambda = C_min * 2**(np.arange(n_wavelets) * np.log2(C_max/C_min) / (n_wavelets-1))
+
+    k = (morlet_w + np.sqrt(2 + morlet_w**2)) / (4 * np.pi)
+    widths = k * Lambda #units are sec
+    widths = widths * actual_sr
+
+    # ## Verify 
+    # # Reversing computation above
+    # scale_to_freq = lambda s: (actual_sr * k) / s
+    # y_axis_freqs = scale_to_freq(widths)
+    # # print("Intended freqs: ", freq)
+    # # print(f"Actual freqs under morlet2, with sr={actual_sr}Hz: ", y_axis_freqs)
+
+    y = np.abs(signal.cwt(x, signal.morlet2, widths, w=morlet_w))
+    return y
+
 def load_wavelet_transformed_data(self, filepath, downsample):
   # perform wavelet transform during loading
-  t, dt = np.linspace(0, 1, self.n_wavelets, retstep=True)
-  fs = 1/dt
-  freq = np.linspace(1, fs/2, self.n_wavelets)
-  widths = self.morlet_w*fs / (2*freq*np.pi)
 
   data = pd.read_csv(filepath, delimiter = ',', header = None).values[:, self.cols_included]
-  data = static_acc_filter(data, self.config)
 
   axes = np.arange(0, np.shape(data)[1])
   transformed = []
@@ -19,9 +47,9 @@ def load_wavelet_transformed_data(self, filepath, downsample):
       sig = data[:, axis]
       sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize each channel independently
       if downsample > 1:
-          transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w))[:, ::downsample])
+          transformed.append(compute_wavelets(sig, self.metadata['sr'], self.model_config['n_wavelets'], self.model_config['C_min'], self.model_config['C_max'], self.model_config['morlet_w'])[:, ::downsample])
       else:
-          transformed.append(np.abs(signal.cwt(sig, signal.morlet2, widths, w=self.morlet_w)))
+          transformed.append(compute_wavelets(sig, self.metadata['sr'], self.model_config['n_wavelets'], self.model_config['C_min'], self.model_config['C_max'], self.model_config['morlet_w']))
 
   transformed = np.concatenate(transformed, axis = 0)
   transformed = np.transpose(transformed)

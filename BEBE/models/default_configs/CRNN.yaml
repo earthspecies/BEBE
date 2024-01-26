@@ -23,3 +23,5 @@ default_model_config:
   wavelet_transform : False
   morlet_w : 1.0
   n_wavelets : 25
+  C_min: null
+  C_max: 100
