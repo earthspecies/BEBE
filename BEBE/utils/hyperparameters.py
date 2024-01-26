@@ -379,7 +379,7 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
     print("Using static acc cutoff determined by previous hyperparameter sweep")
     if dataset_name in ["desantis_rattlesnakes"]:
       return [0]
-    elif dataset_name in ["vehkaoja_dogs"]:
+    elif dataset_name in ["vehkaoja_dogs", "maekawa_gulls"]:
       return [0.1]
     elif dataset_name in ["ladds_seals"]:
       return [6.4]

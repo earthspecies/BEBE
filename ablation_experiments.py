@@ -9,18 +9,19 @@ import numpy as np
 def main():
     # Harnet ablations
     
-    model_types = ['harnet', 'harnet_unfrozen', 'harnet_random', 'RNN', 'CRNN', 'rf']
-    low_data = [True, False]
-    dataset_names = ['baglione_crows',
-                     'jeantet_turtles',
-                     'pagano_bears',
-                     'maekawa_gulls',
-                     'HAR',
-                     'friedlaender_whales',
-                     'ladds_seals',
-                     'vehkaoja_dogs',
-                     'desantis_rattlesnakes',
-                    ]
+    model_types = ['CRNN', 'harnet', 'harnet_unfrozen', 'harnet_random', 'RNN', 'rf']
+    low_data = [False, True]
+    dataset_names = ['maekawa_gulls']
+    # dataset_names = ['baglione_crows',
+    #                  'jeantet_turtles',
+    #                  'pagano_bears',
+    #                  'maekawa_gulls',
+    #                  'HAR',
+    #                  'friedlaender_whales',
+    #                  'ladds_seals',
+    #                  'vehkaoja_dogs',
+    #                  'desantis_rattlesnakes',
+    #                 ]
   
     for model_type in model_types:
         for low_data_setting in low_data:
@@ -56,16 +57,18 @@ def main():
                     
     model_types = ['wavelet_RNN']
     low_data = [True] # False: hyperparam selection takes too long
-    dataset_names = ['baglione_crows',
-                     'jeantet_turtles',
-                     'pagano_bears',
-                     'maekawa_gulls',
-                     'HAR',
-                     'friedlaender_whales',
-                     'ladds_seals',
-                     'vehkaoja_dogs',
-                     'desantis_rattlesnakes',
-                    ]
+    dataset_names = ['maekawa_gulls']
+
+    # dataset_names = ['baglione_crows',
+    #                  'jeantet_turtles',
+    #                  'pagano_bears',
+    #                  'maekawa_gulls',
+    #                  'HAR',
+    #                  'friedlaender_whales',
+    #                  'ladds_seals',
+    #                  'vehkaoja_dogs',
+    #                  'desantis_rattlesnakes',
+    #                 ]
   
     for model_type in model_types:
         for low_data_setting in low_data:
@@ -99,16 +102,18 @@ def main():
     
     model_types = ['CRNN', 'rf'] 
     low_data = [True] # false is already done in general experiments
-    dataset_names = ['baglione_crows',
-                     'jeantet_turtles',
-                     'pagano_bears',
-                     'maekawa_gulls',
-                     'HAR',
-                     'friedlaender_whales',
-                     'ladds_seals',
-                     'vehkaoja_dogs',
-                     'desantis_rattlesnakes',
-                    ]
+    dataset_names = ['maekawa_gulls']
+
+    # dataset_names = ['baglione_crows',
+    #                  'jeantet_turtles',
+    #                  'pagano_bears',
+    #                  'maekawa_gulls',
+    #                  'HAR',
+    #                  'friedlaender_whales',
+    #                  'ladds_seals',
+    #                  'vehkaoja_dogs',
+    #                  'desantis_rattlesnakes',
+    #                 ]
   
     for model_type in model_types:
         for low_data_setting in low_data:
