@@ -389,7 +389,7 @@ def get_static_acc_cutoff_choices(model_type, dataset_name, no_cutoff):
       return [0]
     elif dataset_name in ["vehkaoja_dogs", "maekawa_gulls"]:
       return [0.1]
-    elif dataset_name in ["ladds_seals"]:
+    elif dataset_name in ["ladds_seals", "pagano_bears"]:
       return [6.4]
     else:
       return [1.6]
