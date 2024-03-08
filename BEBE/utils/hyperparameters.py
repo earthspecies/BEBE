@@ -169,7 +169,8 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'morlet_w' : [5., 10., 20.],
                                 'C_min' : [None],
                                 'C_max' : [1., 10., 100., 1000.],
-                                'n_wavelets' : [15],                          
+                                'n_wavelets' : [15],
+                                'per_channel_normalize' : [True],
                                }
 
     if model_type == 'wavelet_rf':
@@ -235,6 +236,7 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'morlet_w' : morlet_w,
                                 'C_min' : [None],
                                 'C_max' : C_max,
+                                'per_channel_normalize' : [True],
                                }
     
   if model_type == 'harnet' or model_type == 'harnet_unfrozen' or model_type == 'harnet_random':
@@ -267,112 +269,6 @@ def get_model_hyperparam_choices(model_type, dataset_name):
                                 'freeze_encoder' : [freeze_encoder],
                                 'load_pretrained_weights' : [load_pretrained_weights]
                                }
-  
-#   if model_type == 'kmeans':
-#     model_hyperparam_choices = {'max_iter' : [1000],
-#                                 'wavelet_transform' : [False],
-#                                 'whiten' : [True],
-#                                 'downsample' : [4]
-#                                }
-    
-  # if model_type == 'wavelet_kmeans':
-  #   model_hyperparam_choices = {'max_iter' : [1000],
-  #                               'wavelet_transform' : [True],
-  #                               'whiten' : [False],
-  #                               'morlet_w' : [1., 5., 10., 15.],
-  #                               'n_wavelets' : [25], 
-  #                               'downsample' : [4]
-  #                              }
-    
-#   if model_type == 'gmm':
-#     model_hyperparam_choices = {'max_iter' : [1000],
-#                                 'n_init' : [1],
-#                                 'downsample' : [4]
-#                                }
-    
-#   if model_type == 'umapper':
-#     if dataset_name == 'vehkaoja_dogs':
-#       downsample = 16
-#     elif dataset_name == 'pagano_bears':
-#       downsample = 32
-#     else:
-#       downsample = 4
-    
-#     model_hyperparam_choices = {'morlet_w' : [1., 5., 10., 15],
-#                                 'n_neighbors' : [16],
-#                                 'min_dist' : [0],
-#                                 'downsample' : [downsample],
-#                                }
-    
-#   if model_type == 'vame':
-#     if dataset_name == 'vehkaoja_dogs':
-#       batch_size = 256
-#     else:
-#       batch_size = 512
-#     if dataset_name == 'pagano_bears':
-#       prediction_downsample = 4
-#     else:
-#       prediction_downsample = 1
-#     model_hyperparam_choices = {'batch_size' : [batch_size], 
-#                                 'n_train_steps' : [10000],
-#                                 'beta' : [0], ## Scalar multiplied by KL loss
-#                                 'zdims' : [20], ## Latent space dimensionality
-#                                 'learning_rate' : [0.001, 0.0003],
-#                                 'time_window_sec' : [3, 10],
-#                                 'prediction_decoder' : [1], ## Whether to predict future steps
-#                                 'scheduler' : [1],
-#                                 'scheduler_step_size' : [100],
-#                                 'scheduler_gamma' : [0.2],
-#                                 'kmeans_lambda' : [0.1],
-#                                 'prediction_downsample' : [prediction_downsample]
-#                                }
-  
-#   if model_type == 'iic':
-#       if dataset_name == 'desantis_rattlesnakes':
-#         window_samples = 64
-#       elif dataset_name == 'ladds_seals':
-#         window_samples = 128
-#       else:
-#         window_samples = 2048
-    
-#       model_hyperparam_choices = {'lr' : [0.001],
-#                                   'weight_decay' : [0],
-#                                   'n_train_steps' : [100000],
-#                                   'hidden_size' : [64],
-#                                   'temporal_window_samples' : [window_samples],
-#                                   'batch_size' : [64],
-#                                   'dropout' : [0],
-#                                   'jitter_scale' : [0],
-#                                   'blur_scale' : [0],
-#                                   'context_window_samples' : [15, 51],
-#                                   'conv_depth' : [4],
-#                                   'ker_size' : [7],
-#                                   'dilation' : [1, 5],
-#                                   'n_heads' : [2]}
-    
-#   if model_type == 'random':
-#     model_hyperparam_choices = {}
-
-#   if model_type == 'hmm':
-#     if dataset_name == 'desantis_rattlesnakes':
-#       window_samples = 64
-#     elif dataset_name == 'ladds_seals':
-#       window_samples = 128
-#     else:
-#       window_samples = 2048
-
-#     model_hyperparam_choices = {
-#         "temporal_window_samples": [window_samples],
-#         "N_iters": [50],
-#         "covariance": ["diagonal", "full"],
-#         "matrix_concentration": [1.1],
-#         "mean_concentration": [0.1],
-#         "cov_scale": [1.0],
-#         "cov_df": [0.1],
-#         "cov_concentration": [0.1],
-#         "wavelet_transform" : [False],
-#         "downsample" : [1]
-#     }
 
   return model_hyperparam_choices
       

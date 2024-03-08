@@ -45,7 +45,8 @@ def load_wavelet_transformed_data(self, filepath, downsample):
   transformed = []
   for axis in axes:
       sig = data[:, axis]
-      sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize each channel independently
+      if self.model_config['per_channel_normalize']:
+          sig = (sig - np.mean(sig)) / (np.std(sig) + 1e-6) # normalize each channel independently
       if downsample > 1:
           transformed.append(compute_wavelets(sig, self.metadata['sr'], self.model_config['n_wavelets'], self.model_config['C_min'], self.model_config['C_max'], self.model_config['morlet_w'])[:, ::downsample])
       else:
