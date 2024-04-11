@@ -1,0 +1,189 @@
+balance_classes: false
+dataset_dir: /home/jupyter/formatted/jeantet_turtles/
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles_hyperparameter_selection/svm_hyperparameter_selection_27/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+- GyrX
+- GyrY
+- GyrZ
+- Depth
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - GyrX
+  - GyrY
+  - GyrZ
+  - Depth
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    CC-07-107_11-02-2019: 0
+    CC-07-108_11-02-2019: 1
+    CC-07-115_13-05-2019: 2
+    CC-07-115_14-05-2019: 3
+    CC-07-47_14-02-2018: 4
+    CC-07-48_04-10-2018: 5
+    CC-07-48_06-10-2018: 6
+    CC-07-48_08-04-2019_1: 7
+    CC-07-48_08-04-2019_2: 7
+    CC-07-48_08-04-2019_3: 7
+    CC-07-48_08-10-2018: 8
+    CC-07-48_10-10-2018: 9
+    CC-07-48_18-02-2019: 10
+    CC-07-48_22-05-2018: 11
+    CC-07-48_26-05-2018: 12
+    CC-07-59_20-05-2018: 13
+  clip_ids:
+  - CC-07-107_11-02-2019
+  - CC-07-108_11-02-2019
+  - CC-07-115_13-05-2019
+  - CC-07-115_14-05-2019
+  - CC-07-47_14-02-2018
+  - CC-07-48_04-10-2018
+  - CC-07-48_06-10-2018
+  - CC-07-48_08-04-2019_1
+  - CC-07-48_08-04-2019_2
+  - CC-07-48_08-04-2019_3
+  - CC-07-48_08-10-2018
+  - CC-07-48_10-10-2018
+  - CC-07-48_18-02-2019
+  - CC-07-48_22-05-2018
+  - CC-07-48_26-05-2018
+  - CC-07-59_20-05-2018
+  clip_ids_per_fold:
+    0:
+    - CC-07-107_11-02-2019
+    - CC-07-48_04-10-2018
+    - CC-07-48_18-02-2019
+    1:
+    - CC-07-108_11-02-2019
+    - CC-07-48_06-10-2018
+    - CC-07-48_22-05-2018
+    2:
+    - CC-07-115_13-05-2019
+    - CC-07-48_08-04-2019_1
+    - CC-07-48_08-04-2019_2
+    - CC-07-48_08-04-2019_3
+    - CC-07-48_26-05-2018
+    3:
+    - CC-07-115_14-05-2019
+    - CC-07-48_08-10-2018
+    - CC-07-59_20-05-2018
+    4:
+    - CC-07-47_14-02-2018
+    - CC-07-48_10-10-2018
+  dataset_name: jeantet_turtles
+  individual_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  individuals_per_fold:
+    0:
+    - 0
+    - 5
+    - 10
+    1:
+    - 1
+    - 6
+    - 11
+    2:
+    - 2
+    - 7
+    - 12
+    3:
+    - 3
+    - 8
+    - 13
+    4:
+    - 4
+    - 9
+  label_names:
+  - unknown
+  - breathing
+  - feeding
+  - gliding
+  - resting
+  - scratching
+  - staying_at_surface
+  - swimming
+  mean_dur_sec_by_individual:
+    0: 32.19392789373814
+    1: 22.943939393939395
+    2: 48.47797062750334
+    3: 97.25602409638554
+    4: 183.27758620689656
+    5: 50.99197080291971
+    6: 34.27965722801789
+    7: 60.018730158730165
+    8: 58.74271523178809
+    9: 37.995000000000005
+    10: 90.0146103896104
+    11: 52.19553903345725
+    12: 27.60584551148225
+    13: 40.860686274509796
+  mean_overall_dur_sec: 47.203839458413924
+  n_folds: 5
+  sr: 20
+model: svm
+model_config:
+  batch_size: 100
+  class_weight: balanced
+  context_window_sec: 16
+  downsample: 0
+  downsizing_factor: 1
+  feature_set: nathan2012
+  intercept_scaling: 1.0
+  max_iter: 1000
+  min_samples_split: 2
+  morlet_w: 10.0
+  n_wavelets: 25
+  normalize: false
+  regularization_parameter: 1.0
+  wavelet_transform: false
+num_clusters: 8
+output_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles_hyperparameter_selection/svm_hyperparameter_selection_27
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles_hyperparameter_selection/svm_hyperparameter_selection_27/predictions
+seed: 1
+static_acc_cutoff_freq: 0.4
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles_hyperparameter_selection/svm_hyperparameter_selection_27/temp
+test_data_fp:
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-107_11-02-2019.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_04-10-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_18-02-2019.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-108_11-02-2019.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-115_13-05-2019.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-115_14-05-2019.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-47_14-02-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_06-10-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_08-04-2019_1.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_08-04-2019_2.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_08-04-2019_3.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_08-10-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_10-10-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_22-05-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-48_26-05-2018.csv
+- /home/jupyter/formatted/jeantet_turtles/clip_data/CC-07-59_20-05-2018.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/svm_jeantet_turtles_hyperparameter_selection/svm_hyperparameter_selection_27/visualizations

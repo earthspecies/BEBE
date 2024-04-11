@@ -1,0 +1,254 @@
+balance_classes: false
+dataset_dir: /home/jupyter/behavior_data_local/pagano_bears/
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf_hyperparameter_selection/wavelet_rf_hyperparameter_selection_1/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+- Wetdry
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - Wetdry
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    clip_0: 5
+    clip_1: 5
+    clip_10: 6
+    clip_11: 6
+    clip_12: 6
+    clip_13: 6
+    clip_14: 6
+    clip_15: 6
+    clip_16: 7
+    clip_17: 7
+    clip_18: 7
+    clip_19: 7
+    clip_2: 5
+    clip_20: 7
+    clip_21: 7
+    clip_22: 7
+    clip_23: 7
+    clip_24: 7
+    clip_25: 8
+    clip_26: 8
+    clip_27: 8
+    clip_28: 8
+    clip_29: 8
+    clip_3: 5
+    clip_30: 8
+    clip_31: 8
+    clip_32: 9
+    clip_33: 9
+    clip_34: 9
+    clip_35: 9
+    clip_36: 9
+    clip_37: 9
+    clip_38: 9
+    clip_4: 5
+    clip_5: 5
+    clip_6: 5
+    clip_7: 5
+    clip_8: 6
+    clip_9: 6
+  clip_ids:
+  - clip_0
+  - clip_1
+  - clip_2
+  - clip_3
+  - clip_4
+  - clip_5
+  - clip_6
+  - clip_7
+  - clip_8
+  - clip_9
+  - clip_10
+  - clip_11
+  - clip_12
+  - clip_13
+  - clip_14
+  - clip_15
+  - clip_16
+  - clip_17
+  - clip_18
+  - clip_19
+  - clip_20
+  - clip_21
+  - clip_22
+  - clip_23
+  - clip_24
+  - clip_25
+  - clip_26
+  - clip_27
+  - clip_28
+  - clip_29
+  - clip_30
+  - clip_31
+  - clip_32
+  - clip_33
+  - clip_34
+  - clip_35
+  - clip_36
+  - clip_37
+  - clip_38
+  clip_ids_per_fold:
+    0:
+    - clip_0
+    - clip_1
+    - clip_2
+    - clip_3
+    - clip_4
+    - clip_5
+    - clip_6
+    - clip_7
+    1:
+    - clip_10
+    - clip_11
+    - clip_12
+    - clip_13
+    - clip_14
+    - clip_15
+    - clip_8
+    - clip_9
+    2:
+    - clip_16
+    - clip_17
+    - clip_18
+    - clip_19
+    - clip_20
+    - clip_21
+    - clip_22
+    - clip_23
+    - clip_24
+    3:
+    - clip_25
+    - clip_26
+    - clip_27
+    - clip_28
+    - clip_29
+    - clip_30
+    - clip_31
+    4:
+    - clip_32
+    - clip_33
+    - clip_34
+    - clip_35
+    - clip_36
+    - clip_37
+    - clip_38
+  dataset_name: pagano_bears
+  individual_ids:
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  individuals_per_fold:
+    0:
+    - 5
+    1:
+    - 6
+    2:
+    - 7
+    3:
+    - 8
+    4:
+    - 9
+  label_names:
+  - unknown
+  - dig
+  - eat
+  - groom
+  - head_shake
+  - pounce
+  - rest
+  - roll
+  - run
+  - swim
+  - walk
+  mean_dur_sec_by_individual:
+    5: 101.66443452380952
+    6: 216.0903165735568
+    7: 122.08488372093024
+    8: 84.74228923920494
+    9: 190.6312625250501
+  mean_overall_dur_sec: 127.5241687748464
+  n_folds: 5
+  sr: 16
+model: rf
+model_config:
+  C_max: 1.0
+  C_min: null
+  batch_size: 100
+  class_weight: balanced
+  context_window_sec: 8
+  downsample: 0
+  downsizing_factor: 1
+  feature_set: wavelet
+  max_samples: 0.1
+  min_samples_split: 2
+  morlet_w: 10.0
+  n_estimators: 100
+  n_jobs: 24
+  n_wavelets: 15
+  normalize: false
+  wavelet_transform: true
+  whiten: false
+num_clusters: 11
+output_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf_hyperparameter_selection/wavelet_rf_hyperparameter_selection_1
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf_hyperparameter_selection/wavelet_rf_hyperparameter_selection_1/predictions
+seed: 1
+static_acc_cutoff_freq: 0
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf_hyperparameter_selection/wavelet_rf_hyperparameter_selection_1/temp
+test_data_fp:
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_0.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_1.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_2.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_3.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_4.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_5.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_6.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_7.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_10.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_11.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_12.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_13.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_14.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_15.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_16.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_17.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_18.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_19.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_20.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_21.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_22.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_23.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_24.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_25.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_26.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_27.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_28.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_29.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_30.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_31.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_32.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_33.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_34.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_35.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_36.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_37.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_38.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_8.csv
+- /home/jupyter/behavior_data_local/pagano_bears/clip_data/clip_9.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/pagano_bears_wavelet_rf_hyperparameter_selection/wavelet_rf_hyperparameter_selection_1/visualizations

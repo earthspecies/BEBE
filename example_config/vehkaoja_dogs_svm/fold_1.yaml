@@ -1,0 +1,480 @@
+balance_classes: false
+dataset_dir: /home/jupyter/formatted/vehkaoja_dogs/
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/svm_vehkaoja_dogs_hyperparameter_selection/svm_hyperparameter_selection_7/final_model
+input_vars:
+- AccX_Back
+- AccY_Back
+- AccZ_Back
+- AccX_Neck
+- AccY_Neck
+- AccZ_Neck
+- GyrX_Back
+- GyrY_Back
+- GyrZ_Back
+- GyrX_Neck
+- GyrY_Neck
+- GyrZ_Neck
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX_Back
+  - AccY_Back
+  - AccZ_Back
+  - AccX_Neck
+  - AccY_Neck
+  - AccZ_Neck
+  - GyrX_Back
+  - GyrY_Back
+  - GyrZ_Back
+  - GyrX_Neck
+  - GyrY_Neck
+  - GyrZ_Neck
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    individual_16_test_1: 16
+    individual_16_test_2: 16
+    individual_18_test_1: 18
+    individual_19_test_2: 19
+    individual_20_test_1: 20
+    individual_21_test_1: 21
+    individual_22_test_2: 22
+    individual_23_test_1: 23
+    individual_23_test_2: 23
+    individual_25_test_1: 25
+    individual_25_test_2: 25
+    individual_26_test_1: 26
+    individual_26_test_2: 26
+    individual_27_test_1: 27
+    individual_27_test_2: 27
+    individual_28_test_1: 28
+    individual_29_test_1: 29
+    individual_29_test_2: 29
+    individual_30_test_1: 30
+    individual_30_test_2: 30
+    individual_33_test_1: 33
+    individual_34_test_1: 34
+    individual_34_test_2: 34
+    individual_36_test_1: 36
+    individual_39_test_1: 39
+    individual_39_test_2: 39
+    individual_41_test_1: 41
+    individual_41_test_2: 41
+    individual_43_test_1: 43
+    individual_43_test_2: 43
+    individual_44_test_1: 44
+    individual_45_test_1: 45
+    individual_45_test_2: 45
+    individual_46_test_1: 46
+    individual_46_test_2: 46
+    individual_47_test_1: 47
+    individual_47_test_2: 47
+    individual_48_test_1: 48
+    individual_48_test_2: 48
+    individual_49_test_1: 49
+    individual_49_test_2: 49
+    individual_51_test_1: 51
+    individual_52_test_1: 52
+    individual_53_test_1: 53
+    individual_54_test_1: 54
+    individual_55_test_1: 55
+    individual_56_test_1: 56
+    individual_57_test_1: 57
+    individual_58_test_2: 58
+    individual_59_test_1: 59
+    individual_60_test_1: 60
+    individual_61_test_1: 61
+    individual_63_test_2: 63
+    individual_65_test_1: 65
+    individual_66_test_2: 66
+    individual_67_test_1: 67
+    individual_68_test_1: 68
+    individual_70_test_1: 70
+    individual_72_test_1: 72
+    individual_73_test_1: 73
+    individual_74_test_1: 74
+    individual_74_test_2: 74
+  clip_ids:
+  - individual_16_test_1
+  - individual_16_test_2
+  - individual_18_test_1
+  - individual_19_test_2
+  - individual_20_test_1
+  - individual_21_test_1
+  - individual_22_test_2
+  - individual_23_test_1
+  - individual_23_test_2
+  - individual_25_test_1
+  - individual_25_test_2
+  - individual_26_test_1
+  - individual_26_test_2
+  - individual_27_test_1
+  - individual_27_test_2
+  - individual_28_test_1
+  - individual_29_test_1
+  - individual_29_test_2
+  - individual_30_test_1
+  - individual_30_test_2
+  - individual_33_test_1
+  - individual_34_test_1
+  - individual_34_test_2
+  - individual_36_test_1
+  - individual_39_test_1
+  - individual_39_test_2
+  - individual_41_test_1
+  - individual_41_test_2
+  - individual_43_test_1
+  - individual_43_test_2
+  - individual_44_test_1
+  - individual_45_test_1
+  - individual_45_test_2
+  - individual_46_test_1
+  - individual_46_test_2
+  - individual_47_test_1
+  - individual_47_test_2
+  - individual_48_test_1
+  - individual_48_test_2
+  - individual_49_test_1
+  - individual_49_test_2
+  - individual_51_test_1
+  - individual_52_test_1
+  - individual_53_test_1
+  - individual_54_test_1
+  - individual_55_test_1
+  - individual_56_test_1
+  - individual_57_test_1
+  - individual_58_test_2
+  - individual_59_test_1
+  - individual_60_test_1
+  - individual_61_test_1
+  - individual_63_test_2
+  - individual_65_test_1
+  - individual_66_test_2
+  - individual_67_test_1
+  - individual_68_test_1
+  - individual_70_test_1
+  - individual_72_test_1
+  - individual_73_test_1
+  - individual_74_test_1
+  - individual_74_test_2
+  clip_ids_per_fold:
+    0:
+    - individual_16_test_1
+    - individual_16_test_2
+    - individual_22_test_2
+    - individual_28_test_1
+    - individual_36_test_1
+    - individual_45_test_1
+    - individual_45_test_2
+    - individual_51_test_1
+    - individual_56_test_1
+    - individual_61_test_1
+    - individual_68_test_1
+    1:
+    - individual_18_test_1
+    - individual_23_test_1
+    - individual_23_test_2
+    - individual_29_test_1
+    - individual_29_test_2
+    - individual_39_test_1
+    - individual_39_test_2
+    - individual_46_test_1
+    - individual_46_test_2
+    - individual_52_test_1
+    - individual_57_test_1
+    - individual_63_test_2
+    - individual_70_test_1
+    2:
+    - individual_19_test_2
+    - individual_25_test_1
+    - individual_25_test_2
+    - individual_30_test_1
+    - individual_30_test_2
+    - individual_41_test_1
+    - individual_41_test_2
+    - individual_47_test_1
+    - individual_47_test_2
+    - individual_53_test_1
+    - individual_58_test_2
+    - individual_65_test_1
+    - individual_72_test_1
+    3:
+    - individual_20_test_1
+    - individual_26_test_1
+    - individual_26_test_2
+    - individual_33_test_1
+    - individual_43_test_1
+    - individual_43_test_2
+    - individual_48_test_1
+    - individual_48_test_2
+    - individual_54_test_1
+    - individual_59_test_1
+    - individual_66_test_2
+    - individual_73_test_1
+    4:
+    - individual_21_test_1
+    - individual_27_test_1
+    - individual_27_test_2
+    - individual_34_test_1
+    - individual_34_test_2
+    - individual_44_test_1
+    - individual_49_test_1
+    - individual_49_test_2
+    - individual_55_test_1
+    - individual_60_test_1
+    - individual_67_test_1
+    - individual_74_test_1
+    - individual_74_test_2
+  dataset_name: vehkaoja_dogs
+  individual_ids:
+  - 16
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 33
+  - 34
+  - 36
+  - 39
+  - 41
+  - 43
+  - 44
+  - 45
+  - 46
+  - 47
+  - 48
+  - 49
+  - 51
+  - 52
+  - 53
+  - 54
+  - 55
+  - 56
+  - 57
+  - 58
+  - 59
+  - 60
+  - 61
+  - 63
+  - 65
+  - 66
+  - 67
+  - 68
+  - 70
+  - 72
+  - 73
+  - 74
+  individuals_per_fold:
+    0:
+    - 16
+    - 22
+    - 28
+    - 36
+    - 45
+    - 51
+    - 56
+    - 61
+    - 68
+    1:
+    - 18
+    - 23
+    - 29
+    - 39
+    - 46
+    - 52
+    - 57
+    - 63
+    - 70
+    2:
+    - 19
+    - 25
+    - 30
+    - 41
+    - 47
+    - 53
+    - 58
+    - 65
+    - 72
+    3:
+    - 20
+    - 26
+    - 33
+    - 43
+    - 48
+    - 54
+    - 59
+    - 66
+    - 73
+    4:
+    - 21
+    - 27
+    - 34
+    - 44
+    - 49
+    - 55
+    - 60
+    - 67
+    - 74
+  label_names:
+  - unknown
+  - galloping
+  - lying_chest
+  - panting_lying_chest
+  - panting_sitting
+  - panting_standing
+  - shaking
+  - sitting
+  - sniffing
+  - standing
+  - trotting
+  - walking
+  mean_dur_sec_by_individual:
+    16: 20.906701030927834
+    18: 7.645714285714286
+    19: 18.88067415730337
+    20: 7.47675392670157
+    21: 16.297430555555554
+    22: 9.84729411764706
+    23: 7.571722054380664
+    25: 8.398412698412699
+    26: 13.530030303030303
+    27: 20.130474452554743
+    28: 10.396813186813189
+    29: 82.29320312499998
+    30: 14.302909090909091
+    33: 19.97128048780488
+    34: 11.839588607594935
+    36: 5.763846153846154
+    39: 4.315294117647059
+    41: 4.639922279792746
+    43: 51.246285714285705
+    44: 8.290955414012739
+    45: 13.562620967741934
+    46: 10.072860576923075
+    47: 5.4819047619047625
+    48: 15.995236051502145
+    49: 7.660966850828729
+    51: 7.516294642857143
+    52: 8.448131868131869
+    53: 4.191520270270271
+    54: 18.415637583892618
+    55: 12.188301886792454
+    56: 12.202627737226278
+    57: 90.97823529411764
+    58: 33.63945945945946
+    59: 23.720238095238095
+    60: 15.012148760330579
+    61: 35.1478640776699
+    63: 14.57753424657534
+    65: 15.659808917197454
+    66: 13.636737588652482
+    67: 22.557235294117646
+    68: 8.901871921182266
+    70: 19.162446043165467
+    72: 10.491318181818183
+    73: 112.69636363636364
+    74: 12.782355371900826
+  mean_overall_dur_sec: 15.484050428163654
+  n_folds: 5
+  sr: 100
+model: svm
+model_config:
+  batch_size: 100
+  class_weight: balanced
+  context_window_sec: 1
+  downsample: 0
+  downsizing_factor: 1
+  feature_set: nathan2012
+  intercept_scaling: 1.0
+  max_iter: 1000
+  min_samples_split: 2
+  morlet_w: 10.0
+  n_wavelets: 25
+  normalize: false
+  regularization_parameter: 1.0
+  wavelet_transform: false
+num_clusters: 12
+output_dir: /home/jupyter/behavior_benchmarks_experiments/svm_vehkaoja_dogs_hyperparameter_selection/svm_hyperparameter_selection_7
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/vehkaoja_dogs_svm
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/svm_vehkaoja_dogs_hyperparameter_selection/svm_hyperparameter_selection_7/predictions
+seed: 1
+static_acc_cutoff_freq: 0.4
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/svm_vehkaoja_dogs_hyperparameter_selection/svm_hyperparameter_selection_7/temp
+test_data_fp:
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_16_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_16_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_22_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_28_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_36_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_45_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_45_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_51_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_56_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_61_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_68_test_1.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_18_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_19_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_20_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_21_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_23_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_23_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_25_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_25_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_26_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_26_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_27_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_27_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_29_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_29_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_30_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_30_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_33_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_34_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_34_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_39_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_39_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_41_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_41_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_43_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_43_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_44_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_46_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_46_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_47_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_47_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_48_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_48_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_49_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_49_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_52_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_53_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_54_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_55_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_57_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_58_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_59_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_60_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_63_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_65_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_66_test_2.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_67_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_70_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_72_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_73_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_74_test_1.csv
+- /home/jupyter/formatted/vehkaoja_dogs/clip_data/individual_74_test_2.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/svm_vehkaoja_dogs_hyperparameter_selection/svm_hyperparameter_selection_7/visualizations

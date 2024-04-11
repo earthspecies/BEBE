@@ -1,0 +1,756 @@
+dataset_dir: /home/jupyter/behavior_data_local/desantis_rattlesnakes/
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_6/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    clip_0: 1
+    clip_1: 1
+    clip_10: 1
+    clip_100: 4
+    clip_101: 4
+    clip_102: 5
+    clip_103: 5
+    clip_104: 5
+    clip_105: 5
+    clip_106: 5
+    clip_107: 5
+    clip_108: 5
+    clip_109: 5
+    clip_11: 1
+    clip_110: 5
+    clip_111: 5
+    clip_112: 5
+    clip_113: 5
+    clip_114: 5
+    clip_115: 5
+    clip_116: 5
+    clip_117: 5
+    clip_118: 5
+    clip_119: 5
+    clip_12: 1
+    clip_120: 5
+    clip_121: 5
+    clip_122: 5
+    clip_123: 5
+    clip_124: 5
+    clip_125: 5
+    clip_126: 5
+    clip_127: 5
+    clip_128: 5
+    clip_129: 5
+    clip_13: 1
+    clip_130: 5
+    clip_131: 5
+    clip_132: 5
+    clip_133: 5
+    clip_134: 5
+    clip_135: 6
+    clip_136: 6
+    clip_137: 6
+    clip_138: 6
+    clip_139: 6
+    clip_14: 1
+    clip_140: 6
+    clip_141: 6
+    clip_142: 6
+    clip_143: 6
+    clip_144: 6
+    clip_145: 6
+    clip_146: 6
+    clip_147: 6
+    clip_148: 6
+    clip_149: 6
+    clip_15: 1
+    clip_150: 6
+    clip_151: 6
+    clip_152: 7
+    clip_153: 7
+    clip_154: 7
+    clip_155: 7
+    clip_156: 7
+    clip_157: 7
+    clip_158: 7
+    clip_159: 7
+    clip_16: 1
+    clip_160: 7
+    clip_161: 7
+    clip_162: 7
+    clip_163: 8
+    clip_164: 8
+    clip_165: 8
+    clip_166: 8
+    clip_167: 8
+    clip_168: 8
+    clip_169: 8
+    clip_17: 1
+    clip_170: 8
+    clip_171: 8
+    clip_172: 8
+    clip_173: 8
+    clip_174: 8
+    clip_175: 8
+    clip_176: 9
+    clip_177: 9
+    clip_178: 9
+    clip_179: 9
+    clip_18: 1
+    clip_180: 9
+    clip_181: 9
+    clip_182: 9
+    clip_183: 9
+    clip_184: 9
+    clip_185: 9
+    clip_186: 9
+    clip_187: 9
+    clip_188: 9
+    clip_189: 9
+    clip_19: 1
+    clip_190: 9
+    clip_191: 9
+    clip_192: 9
+    clip_193: 9
+    clip_194: 9
+    clip_195: 9
+    clip_196: 9
+    clip_197: 9
+    clip_198: 9
+    clip_199: 9
+    clip_2: 1
+    clip_20: 1
+    clip_200: 9
+    clip_201: 9
+    clip_202: 9
+    clip_203: 9
+    clip_204: 9
+    clip_205: 9
+    clip_21: 1
+    clip_22: 1
+    clip_23: 10
+    clip_24: 10
+    clip_25: 11
+    clip_26: 11
+    clip_27: 11
+    clip_28: 11
+    clip_29: 11
+    clip_3: 1
+    clip_30: 11
+    clip_31: 11
+    clip_32: 11
+    clip_33: 11
+    clip_34: 11
+    clip_35: 11
+    clip_36: 11
+    clip_37: 11
+    clip_38: 11
+    clip_39: 11
+    clip_4: 1
+    clip_40: 11
+    clip_41: 11
+    clip_42: 11
+    clip_43: 11
+    clip_44: 13
+    clip_45: 14
+    clip_46: 14
+    clip_47: 14
+    clip_48: 14
+    clip_49: 14
+    clip_5: 1
+    clip_50: 14
+    clip_51: 14
+    clip_52: 2
+    clip_53: 2
+    clip_54: 2
+    clip_55: 2
+    clip_56: 2
+    clip_57: 2
+    clip_58: 2
+    clip_59: 2
+    clip_6: 1
+    clip_60: 2
+    clip_61: 2
+    clip_62: 2
+    clip_63: 2
+    clip_64: 2
+    clip_65: 2
+    clip_66: 2
+    clip_67: 2
+    clip_68: 2
+    clip_69: 2
+    clip_7: 1
+    clip_70: 2
+    clip_71: 2
+    clip_72: 2
+    clip_73: 2
+    clip_74: 2
+    clip_75: 2
+    clip_76: 2
+    clip_77: 3
+    clip_78: 3
+    clip_79: 3
+    clip_8: 1
+    clip_80: 3
+    clip_81: 3
+    clip_82: 3
+    clip_83: 3
+    clip_84: 3
+    clip_85: 4
+    clip_86: 4
+    clip_87: 4
+    clip_88: 4
+    clip_89: 4
+    clip_9: 1
+    clip_90: 4
+    clip_91: 4
+    clip_92: 4
+    clip_93: 4
+    clip_94: 4
+    clip_95: 4
+    clip_96: 4
+    clip_97: 4
+    clip_98: 4
+    clip_99: 4
+  clip_ids:
+  - clip_1
+  - clip_100
+  - clip_101
+  - clip_104
+  - clip_105
+  - clip_106
+  - clip_107
+  - clip_108
+  - clip_109
+  - clip_110
+  - clip_111
+  - clip_112
+  - clip_115
+  - clip_116
+  - clip_117
+  - clip_118
+  - clip_119
+  - clip_120
+  - clip_121
+  - clip_122
+  - clip_123
+  - clip_124
+  - clip_125
+  - clip_126
+  - clip_127
+  - clip_128
+  - clip_129
+  - clip_130
+  - clip_131
+  - clip_132
+  - clip_133
+  - clip_134
+  - clip_136
+  - clip_137
+  - clip_138
+  - clip_139
+  - clip_140
+  - clip_141
+  - clip_142
+  - clip_143
+  - clip_144
+  - clip_145
+  - clip_148
+  - clip_15
+  - clip_152
+  - clip_154
+  - clip_155
+  - clip_157
+  - clip_158
+  - clip_159
+  - clip_16
+  - clip_160
+  - clip_161
+  - clip_162
+  - clip_163
+  - clip_165
+  - clip_166
+  - clip_17
+  - clip_171
+  - clip_172
+  - clip_18
+  - clip_180
+  - clip_181
+  - clip_182
+  - clip_183
+  - clip_184
+  - clip_185
+  - clip_186
+  - clip_187
+  - clip_188
+  - clip_189
+  - clip_19
+  - clip_190
+  - clip_191
+  - clip_192
+  - clip_193
+  - clip_194
+  - clip_195
+  - clip_196
+  - clip_197
+  - clip_198
+  - clip_199
+  - clip_2
+  - clip_20
+  - clip_200
+  - clip_201
+  - clip_202
+  - clip_203
+  - clip_21
+  - clip_22
+  - clip_23
+  - clip_24
+  - clip_26
+  - clip_30
+  - clip_32
+  - clip_34
+  - clip_35
+  - clip_36
+  - clip_39
+  - clip_4
+  - clip_40
+  - clip_41
+  - clip_42
+  - clip_43
+  - clip_44
+  - clip_48
+  - clip_50
+  - clip_52
+  - clip_53
+  - clip_54
+  - clip_55
+  - clip_56
+  - clip_57
+  - clip_58
+  - clip_59
+  - clip_60
+  - clip_61
+  - clip_62
+  - clip_63
+  - clip_64
+  - clip_65
+  - clip_66
+  - clip_67
+  - clip_68
+  - clip_69
+  - clip_7
+  - clip_70
+  - clip_71
+  - clip_72
+  - clip_73
+  - clip_74
+  - clip_75
+  - clip_76
+  - clip_81
+  - clip_88
+  - clip_89
+  - clip_90
+  - clip_91
+  - clip_92
+  - clip_93
+  - clip_94
+  - clip_95
+  - clip_96
+  - clip_97
+  - clip_98
+  - clip_99
+  clip_ids_per_fold:
+    0:
+    - clip_1
+    - clip_136
+    - clip_137
+    - clip_138
+    - clip_139
+    - clip_140
+    - clip_141
+    - clip_142
+    - clip_143
+    - clip_144
+    - clip_145
+    - clip_148
+    - clip_15
+    - clip_16
+    - clip_17
+    - clip_18
+    - clip_19
+    - clip_2
+    - clip_20
+    - clip_21
+    - clip_22
+    - clip_26
+    - clip_30
+    - clip_32
+    - clip_34
+    - clip_35
+    - clip_36
+    - clip_39
+    - clip_4
+    - clip_40
+    - clip_41
+    - clip_42
+    - clip_43
+    - clip_7
+    1:
+    - clip_152
+    - clip_154
+    - clip_155
+    - clip_157
+    - clip_158
+    - clip_159
+    - clip_160
+    - clip_161
+    - clip_162
+    - clip_44
+    - clip_52
+    - clip_53
+    - clip_54
+    - clip_55
+    - clip_56
+    - clip_57
+    - clip_58
+    - clip_59
+    - clip_60
+    - clip_61
+    - clip_62
+    - clip_63
+    - clip_64
+    - clip_65
+    - clip_66
+    - clip_67
+    - clip_68
+    - clip_69
+    - clip_70
+    - clip_71
+    - clip_72
+    - clip_73
+    - clip_74
+    - clip_75
+    - clip_76
+    2:
+    - clip_163
+    - clip_165
+    - clip_166
+    - clip_171
+    - clip_172
+    - clip_48
+    - clip_50
+    - clip_81
+    3:
+    - clip_100
+    - clip_101
+    - clip_180
+    - clip_181
+    - clip_182
+    - clip_183
+    - clip_184
+    - clip_185
+    - clip_186
+    - clip_187
+    - clip_188
+    - clip_189
+    - clip_190
+    - clip_191
+    - clip_192
+    - clip_193
+    - clip_194
+    - clip_195
+    - clip_196
+    - clip_197
+    - clip_198
+    - clip_199
+    - clip_200
+    - clip_201
+    - clip_202
+    - clip_203
+    - clip_88
+    - clip_89
+    - clip_90
+    - clip_91
+    - clip_92
+    - clip_93
+    - clip_94
+    - clip_95
+    - clip_96
+    - clip_97
+    - clip_98
+    - clip_99
+    4:
+    - clip_104
+    - clip_105
+    - clip_106
+    - clip_107
+    - clip_108
+    - clip_109
+    - clip_110
+    - clip_111
+    - clip_112
+    - clip_115
+    - clip_116
+    - clip_117
+    - clip_118
+    - clip_119
+    - clip_120
+    - clip_121
+    - clip_122
+    - clip_123
+    - clip_124
+    - clip_125
+    - clip_126
+    - clip_127
+    - clip_128
+    - clip_129
+    - clip_130
+    - clip_131
+    - clip_132
+    - clip_133
+    - clip_134
+    - clip_23
+    - clip_24
+  dataset_name: desantis_rattlesnakes
+  individual_ids:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 13
+  - 14
+  individuals_per_fold:
+    0:
+    - 1
+    - 6
+    - 11
+    1:
+    - 2
+    - 7
+    - 13
+    2:
+    - 3
+    - 8
+    - 14
+    3:
+    - 4
+    - 9
+    4:
+    - 5
+    - 10
+  label_names:
+  - unknown
+  - Moving
+  - Not_Moving
+  mean_dur_sec_by_individual:
+    1: 352.9166666666667
+    2: 373.25
+    3: 178.0
+    4: 421.0
+    5: 419.55172413793105
+    6: 413.90909090909093
+    7: 734.6666666666666
+    8: 742.2
+    9: 1411.0833333333333
+    10: 806.0
+    11: 2240.181818181818
+    13: 472.6666666666667
+    14: 199.0
+  mean_overall_dur_sec: 721.7857142857143
+  n_folds: 5
+  sr: 1
+model: CRNN
+model_config:
+  batch_size: 32
+  blur_scale: 0
+  conv_depth: 2
+  dilation: 5
+  downsizing_factor: 32
+  dropout: 0
+  gru_depth: 1
+  gru_hidden_size: 64
+  hidden_size: 64
+  jitter_scale: 0
+  ker_size: 7
+  lr: 0.01
+  n_epochs: 100
+  normalize: false
+  rescale_param: 0
+  sparse_annotations: true
+  temporal_window_samples: 64
+  weight_decay: 0
+num_clusters: 3
+output_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_6
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_6/predictions
+seed: 1
+static_acc_cutoff_freq: 0
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_6/temp
+test_data_fp:
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_1.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_136.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_137.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_138.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_139.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_140.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_141.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_142.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_143.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_144.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_145.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_148.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_15.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_16.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_17.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_18.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_19.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_2.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_20.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_21.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_22.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_26.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_30.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_32.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_34.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_35.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_36.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_39.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_4.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_40.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_41.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_42.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_43.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_7.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_100.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_101.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_104.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_105.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_106.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_107.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_108.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_109.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_110.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_111.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_112.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_115.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_116.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_117.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_118.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_119.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_120.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_121.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_122.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_123.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_124.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_125.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_126.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_127.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_128.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_129.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_130.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_131.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_132.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_133.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_134.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_152.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_154.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_155.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_157.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_158.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_159.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_160.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_161.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_162.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_163.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_165.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_166.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_171.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_172.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_180.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_181.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_182.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_183.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_184.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_185.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_186.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_187.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_188.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_189.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_190.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_191.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_192.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_193.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_194.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_195.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_196.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_197.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_198.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_199.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_200.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_201.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_202.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_203.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_23.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_24.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_44.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_48.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_50.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_52.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_53.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_54.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_55.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_56.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_57.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_58.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_59.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_60.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_61.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_62.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_63.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_64.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_65.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_66.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_67.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_68.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_69.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_70.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_71.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_72.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_73.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_74.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_75.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_76.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_81.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_88.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_89.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_90.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_91.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_92.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_93.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_94.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_95.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_96.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_97.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_98.csv
+- /home/jupyter/behavior_data_local/desantis_rattlesnakes/clip_data/clip_99.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/desantis_rattlesnakes_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_6/visualizations

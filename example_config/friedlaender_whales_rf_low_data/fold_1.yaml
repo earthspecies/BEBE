@@ -1,0 +1,132 @@
+balance_classes: false
+dataset_dir: /home/jupyter/behavior_data_local/friedlaender_whales
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data_hyperparameter_selection/rf_hyperparameter_selection_5/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+- Depth
+- Speed
+low_data_setting: true
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - Depth
+  - Speed
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    mn09_127a: 0
+    mn09_148a: 1
+    mn09_152a: 2
+    mn10_132a: 3
+    mn10_133a: 4
+    mn10_139a: 5
+    mn10_144a: 6
+    mn10_151a: 7
+  clip_ids:
+  - mn09_127a
+  - mn09_148a
+  - mn09_152a
+  - mn10_132a
+  - mn10_133a
+  - mn10_139a
+  - mn10_144a
+  - mn10_151a
+  clip_ids_per_fold:
+    0:
+    - mn09_127a
+    - mn10_139a
+    1:
+    - mn09_148a
+    - mn10_144a
+    2:
+    - mn09_152a
+    - mn10_151a
+    3:
+    - mn10_132a
+    4:
+    - mn10_133a
+  dataset_name: friedlaender_whales
+  individual_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  individuals_per_fold:
+    0:
+    - 0
+    - 5
+    1:
+    - 1
+    - 6
+    2:
+    - 2
+    - 7
+    3:
+    - 3
+    4:
+    - 4
+  label_names:
+  - unknown
+  - rest
+  - travel
+  - exploratory
+  - feed
+  mean_dur_sec_by_individual:
+    0: 228.65999999999997
+    1: 95.61751527494907
+    2: 66.57073170731708
+    3: 138.4298578199052
+    4: 186.92107623318384
+    5: 137.63088235294117
+    6: 108.02182539682539
+    7: 148.8249322493225
+  mean_overall_dur_sec: 119.81184709658594
+  n_folds: 5
+  sr: 5
+model: rf
+model_config:
+  batch_size: 100
+  class_weight: balanced
+  context_window_sec: 16
+  downsample: 0
+  downsizing_factor: 1
+  feature_set: nathan2012
+  max_samples: 0.1
+  min_samples_split: 2
+  morlet_w: 10.0
+  n_estimators: 100
+  n_jobs: 24
+  n_wavelets: 25
+  normalize: false
+  wavelet_transform: false
+num_clusters: 5
+output_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data_hyperparameter_selection/rf_hyperparameter_selection_5
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data_hyperparameter_selection/rf_hyperparameter_selection_5/predictions
+seed: 1
+static_acc_cutoff_freq: 1.6
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data_hyperparameter_selection/rf_hyperparameter_selection_5/temp
+test_data_fp:
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn09_127a.csv
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn10_139a.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn10_133a.csv
+unsupervised: false
+val_data_fp:
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn09_148a.csv
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn09_152a.csv
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn10_132a.csv
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn10_144a.csv
+- /home/jupyter/behavior_data_local/friedlaender_whales/clip_data/mn10_151a.csv
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/friedlaender_whales_rf_low_data_hyperparameter_selection/rf_hyperparameter_selection_5/visualizations

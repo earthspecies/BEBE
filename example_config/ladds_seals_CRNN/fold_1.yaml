@@ -1,0 +1,400 @@
+dataset_dir: /home/jupyter/bebe_data/ladds_seals
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_3/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+- Depth
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - Depth
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    abbey-15-12-14: 0
+    abbey-30-10-14: 0
+    bella-02-09-15: 1
+    bella-03-09-15: 1
+    bella-29-08-15: 1
+    bella-30-08-15: 1
+    bella-31-08-15: 1
+    groucho-03-09-15: 2
+    groucho-29-08-15: 2
+    groucho-30-08-15: 2
+    groucho-31-08-15: 2
+    malie-03-09-14: 3
+    malie-04-09-14: 3
+    malie-05-09-14: 3
+    malie-06-09-14: 3
+    malie-07-09-14: 3
+    malie-10-09-14: 3
+    malie-11-09-14: 3
+    malie-12-09-14: 3
+    malie-15-09-14: 3
+    malie-16-09-14: 3
+    mav-03-09-14: 4
+    mav-06-09-14: 4
+    mav-07-09-14: 4
+    mav-08-09-14: 4
+    mav-09-09-14: 4
+    mav-10-09-14: 4
+    mav-12-09-14: 4
+    mav-17-09-14: 4
+    maxine-15-12-14: 5
+    maxine-20-10-14: 5
+    maxine-22-08-14: 5
+    maxine-22-10-14: 5
+    maxine-23-08-14: 5
+    maxine-24-08-14: 5
+    maxine-25-08-14: 5
+    maxine-27-10-14: 5
+    maxine-28-10-14: 5
+    maxine-29-10-14: 5
+    maxine-31-10-14: 5
+    miri-01-11-14: 6
+    miri-20-10-14: 6
+    miri-22-08-14: 6
+    miri-22-10-14: 6
+    miri-23-08-14: 6
+    miri-24-08-14: 6
+    miri-24-10-14: 6
+    miri-25-08-14: 6
+    miri-28-10-14: 6
+    miri-30-10-14: 6
+    miri-31-10-14: 6
+    nelson-05-11-14: 7
+    nelson-08-11-14: 7
+    rocky-20-10-14: 8
+    rocky-22-10-14: 8
+    rocky-23-08-14: 8
+    rocky-24-10-14: 8
+    rocky-28-10-14: 8
+    rocky-29-10-14: 8
+    ronnie-03-09-14: 9
+    ronnie-04-09-14: 9
+    ronnie-11-09-14: 9
+    ronnie-12-09-14: 9
+    ronnie-17-09-14: 9
+    sly-01-09-15: 10
+    sly-03-09-15: 10
+    sly-05-11-14: 10
+    sly-09-12-14: 10
+    teiko-01-09-15: 11
+    teiko-02-09-15: 11
+    teiko-03-09-15: 11
+    teiko-28-08-15: 11
+  clip_ids:
+  - miri-30-10-14
+  - miri-23-08-14
+  - miri-20-10-14
+  - miri-28-10-14
+  - miri-24-08-14
+  - miri-25-08-14
+  - miri-22-08-14
+  - miri-24-10-14
+  - miri-31-10-14
+  - miri-01-11-14
+  - miri-22-10-14
+  - sly-03-09-15
+  - sly-09-12-14
+  - sly-05-11-14
+  - sly-01-09-15
+  - malie-16-09-14
+  - malie-03-09-14
+  - malie-10-09-14
+  - malie-11-09-14
+  - malie-12-09-14
+  - malie-15-09-14
+  - malie-04-09-14
+  - malie-06-09-14
+  - malie-07-09-14
+  - malie-05-09-14
+  - bella-31-08-15
+  - bella-30-08-15
+  - bella-03-09-15
+  - bella-02-09-15
+  - bella-29-08-15
+  - rocky-23-08-14
+  - rocky-20-10-14
+  - rocky-28-10-14
+  - rocky-24-10-14
+  - rocky-29-10-14
+  - rocky-22-10-14
+  - teiko-03-09-15
+  - teiko-02-09-15
+  - teiko-28-08-15
+  - teiko-01-09-15
+  - mav-03-09-14
+  - mav-10-09-14
+  - mav-09-09-14
+  - mav-12-09-14
+  - mav-08-09-14
+  - mav-06-09-14
+  - mav-17-09-14
+  - mav-07-09-14
+  - maxine-27-10-14
+  - maxine-23-08-14
+  - maxine-20-10-14
+  - maxine-15-12-14
+  - maxine-28-10-14
+  - maxine-24-08-14
+  - maxine-25-08-14
+  - maxine-22-08-14
+  - maxine-29-10-14
+  - maxine-31-10-14
+  - maxine-22-10-14
+  - nelson-05-11-14
+  - nelson-08-11-14
+  - abbey-30-10-14
+  - abbey-15-12-14
+  - ronnie-03-09-14
+  - ronnie-11-09-14
+  - ronnie-12-09-14
+  - ronnie-04-09-14
+  - ronnie-17-09-14
+  - groucho-31-08-15
+  - groucho-30-08-15
+  - groucho-03-09-15
+  - groucho-29-08-15
+  clip_ids_per_fold:
+    0:
+    - abbey-15-12-14
+    - abbey-30-10-14
+    - maxine-15-12-14
+    - maxine-20-10-14
+    - maxine-22-08-14
+    - maxine-22-10-14
+    - maxine-23-08-14
+    - maxine-24-08-14
+    - maxine-25-08-14
+    - maxine-27-10-14
+    - maxine-28-10-14
+    - maxine-29-10-14
+    - maxine-31-10-14
+    - sly-01-09-15
+    - sly-03-09-15
+    - sly-05-11-14
+    - sly-09-12-14
+    1:
+    - bella-02-09-15
+    - bella-03-09-15
+    - bella-29-08-15
+    - bella-30-08-15
+    - bella-31-08-15
+    - miri-01-11-14
+    - miri-20-10-14
+    - miri-22-08-14
+    - miri-22-10-14
+    - miri-23-08-14
+    - miri-24-08-14
+    - miri-24-10-14
+    - miri-25-08-14
+    - miri-28-10-14
+    - miri-30-10-14
+    - miri-31-10-14
+    - teiko-01-09-15
+    - teiko-02-09-15
+    - teiko-03-09-15
+    - teiko-28-08-15
+    2:
+    - groucho-03-09-15
+    - groucho-29-08-15
+    - groucho-30-08-15
+    - groucho-31-08-15
+    - nelson-05-11-14
+    - nelson-08-11-14
+    3:
+    - malie-03-09-14
+    - malie-04-09-14
+    - malie-05-09-14
+    - malie-06-09-14
+    - malie-07-09-14
+    - malie-10-09-14
+    - malie-11-09-14
+    - malie-12-09-14
+    - malie-15-09-14
+    - malie-16-09-14
+    - rocky-20-10-14
+    - rocky-22-10-14
+    - rocky-23-08-14
+    - rocky-24-10-14
+    - rocky-28-10-14
+    - rocky-29-10-14
+    4:
+    - mav-03-09-14
+    - mav-06-09-14
+    - mav-07-09-14
+    - mav-08-09-14
+    - mav-09-09-14
+    - mav-10-09-14
+    - mav-12-09-14
+    - mav-17-09-14
+    - ronnie-03-09-14
+    - ronnie-04-09-14
+    - ronnie-11-09-14
+    - ronnie-12-09-14
+    - ronnie-17-09-14
+  dataset_name: ladds_seals
+  individual_ids:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  individuals_per_fold:
+    0:
+    - 0
+    - 5
+    - 10
+    1:
+    - 1
+    - 6
+    - 11
+    2:
+    - 2
+    - 7
+    3:
+    - 3
+    - 8
+    4:
+    - 4
+    - 9
+  label_names:
+  - unknown
+  - travelling
+  - resting
+  - grooming
+  - feeding
+  mean_dur_sec_by_individual:
+    0: 13.088163265306122
+    1: 12.25
+    2: 8.61515625
+    3: 12.520477137176938
+    4: 49.57015267175573
+    5: 36.77322834645669
+    6: 39.22552083333333
+    7: 10.006976744186046
+    8: 49.02392694063927
+    9: 10.673399715504978
+    10: 29.95843137254901
+    11: 8.635
+  mean_overall_dur_sec: 24.84734294261626
+  n_folds: 5
+  sr: 25
+model: CRNN
+model_config:
+  batch_size: 32
+  blur_scale: 0
+  conv_depth: 2
+  dilation: 1
+  downsizing_factor: 64
+  dropout: 0
+  gru_depth: 1
+  gru_hidden_size: 64
+  hidden_size: 64
+  jitter_scale: 0
+  ker_size: 7
+  lr: 0.01
+  n_epochs: 100
+  normalize: false
+  rescale_param: 0
+  sparse_annotations: true
+  temporal_window_samples: 128
+  weight_decay: 0
+num_clusters: 5
+output_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_3
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_3/predictions
+seed: 1
+static_acc_cutoff_freq: 1.6
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_3/temp
+test_data_fp:
+- /home/jupyter/bebe_data/ladds_seals/clip_data/abbey-15-12-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/abbey-30-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-15-12-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-20-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-22-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-22-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-23-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-24-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-25-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-27-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-28-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-29-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/maxine-31-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/sly-01-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/sly-03-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/sly-05-11-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/sly-09-12-14.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/bebe_data/ladds_seals/clip_data/bella-02-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/bella-03-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/bella-29-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/bella-30-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/bella-31-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/groucho-03-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/groucho-29-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/groucho-30-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/groucho-31-08-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-03-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-04-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-05-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-06-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-07-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-10-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-11-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-12-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-15-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/malie-16-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-03-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-06-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-07-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-08-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-09-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-10-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-12-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/mav-17-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-01-11-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-20-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-22-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-22-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-23-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-24-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-24-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-25-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-28-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-30-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/miri-31-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/nelson-05-11-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/nelson-08-11-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-20-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-22-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-23-08-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-24-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-28-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/rocky-29-10-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/ronnie-03-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/ronnie-04-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/ronnie-11-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/ronnie-12-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/ronnie-17-09-14.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/teiko-01-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/teiko-02-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/teiko-03-09-15.csv
+- /home/jupyter/bebe_data/ladds_seals/clip_data/teiko-28-08-15.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/ladds_seals_CRNN_hyperparameter_selection/CRNN_hyperparameter_selection_3/visualizations

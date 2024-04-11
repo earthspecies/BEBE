@@ -1,0 +1,26 @@
+balance_classes: false
+dataset_dir: /home/jupyter/behavior_data_local/maekawa_gulls/
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_hyperparameter_selection/harnet_hyperparameter_selection_0/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    clip_1: 1
+    clip_12: 5
+    clip_146: 7
+    clip_147: 7
+    clip_149: 8
+    clip_150: 8
+    clip_152: 8
+    clip_154: 9
+    clip_165: 10

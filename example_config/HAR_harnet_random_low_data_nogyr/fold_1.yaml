@@ -1,0 +1,413 @@
+balance_classes: false
+dataset_dir: /home/jupyter/behavior_data_local/HAR
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr_hyperparameter_selection/harnet_random_hyperparameter_selection_0/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+low_data_setting: true
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - GyrX
+  - GyrY
+  - GyrZ
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    exp01_user01: 1
+    exp02_user01: 1
+    exp03_user02: 2
+    exp04_user02: 2
+    exp05_user03: 3
+    exp06_user03: 3
+    exp07_user04: 4
+    exp08_user04: 4
+    exp09_user05: 5
+    exp10_user05: 5
+    exp11_user06: 6
+    exp12_user06: 6
+    exp13_user07: 7
+    exp14_user07: 7
+    exp15_user08: 8
+    exp16_user08: 8
+    exp17_user09: 9
+    exp18_user09: 9
+    exp19_user10: 10
+    exp20_user10: 10
+    exp21_user10: 10
+    exp22_user11: 11
+    exp23_user11: 11
+    exp24_user12: 12
+    exp25_user12: 12
+    exp26_user13: 13
+    exp27_user13: 13
+    exp28_user14: 14
+    exp29_user14: 14
+    exp30_user15: 15
+    exp31_user15: 15
+    exp32_user16: 16
+    exp33_user16: 16
+    exp34_user17: 17
+    exp35_user17: 17
+    exp36_user18: 18
+    exp37_user18: 18
+    exp38_user19: 19
+    exp39_user19: 19
+    exp40_user20: 20
+    exp41_user20: 20
+    exp42_user21: 21
+    exp43_user21: 21
+    exp44_user22: 22
+    exp45_user22: 22
+    exp46_user23: 23
+    exp47_user23: 23
+    exp48_user24: 24
+    exp49_user24: 24
+    exp50_user25: 25
+    exp51_user25: 25
+    exp52_user26: 26
+    exp53_user26: 26
+    exp54_user27: 27
+    exp55_user27: 27
+    exp56_user28: 28
+    exp57_user28: 28
+    exp58_user29: 29
+    exp59_user29: 29
+    exp60_user30: 30
+    exp61_user30: 30
+  clip_ids:
+  - exp01_user01
+  - exp02_user01
+  - exp03_user02
+  - exp04_user02
+  - exp05_user03
+  - exp06_user03
+  - exp07_user04
+  - exp08_user04
+  - exp09_user05
+  - exp10_user05
+  - exp11_user06
+  - exp12_user06
+  - exp13_user07
+  - exp14_user07
+  - exp15_user08
+  - exp16_user08
+  - exp17_user09
+  - exp18_user09
+  - exp19_user10
+  - exp20_user10
+  - exp21_user10
+  - exp22_user11
+  - exp23_user11
+  - exp24_user12
+  - exp25_user12
+  - exp26_user13
+  - exp27_user13
+  - exp28_user14
+  - exp29_user14
+  - exp30_user15
+  - exp31_user15
+  - exp32_user16
+  - exp33_user16
+  - exp34_user17
+  - exp35_user17
+  - exp36_user18
+  - exp37_user18
+  - exp38_user19
+  - exp39_user19
+  - exp40_user20
+  - exp41_user20
+  - exp42_user21
+  - exp43_user21
+  - exp44_user22
+  - exp45_user22
+  - exp46_user23
+  - exp47_user23
+  - exp48_user24
+  - exp49_user24
+  - exp50_user25
+  - exp51_user25
+  - exp52_user26
+  - exp53_user26
+  - exp54_user27
+  - exp55_user27
+  - exp56_user28
+  - exp57_user28
+  - exp58_user29
+  - exp59_user29
+  - exp60_user30
+  - exp61_user30
+  clip_ids_per_fold:
+    0:
+    - exp01_user01
+    - exp02_user01
+    - exp11_user06
+    - exp12_user06
+    - exp22_user11
+    - exp23_user11
+    - exp32_user16
+    - exp33_user16
+    - exp42_user21
+    - exp43_user21
+    - exp52_user26
+    - exp53_user26
+    1:
+    - exp03_user02
+    - exp04_user02
+    - exp13_user07
+    - exp14_user07
+    - exp24_user12
+    - exp25_user12
+    - exp34_user17
+    - exp35_user17
+    - exp44_user22
+    - exp45_user22
+    - exp54_user27
+    - exp55_user27
+    2:
+    - exp05_user03
+    - exp06_user03
+    - exp15_user08
+    - exp16_user08
+    - exp26_user13
+    - exp27_user13
+    - exp36_user18
+    - exp37_user18
+    - exp46_user23
+    - exp47_user23
+    - exp56_user28
+    - exp57_user28
+    3:
+    - exp07_user04
+    - exp08_user04
+    - exp17_user09
+    - exp18_user09
+    - exp28_user14
+    - exp29_user14
+    - exp38_user19
+    - exp39_user19
+    - exp48_user24
+    - exp49_user24
+    - exp58_user29
+    - exp59_user29
+    4:
+    - exp09_user05
+    - exp10_user05
+    - exp19_user10
+    - exp20_user10
+    - exp21_user10
+    - exp30_user15
+    - exp31_user15
+    - exp40_user20
+    - exp41_user20
+    - exp50_user25
+    - exp51_user25
+    - exp60_user30
+    - exp61_user30
+  dataset_name: HAR
+  individual_ids:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  individuals_per_fold:
+    0:
+    - 1
+    - 6
+    - 11
+    - 16
+    - 21
+    - 26
+    1:
+    - 2
+    - 7
+    - 12
+    - 17
+    - 22
+    - 27
+    2:
+    - 3
+    - 8
+    - 13
+    - 18
+    - 23
+    - 28
+    3:
+    - 4
+    - 9
+    - 14
+    - 19
+    - 24
+    - 29
+    4:
+    - 5
+    - 10
+    - 15
+    - 20
+    - 25
+    - 30
+  label_names:
+  - unknown
+  - WALKING
+  - WALKING_UPSTAIRS
+  - WALKING_DOWNSTAIRS
+  - SITTING
+  - STANDING
+  - LAYING
+  mean_dur_sec_by_individual:
+    1: 15.385454545454545
+    2: 15.895714285714286
+    3: 17.137241379310343
+    4: 15.726896551724135
+    5: 15.750714285714286
+    6: 16.702857142857145
+    7: 15.851428571428572
+    8: 14.446896551724137
+    9: 14.139354838709677
+    10: 15.51357142857143
+    11: 15.989655172413793
+    12: 16.891428571428573
+    13: 16.986428571428572
+    14: 16.597857142857144
+    15: 17.205000000000002
+    16: 18.529285714285713
+    17: 19.205714285714286
+    18: 19.21857142857143
+    19: 18.490000000000002
+    20: 18.342142857142857
+    21: 20.851428571428567
+    22: 16.77285714285714
+    23: 18.909285714285716
+    24: 18.914482758620693
+    25: 20.719285714285718
+    26: 19.999285714285712
+    27: 18.804827586206898
+    28: 18.800689655172413
+    29: 17.131034482758622
+    30: 19.90142857142857
+  mean_overall_dur_sec: 17.4661214953271
+  n_folds: 5
+  sr: 50
+model: harnet
+model_config:
+  batch_size: 32
+  blur_scale: 0
+  downsizing_factor: 450
+  dropout: 0
+  freeze_encoder: false
+  gru_hidden_size: 64
+  harnet_version: harnet30
+  jitter_scale: 0
+  load_pretrained_weights: false
+  lr: 0.01
+  n_epochs: 100
+  normalize: true
+  rescale_param: 0
+  sparse_annotations: true
+  temporal_window_samples: 900
+  weight_decay: 0
+num_clusters: 7
+output_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr_hyperparameter_selection/harnet_random_hyperparameter_selection_0
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr_hyperparameter_selection/harnet_random_hyperparameter_selection_0/predictions
+seed: 1
+static_acc_cutoff_freq: 0
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr_hyperparameter_selection/harnet_random_hyperparameter_selection_0/temp
+test_data_fp:
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp01_user01.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp02_user01.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp11_user06.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp12_user06.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp22_user11.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp23_user11.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp32_user16.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp33_user16.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp42_user21.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp43_user21.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp52_user26.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp53_user26.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp09_user05.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp10_user05.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp19_user10.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp20_user10.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp21_user10.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp30_user15.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp31_user15.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp40_user20.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp41_user20.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp50_user25.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp51_user25.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp60_user30.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp61_user30.csv
+unsupervised: false
+val_data_fp:
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp03_user02.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp04_user02.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp05_user03.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp06_user03.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp07_user04.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp08_user04.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp13_user07.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp14_user07.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp15_user08.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp16_user08.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp17_user09.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp18_user09.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp24_user12.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp25_user12.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp26_user13.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp27_user13.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp28_user14.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp29_user14.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp34_user17.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp35_user17.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp36_user18.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp37_user18.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp38_user19.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp39_user19.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp44_user22.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp45_user22.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp46_user23.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp47_user23.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp48_user24.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp49_user24.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp54_user27.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp55_user27.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp56_user28.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp57_user28.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp58_user29.csv
+- /home/jupyter/behavior_data_local/HAR/clip_data/exp59_user29.csv
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/HAR_harnet_random_low_data_nogyr_hyperparameter_selection/harnet_random_hyperparameter_selection_0/visualizations

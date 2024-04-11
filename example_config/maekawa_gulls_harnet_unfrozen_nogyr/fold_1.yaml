@@ -1,0 +1,194 @@
+balance_classes: false
+dataset_dir: /home/jupyter/behavior_data_local/maekawa_gulls
+experiment_name: fold_1
+final_model_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr_hyperparameter_selection/harnet_unfrozen_hyperparameter_selection_0/final_model
+input_vars:
+- AccX
+- AccY
+- AccZ
+low_data_setting: false
+metadata:
+  clip_column_names:
+  - AccX
+  - AccY
+  - AccZ
+  - individual_id
+  - label
+  clip_id_to_individual_id:
+    clip_1: 1
+    clip_12: 5
+    clip_146: 7
+    clip_147: 7
+    clip_149: 8
+    clip_150: 8
+    clip_152: 8
+    clip_154: 9
+    clip_165: 10
+    clip_167: 10
+    clip_169: 11
+    clip_171: 11
+    clip_21: 5
+    clip_3: 2
+    clip_32: 6
+    clip_34: 6
+    clip_36: 7
+    clip_45: 7
+    clip_49: 7
+    clip_5: 2
+    clip_7: 3
+    clip_9: 4
+  clip_ids:
+  - clip_1
+  - clip_12
+  - clip_146
+  - clip_147
+  - clip_149
+  - clip_150
+  - clip_152
+  - clip_154
+  - clip_165
+  - clip_167
+  - clip_169
+  - clip_171
+  - clip_21
+  - clip_3
+  - clip_32
+  - clip_34
+  - clip_36
+  - clip_45
+  - clip_49
+  - clip_5
+  - clip_7
+  - clip_9
+  clip_ids_per_fold:
+    0:
+    - clip_1
+    - clip_154
+    - clip_165
+    - clip_167
+    1:
+    - clip_3
+    - clip_32
+    - clip_34
+    - clip_5
+    2:
+    - clip_169
+    - clip_171
+    - clip_7
+    3:
+    - clip_149
+    - clip_150
+    - clip_152
+    - clip_9
+    4:
+    - clip_12
+    - clip_146
+    - clip_147
+    - clip_21
+    - clip_36
+    - clip_45
+    - clip_49
+  dataset_name: maekawa_gulls
+  individual_ids:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  individuals_per_fold:
+    0:
+    - 1
+    - 9
+    - 10
+    1:
+    - 2
+    - 6
+    2:
+    - 3
+    - 11
+    3:
+    - 4
+    - 8
+    4:
+    - 5
+    - 7
+  label_names:
+  - unknown
+  - flying
+  - foraging
+  - stationary
+  mean_dur_sec_by_individual:
+    1: 2851.3120000000004
+    2: 8709.84
+    3: 1322.0145454545452
+    4: 4456.526666666668
+    5: 26600.0
+    6: 4467.837777777777
+    7: 1642.4964705882353
+    8: 3001.6275
+    9: 1312.52
+    10: 913.5866666666666
+    11: 2797.012
+  mean_overall_dur_sec: 2823.74325
+  n_folds: 5
+  sr: 25
+model: harnet
+model_config:
+  batch_size: 32
+  blur_scale: 0
+  downsizing_factor: 450
+  dropout: 0
+  freeze_encoder: false
+  gru_hidden_size: 64
+  harnet_version: harnet30
+  jitter_scale: 0
+  load_pretrained_weights: true
+  lr: 0.01
+  n_epochs: 100
+  normalize: true
+  rescale_param: 0
+  sparse_annotations: true
+  temporal_window_samples: 900
+  weight_decay: 0
+num_clusters: 4
+output_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr_hyperparameter_selection/harnet_unfrozen_hyperparameter_selection_0
+output_parent_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr
+predictions_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr_hyperparameter_selection/harnet_unfrozen_hyperparameter_selection_0/predictions
+seed: 1
+static_acc_cutoff_freq: 0
+temp_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr_hyperparameter_selection/harnet_unfrozen_hyperparameter_selection_0/temp
+test_data_fp:
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_1.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_154.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_165.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_167.csv
+test_folds:
+- 1
+train_data_fp:
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_12.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_146.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_147.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_149.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_150.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_152.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_169.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_171.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_21.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_3.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_32.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_34.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_36.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_45.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_49.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_5.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_7.csv
+- /home/jupyter/behavior_data_local/maekawa_gulls/clip_data/clip_9.csv
+unsupervised: false
+val_data_fp: []
+visualization_dir: /home/jupyter/behavior_benchmarks_experiments/maekawa_gulls_harnet_unfrozen_nogyr_hyperparameter_selection/harnet_unfrozen_hyperparameter_selection_0/visualizations
