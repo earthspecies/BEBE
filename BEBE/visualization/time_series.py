@@ -19,7 +19,7 @@ def plot_track(data_fp, predictions_fp, metadata, num_clusters, unsupervised, ev
       num_rows = len(vars_to_plot) + 2
       
     fig, axes = plt.subplots(nrows=num_rows, ncols=1, figsize=(10, 3* num_rows))
-    axes[0].set_title(predictions_fp.split('/')[-1] + ' start: ' + str(start_sample) + ' end: ' + str(end_sample))
+    axes[0].set_title(os.path.basename(predictions_fp) + ' start: ' + str(start_sample) + ' end: ' + str(end_sample))
     
     # Raw Data
     for i, var in enumerate(vars_to_plot):

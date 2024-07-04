@@ -67,7 +67,8 @@ def generate_predictions(model, config):
     for filename in tqdm.tqdm(data_fp):
       predictions, latents = model.predict_from_file(filename)
 
-      predictions_fp = os.path.join(config['predictions_dir'], filename.split('/')[-1])
+      # predictions_fp = os.path.join(config['predictions_dir'], filename.split('/')[-1])
+      predictions_fp = os.path.join(config['predictions_dir'], os.path.basename(filename))
       pd.DataFrame(predictions.astype('int')).to_csv(predictions_fp, index = False, header = False)
       
 def generate_evaluations_standalone(metadata,
@@ -118,7 +119,7 @@ def generate_evaluations_standalone(metadata,
     #######
     
     for fp in data_fp:
-      filename = fp.split('/')[-1]
+      filename = os.path.basename(fp) #fp.split('/')[-1]
       predictions_fp = os.path.join(predictions_dir, filename)
       if not os.path.exists(predictions_fp):
         raise ValueError("you need to save off all the model predictions before performing evaluation")
@@ -128,7 +129,7 @@ def generate_evaluations_standalone(metadata,
 
       labels_idx = metadata['clip_column_names'].index('label')
       labels = list(pd.read_csv(fp, delimiter = ',', header = None).values[:, labels_idx].flatten())
-      clip_id = filename.split('/')[-1].split('.')[0]
+      clip_id = os.path.basename(filename).split('.')[0] #filename.split('/')[-1].split('.')[0]
       individual_id = metadata['clip_id_to_individual_id'][clip_id]
       
       if individual_id in all_predictions_dict:
@@ -235,7 +236,7 @@ def generate_evaluations_standalone(metadata,
     if len(data_fp) == 0:
       continue
     for i, fp in enumerate(rng.choice(data_fp, 3, replace = True)):
-      filename = fp.split('/')[-1]
+      filename = os.path.basename(fp) #fp.split('/')[-1]
       predictions_fp = os.path.join(predictions_dir, filename)
       track_length = len(pd.read_csv(predictions_fp, delimiter = ',', header = None))
       if data_fp == train_data_fp:

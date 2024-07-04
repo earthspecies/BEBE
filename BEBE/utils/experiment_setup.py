@@ -106,7 +106,7 @@ def expand_config(config):
   data_fp_glob = os.path.join(config['dataset_dir'], 'clip_data', '*.csv')
   fps = glob.glob(data_fp_glob)
   for fp in fps:
-    clip_id = fp.split('/')[-1].split('.')[0]
+    clip_id = os.path.basename(fp).split('.')[0] #fp.split('/')[-1].split('.')[0]
     if clip_id in test_clip_ids:
       test_data_fp.append(fp)
     elif clip_id in val_clip_ids:
