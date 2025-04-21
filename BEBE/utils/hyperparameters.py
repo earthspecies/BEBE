@@ -317,4 +317,7 @@ def get_nogyr_vars(dataset_name):
     return ['AccX', 'AccY', 'AccZ', 'Depth']
   if dataset_name in ['vehkaoja_dogs']:
     return ['AccX_Back', 'AccY_Back', 'AccZ_Back', 'AccX_Neck', 'AccY_Neck', 'AccZ_Neck']
+  else:
+    print("Nogyr dataset name not recognized, using tri-axial accelerometer channels")
+    return ["AccX", "AccY", "AccZ"]
       

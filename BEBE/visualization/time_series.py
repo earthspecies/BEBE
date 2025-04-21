@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MultipleLocator
 import pandas as pd
+import os
 
 def plot_track(data_fp, predictions_fp, metadata, num_clusters, unsupervised, eval_dict, start_sample = 0, end_sample = 20000, vars_to_plot = None, target_fp = None):
     input_data = pd.read_csv(data_fp, delimiter = ',', header = None).values
